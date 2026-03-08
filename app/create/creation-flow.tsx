@@ -936,6 +936,14 @@ export default function CreationFlow() {
   // Check if landing page already scanned a business
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // If user clicked "sign up without a website", skip straight to template selection
+      const skipScan = sessionStorage.getItem("bff_skip_scan");
+      if (skipScan) {
+        sessionStorage.removeItem("bff_skip_scan");
+        setStep("manual-template");
+        return;
+      }
+
       const savedBusiness = sessionStorage.getItem("bff_business");
       const savedUrl = sessionStorage.getItem("bff_scan_url");
       if (savedBusiness) {

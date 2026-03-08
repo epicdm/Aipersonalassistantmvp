@@ -176,7 +176,12 @@ export function Landing({ onStart }: LandingProps) {
           {!preview && (
             <div className="mt-4 flex items-center justify-center gap-2">
               <button
-                onClick={onStart}
+                onClick={() => {
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("bff_skip_scan", "true");
+                    }
+                    onStart();
+                  }}
                 className="text-sm text-gray-500 hover:text-white transition-colors cursor-pointer"
               >
                 Or sign up without a website →
