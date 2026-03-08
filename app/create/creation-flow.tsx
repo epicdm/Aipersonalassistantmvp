@@ -1,249 +1,970 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  Globe,
   Sparkles,
-  ChevronRight,
-  MessageSquare,
-  Phone,
-  Mail,
-  Calendar,
-  Brain,
-  Shield,
-  Heart,
-  Zap,
-  Eye,
-  Volume2,
-  Bot,
   ArrowRight,
+  ChevronRight,
+  Check,
+  X,
+  Plus,
+  Loader2,
+  Building2,
+  Phone,
+  MapPin,
+  Clock,
+  Tags,
+  Zap,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
-import { TEMPLATES, getTemplate } from "@/app/lib/templates";
+import { TEMPLATES, AgentTemplate } from "@/app/lib/templates";
 
-/*
- * CREATION FLOW
- * 
- * Psychology: This isn't a settings form. It's a ritual.
- * You're bringing a person into existence, step by step.
- * Each step reveals more of who they are.
- *
- * Flow: Template → Name → Personality → Abilities → Trust → Birth
- * Templates pre-fill purpose, tone, and tools — user can still customize.
- *
- * Inspired by:
- * - Replika: Conversational onboarding
- * - Tamagotchi: Emotional bond through creation
- * - The Sims: Character creation IS the experience
- * - Shopify: Pick your store type, customize from there
- */
+// ─── Types ───────────────────────────────────────────────────
 
-type Step = {
-  id: string;
-  question: string;
-  subtext?: string;
-  type: "text" | "choice" | "multi" | "reveal" | "template";
-  options?: { value: string; label: string; emoji: string; desc?: string }[];
-  field?: string;
-  placeholder?: string;
+type BusinessHours = {
+  [day: string]: { open: string | null; close: string | null; closed: boolean };
 };
 
-const STEPS: Step[] = [
-  {
-    id: "intro",
-    question: "Let's bring someone to life.",
-    subtext: "You're about to create an AI that works for you — talks to people, handles tasks, remembers everything. But first, they need a soul.",
-    type: "reveal",
-  },
-  {
-    id: "template",
-    question: "What kind of agent do you need?",
-    subtext: "Pick a template to get started fast. You can customize everything after.",
-    type: "template",
-    field: "template",
-  },
-  {
-    id: "name",
-    question: "What's their name?",
-    subtext: "This is the first thing anyone will hear when they meet your AI.",
-    type: "text",
-    field: "name",
-    placeholder: "Luna, Max, Aria, Atlas...",
-  },
-  {
-    id: "personality",
-    question: "What kind of presence should they have?",
-    subtext: "Think of someone you'd trust to represent you.",
-    type: "choice",
-    field: "tone",
-    options: [
-      { value: "professional", label: "The Executive", emoji: "🎯", desc: "Precise, confident, gets to the point" },
-      { value: "friendly", label: "The Ally", emoji: "🤝", desc: "Warm, approachable, makes people comfortable" },
-      { value: "casual", label: "The Friend", emoji: "😎", desc: "Relaxed, natural, like texting a buddy" },
-      { value: "enthusiastic", label: "The Spark", emoji: "⚡", desc: "Energetic, positive, infectious enthusiasm" },
-      { value: "empathetic", label: "The Listener", emoji: "💜", desc: "Thoughtful, patient, deeply understanding" },
-    ],
-  },
-  {
-    id: "abilities",
-    question: "Give them abilities.",
-    subtext: "Each one is a new superpower. Start with what matters most.",
-    type: "multi",
-    field: "tools",
-    options: [
-      { value: "whatsapp", label: "WhatsApp", emoji: "💬", desc: "Message people on your behalf" },
-      { value: "phone", label: "Phone Calls", emoji: "📞", desc: "Call and receive calls" },
-      { value: "email", label: "Email", emoji: "📧", desc: "Send and read emails" },
-      { value: "calendar", label: "Calendar", emoji: "📅", desc: "Schedule and manage events" },
-      { value: "knowledge", label: "Knowledge Base", emoji: "🧠", desc: "Learn from your documents" },
-      { value: "web", label: "Web Search", emoji: "🌐", desc: "Research anything online" },
-    ],
-  },
-  {
-    id: "trust",
-    question: "How much freedom do they get?",
-    subtext: "You can always change this later.",
-    type: "choice",
-    field: "approvalMode",
-    options: [
-      { value: "confirm", label: "Check with me first", emoji: "🔒", desc: "Shows you what they'll do before doing it" },
-      { value: "notify", label: "Act, then tell me", emoji: "📋", desc: "Gets things done, keeps you in the loop" },
-      { value: "auto", label: "Full autonomy", emoji: "🚀", desc: "Handles everything independently" },
-    ],
-  },
-  {
-    id: "birth",
-    question: "",
-    subtext: "",
-    type: "reveal",
-  },
-];
-
-// Personality-based avatar colors
-const PERSONA_COLORS: Record<string, { bg: string; accent: string; glow: string }> = {
-  professional: { bg: "from-slate-800 to-slate-900", accent: "text-blue-400", glow: "shadow-blue-500/30" },
-  friendly: { bg: "from-amber-500 to-orange-600", accent: "text-amber-200", glow: "shadow-amber-500/30" },
-  casual: { bg: "from-emerald-500 to-teal-600", accent: "text-emerald-200", glow: "shadow-emerald-500/30" },
-  enthusiastic: { bg: "from-violet-500 to-fuchsia-600", accent: "text-violet-200", glow: "shadow-violet-500/30" },
-  empathetic: { bg: "from-rose-500 to-pink-600", accent: "text-rose-200", glow: "shadow-rose-500/30" },
+type BusinessInfo = {
+  name: string;
+  industry: string;
+  description: string;
+  phone: string | null;
+  location: string | null;
+  hours: BusinessHours | null;
+  services: string[];
+  email: string | null;
+  website: string;
 };
+
+type Recommendation = {
+  slug: string;
+  reason: string;
+  template: AgentTemplate;
+};
+
+type OnboardingState = {
+  // Step 1: URL
+  url: string;
+  // Step 2: Business info
+  business: BusinessInfo | null;
+  // Step 3: Selected templates
+  selectedTemplates: string[];
+  // Step 4: Agent name
+  agentName: string;
+  // Step 5: Trust level
+  approvalMode: string;
+};
+
+const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const DAY_LABELS: Record<string, string> = {
+  monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu",
+  friday: "Fri", saturday: "Sat", sunday: "Sun",
+};
+
+const PERSONA_COLORS: Record<string, { bg: string; glow: string }> = {
+  professional: { bg: "from-blue-500 to-cyan-500", glow: "shadow-blue-500/30" },
+  friendly: { bg: "from-amber-500 to-orange-500", glow: "shadow-amber-500/30" },
+  casual: { bg: "from-emerald-500 to-teal-500", glow: "shadow-emerald-500/30" },
+  enthusiastic: { bg: "from-violet-500 to-fuchsia-500", glow: "shadow-violet-500/30" },
+  empathetic: { bg: "from-rose-500 to-pink-500", glow: "shadow-rose-500/30" },
+};
+
+// ─── Step 1: URL Input ────────────────────────────────────────
+
+function StepUrl({
+  value,
+  onChange,
+  onNext,
+  onSkip,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onNext: () => void;
+  onSkip: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
+
+  const handleScan = async () => {
+    if (!value.trim()) return;
+    setLoading(true);
+    try {
+      // Trigger parent which calls the scan API
+      onNext();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center space-y-4">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", delay: 0.1 }}
+          className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/30"
+        >
+          <Globe className="w-10 h-10 text-white" />
+        </motion.div>
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-4xl font-extrabold tracking-tight"
+        >
+          What&apos;s your website?
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-gray-400 text-lg max-w-sm mx-auto"
+        >
+          We&apos;ll scan it and set up your AI in seconds. Works with websites, Facebook pages, and Google Business profiles.
+        </motion.p>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="space-y-4"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleScan();
+          }}
+        >
+          <div className="relative">
+            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="yourwebsite.com or facebook.com/yourbusiness"
+              className="w-full bg-gray-900 border border-gray-700 rounded-2xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-gray-600"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!value.trim() || loading}
+            className="w-full mt-3 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold text-lg hover:from-indigo-700 hover:to-violet-700 transition-all disabled:opacity-40 cursor-pointer flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                Scan My Business
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <button
+          onClick={onSkip}
+          className="w-full text-center text-sm text-gray-600 hover:text-gray-400 transition-colors py-2 cursor-pointer"
+        >
+          I don&apos;t have a website → set up manually
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Step 2: Business Review ──────────────────────────────────
+
+function StepReview({
+  business,
+  onUpdate,
+  onNext,
+  onBack,
+}: {
+  business: BusinessInfo;
+  onUpdate: (b: BusinessInfo) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const [editing, setEditing] = useState<BusinessInfo>({ ...business });
+  const [newService, setNewService] = useState("");
+
+  const updateHours = (day: string, field: string, val: string | boolean) => {
+    setEditing((prev) => ({
+      ...prev,
+      hours: {
+        ...(prev.hours || {}),
+        [day]: {
+          ...(prev.hours?.[day] || { open: "09:00", close: "17:00", closed: false }),
+          [field]: val,
+        },
+      },
+    }));
+  };
+
+  const addService = () => {
+    if (!newService.trim()) return;
+    setEditing((prev) => ({ ...prev, services: [...prev.services, newService.trim()] }));
+    setNewService("");
+  };
+
+  const removeService = (i: number) => {
+    setEditing((prev) => ({
+      ...prev,
+      services: prev.services.filter((_, idx) => idx !== i),
+    }));
+  };
+
+  const handleNext = () => {
+    onUpdate(editing);
+    onNext();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Here&apos;s what we found</h2>
+        <p className="text-gray-400 mt-1">Review and edit — we&apos;ll use this to configure your agent.</p>
+      </div>
+
+      {/* Business name + industry */}
+      <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider font-semibold">
+          <Building2 className="w-3.5 h-3.5" />
+          Business Info
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Business Name</label>
+            <input
+              value={editing.name}
+              onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Industry</label>
+            <input
+              value={editing.industry}
+              onChange={(e) => setEditing({ ...editing, industry: e.target.value })}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-500"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-500 mb-1 flex items-center gap-1 mb-1">
+              <Phone className="w-3 h-3" /> Phone
+            </label>
+            <input
+              value={editing.phone || ""}
+              onChange={(e) => setEditing({ ...editing, phone: e.target.value || null })}
+              placeholder="Not found"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 flex items-center gap-1 mb-1">
+              <MapPin className="w-3 h-3" /> Location
+            </label>
+            <input
+              value={editing.location || ""}
+              onChange={(e) => setEditing({ ...editing, location: e.target.value || null })}
+              placeholder="Not found"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Services */}
+      <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider font-semibold">
+          <Tags className="w-3.5 h-3.5" />
+          Services
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {editing.services.map((s, i) => (
+            <span
+              key={i}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-sm"
+            >
+              {s}
+              <button
+                onClick={() => removeService(i)}
+                className="text-gray-500 hover:text-red-400 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={newService}
+            onChange={(e) => setNewService(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addService()}
+            placeholder="Add a service..."
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-500"
+          />
+          <button
+            onClick={addService}
+            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Business hours */}
+      <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider font-semibold">
+          <Clock className="w-3.5 h-3.5" />
+          Business Hours
+        </div>
+        <div className="space-y-2">
+          {DAYS.map((day) => {
+            const h = editing.hours?.[day] || { open: "09:00", close: "17:00", closed: false };
+            return (
+              <div key={day} className="flex items-center gap-3">
+                <span className="w-10 text-xs text-gray-500 font-medium">{DAY_LABELS[day]}</span>
+                <button
+                  onClick={() => updateHours(day, "closed", !h.closed)}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer shrink-0 ${
+                    !h.closed ? "bg-indigo-500" : "bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      !h.closed ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                {!h.closed ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="time"
+                      value={h.open || "09:00"}
+                      onChange={(e) => updateHours(day, "open", e.target.value)}
+                      className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-gray-500 flex-1"
+                    />
+                    <span className="text-gray-600 text-xs">to</span>
+                    <input
+                      type="time"
+                      value={h.close || "17:00"}
+                      onChange={(e) => updateHours(day, "close", e.target.value)}
+                      className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-gray-500 flex-1"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-600">Closed</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onBack}
+          className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition cursor-pointer text-sm font-medium"
+        >
+          Back
+        </button>
+        <button
+          onClick={handleNext}
+          className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition cursor-pointer flex items-center justify-center gap-2"
+        >
+          Looks good
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3: Agent Recommendations ───────────────────────────
+
+function StepRecommend({
+  business,
+  recommendations,
+  selected,
+  onToggle,
+  onNext,
+  onBack,
+  onSkip,
+}: {
+  business: BusinessInfo;
+  recommendations: Recommendation[];
+  selected: string[];
+  onToggle: (slug: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">
+          We recommend these agents
+        </h2>
+        <p className="text-gray-400 mt-1">
+          Based on your {business.industry} business. Pick one to start, or add all — you can always change later.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {recommendations.map((rec, i) => {
+          const tpl = rec.template;
+          if (!tpl) return null;
+          const isSelected = selected.includes(rec.slug);
+          return (
+            <motion.button
+              key={rec.slug}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              onClick={() => onToggle(rec.slug)}
+              className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer ${
+                isSelected
+                  ? "border-indigo-500 bg-indigo-500/10"
+                  : "border-gray-800 hover:border-gray-600 bg-gray-900/50"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl shrink-0`}
+                >
+                  {tpl.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">{tpl.name}</p>
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected ? "bg-indigo-500 border-indigo-500" : "border-gray-600"
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5">{rec.reason}</p>
+                </div>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Manual pick option */}
+      <details className="group">
+        <summary className="text-sm text-gray-500 hover:text-gray-300 cursor-pointer transition-colors">
+          Or pick a different template
+        </summary>
+        <div className="mt-3 space-y-2">
+          {TEMPLATES.filter((t) => !recommendations.some((r) => r.slug === t.slug)).map((tpl) => (
+            <button
+              key={tpl.slug}
+              onClick={() => onToggle(tpl.slug)}
+              className={`w-full text-left p-4 rounded-xl border transition cursor-pointer ${
+                selected.includes(tpl.slug)
+                  ? "border-indigo-500 bg-indigo-500/10"
+                  : "border-gray-800 bg-gray-900/30 hover:border-gray-600"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{tpl.emoji}</span>
+                <div>
+                  <p className="font-medium text-sm">{tpl.name}</p>
+                  <p className="text-xs text-gray-500">{tpl.tagline}</p>
+                </div>
+                {selected.includes(tpl.slug) && (
+                  <Check className="w-4 h-4 text-indigo-400 ml-auto" />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </details>
+
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onBack}
+          className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition cursor-pointer text-sm font-medium"
+        >
+          Back
+        </button>
+        <button
+          onClick={onNext}
+          disabled={selected.length === 0}
+          className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
+        >
+          Set up {selected.length > 1 ? `${selected.length} agents` : "this agent"}
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <button
+        onClick={onSkip}
+        className="w-full text-center text-xs text-gray-600 hover:text-gray-400 cursor-pointer"
+      >
+        Skip recommendations — I&apos;ll set up manually
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 4: Agent Name ───────────────────────────────────────
+
+function StepName({
+  templateSlug,
+  value,
+  onChange,
+  onNext,
+  onBack,
+}: {
+  templateSlug: string;
+  value: string;
+  onChange: (v: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const tpl = TEMPLATES.find((t) => t.slug === templateSlug);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 200);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      {tpl && (
+        <div
+          className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-3xl`}
+        >
+          {tpl.emoji}
+        </div>
+      )}
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">What&apos;s their name?</h2>
+        <p className="text-gray-400 mt-1">
+          This is how {tpl ? `your ${tpl.name}` : "your agent"} will introduce itself.
+        </p>
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (value.trim()) onNext();
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Luna, Max, Aria, Jade..."
+          className="w-full bg-transparent border-b-2 border-gray-700 focus:border-white text-3xl font-bold py-3 outline-none transition-colors placeholder:text-gray-700"
+        />
+        <div className="flex gap-3 mt-6">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition cursor-pointer text-sm font-medium"
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            disabled={!value.trim()}
+            className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
+          >
+            Continue
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ─── Step 5: Trust Level ──────────────────────────────────────
+
+function StepTrust({
+  agentName,
+  value,
+  onChange,
+  onNext,
+  onBack,
+}: {
+  agentName: string;
+  value: string;
+  onChange: (v: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  const options = [
+    { value: "confirm", label: "Check with me first", emoji: "🔒", desc: "Shows you what they'll do before doing it" },
+    { value: "notify", label: "Act, then tell me", emoji: "📋", desc: "Gets things done, keeps you in the loop" },
+    { value: "auto", label: "Full autonomy", emoji: "🚀", desc: "Handles everything independently" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">How much freedom does {agentName} get?</h2>
+        <p className="text-gray-400 mt-1">You can always change this later.</p>
+      </div>
+
+      <div className="space-y-3">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer ${
+              value === opt.value
+                ? "border-white bg-white/10"
+                : "border-gray-800 hover:border-gray-600 bg-gray-900/50"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-2xl">{opt.emoji}</span>
+              <div>
+                <p className="font-bold">{opt.label}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{opt.desc}</p>
+              </div>
+              {value === opt.value && (
+                <Check className="w-5 h-5 text-white ml-auto" />
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={onBack}
+          className="px-5 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition cursor-pointer text-sm font-medium"
+        >
+          Back
+        </button>
+        <button
+          onClick={onNext}
+          className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition cursor-pointer flex items-center justify-center gap-2"
+        >
+          Activate {agentName}
+          <Zap className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Manual Template Picker (fallback) ────────────────────────
+
+function StepManualTemplate({
+  selected,
+  onToggle,
+  onNext,
+}: {
+  selected: string[];
+  onToggle: (slug: string) => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">What kind of agent do you need?</h2>
+        <p className="text-gray-400 mt-1">Pick a template to get started. You can customize everything after.</p>
+      </div>
+      <div className="space-y-3">
+        {TEMPLATES.map((tpl, i) => (
+          <motion.button
+            key={tpl.slug}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.07 }}
+            onClick={() => onToggle(tpl.slug)}
+            className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer ${
+              selected.includes(tpl.slug)
+                ? "border-indigo-500 bg-indigo-500/10"
+                : "border-gray-800 hover:border-gray-600 bg-gray-900/50"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl shrink-0`}>
+                {tpl.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold">{tpl.name}</p>
+                  {selected.includes(tpl.slug) && <Check className="w-4 h-4 text-indigo-400" />}
+                </div>
+                <p className="text-sm text-gray-500 mt-0.5">{tpl.tagline}</p>
+                <p className="text-xs text-gray-600 mt-1">{tpl.description}</p>
+              </div>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+      <button
+        onClick={onNext}
+        disabled={selected.length === 0}
+        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold hover:from-indigo-700 hover:to-violet-700 transition disabled:opacity-40 cursor-pointer"
+      >
+        Continue
+      </button>
+    </div>
+  );
+}
+
+// ─── Birth Screen ─────────────────────────────────────────────
+
+function StepBirth({
+  agentName,
+  templateSlug,
+  deploying,
+  onDeploy,
+}: {
+  agentName: string;
+  templateSlug: string;
+  deploying: boolean;
+  onDeploy: () => void;
+}) {
+  const tpl = TEMPLATES.find((t) => t.slug === templateSlug);
+  const colors = tpl ? tpl.color : "from-indigo-500 to-violet-600";
+
+  const responses: Record<string, string> = {
+    professional: `${agentName} here. I'm ready to handle things. What's first?`,
+    friendly: `Hey! I'm ${agentName} 👋 So excited to get started — what can I help with?`,
+    casual: `Yo, ${agentName} here. Ready when you are.`,
+    enthusiastic: `I'm ${agentName}!! ⚡ Let's DO this!`,
+    empathetic: `Hi there. I'm ${agentName}. I'm here to listen and help. What do you need?`,
+  };
+
+  const reply = tpl ? (responses[tpl.tone] || responses.professional) : `Hi, I'm ${agentName}. Ready to help!`;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!deploying) onDeploy();
+    }, 1500);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="text-center space-y-8">
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", duration: 0.8 }}
+        className={`w-32 h-32 bg-gradient-to-br ${colors} rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl`}
+      >
+        <span className="text-5xl">{tpl?.emoji || "✨"}</span>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+        <h2 className="text-4xl font-extrabold">Meet {agentName}</h2>
+        <p className="text-gray-400 mt-2">{tpl?.tagline || "Your AI assistant"}</p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 max-w-md mx-auto"
+      >
+        <div className="flex items-start gap-3">
+          <div className={`w-8 h-8 bg-gradient-to-br ${colors} rounded-lg shrink-0 flex items-center justify-center text-lg`}>
+            {tpl?.emoji || "🤖"}
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-gray-500 font-semibold mb-1">{agentName}</p>
+            <p className="text-sm text-gray-300 leading-relaxed">{reply}</p>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}>
+        {deploying ? (
+          <div className="flex items-center justify-center gap-3 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Setting up {agentName}...
+          </div>
+        ) : (
+          <button
+            onClick={onDeploy}
+            className={`px-10 py-4 bg-gradient-to-r ${colors} text-white rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-all cursor-pointer flex items-center gap-3 mx-auto`}
+          >
+            <Zap className="w-5 h-5" />
+            Activate {agentName}
+          </button>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Main Creation Flow ───────────────────────────────────────
+
+type FlowStep =
+  | "url"
+  | "scanning"
+  | "review"
+  | "recommend"
+  | "manual-template"
+  | "name"
+  | "trust"
+  | "birth";
 
 export default function CreationFlow() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [config, setConfig] = useState<Record<string, any>>({
-    name: "",
-    template: "",
-    tone: "",
-    purpose: "",
-    tools: [],
-    approvalMode: "confirm",
+  const [step, setStep] = useState<FlowStep>("url");
+  const [state, setState] = useState<OnboardingState>({
+    url: "",
+    business: null,
+    selectedTemplates: [],
+    agentName: "",
+    approvalMode: "notify",
   });
-  const [inputVal, setInputVal] = useState("");
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [deploying, setDeploying] = useState(false);
-  const [agentReply, setAgentReply] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [currentTemplateIdx, setCurrentTemplateIdx] = useState(0);
 
-  const currentStep = STEPS[step];
-  const colors = PERSONA_COLORS[config.tone] || { bg: "from-indigo-500 to-violet-600", accent: "text-indigo-200", glow: "shadow-indigo-500/30" };
+  const currentTemplate = state.selectedTemplates[currentTemplateIdx] || TEMPLATES[0].slug;
 
-  useEffect(() => {
-    if (currentStep?.type === "text") {
-      setTimeout(() => inputRef.current?.focus(), 300);
-    }
-  }, [step]);
-
-  // Generate a live "agent response" when certain steps complete
-  useEffect(() => {
-    if (step === STEPS.length - 1 && config.name) {
-      // Birth step
-      const responses = [
-        `I'm here. My name is ${config.name}, and I'm ready to work for you.`,
-        `Hello. I'm ${config.name}. Tell me what you need.`,
-        `${config.name}, online. Let's get to work.`,
-      ];
-      const personalityResponses: Record<string, string> = {
-        professional: `${config.name} here. I'm ready to handle things. What's first?`,
-        friendly: `Hey! I'm ${config.name} 👋 So excited to get started — what can I do for you?`,
-        casual: `Yo, ${config.name} here. Ready when you are.`,
-        enthusiastic: `I'm ${config.name}!! ⚡ I can already feel the possibilities — let's DO this!`,
-        empathetic: `Hi there. I'm ${config.name}. I'm here to listen and help however you need. What's on your mind?`,
-      };
-      setAgentReply(personalityResponses[config.tone] || responses[0]);
-    }
-  }, [step, config.name, config.tone]);
-
-  const next = () => {
-    if (step < STEPS.length - 1) setStep(step + 1);
-  };
-
-  const handleTextSubmit = () => {
-    if (!inputVal.trim()) return;
-    const field = currentStep.field!;
-    setConfig((prev) => ({ ...prev, [field]: inputVal.trim() }));
-    setInputVal("");
-    next();
-  };
-
-  const handleChoice = (value: string) => {
-    const field = currentStep.field!;
-    setConfig((prev) => ({ ...prev, [field]: value }));
-    setTimeout(next, 300);
-  };
-
-  const handleMulti = (value: string) => {
-    setConfig((prev) => {
-      const tools = prev.tools.includes(value)
-        ? prev.tools.filter((t: string) => t !== value)
-        : [...prev.tools, value];
-      return { ...prev, tools };
-    });
-  };
-
-  const deploy = async () => {
-    setDeploying(true);
+  const scanBusiness = useCallback(async () => {
+    setStep("scanning");
+    setScanError(null);
     try {
-      // Save agent config
-      await fetch("/api/agent", {
+      const res = await fetch("/api/business/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: config.name,
-          template: config.template,
-          purpose: config.purpose,
-          tools: config.tools,
-          config: {
-            name: config.name,
-            template: config.template,
-            purpose: config.purpose,
-            tone: config.tone,
-            tools: config.tools,
-            approvalMode: config.approvalMode,
-            role: "Personal Assistant",
-            language: "English",
-          },
-        }),
+        body: JSON.stringify({ url: state.url }),
       });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setState((prev) => ({ ...prev, business: data.data }));
 
-      toast.success(`${config.name} is alive.`);
+        // Get recommendations
+        try {
+          const recRes = await fetch("/api/business/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data.data),
+          });
+          const recData = await recRes.json();
+          if (recData.success) {
+            setRecommendations(recData.recommendations);
+          }
+        } catch {
+          // Skip recommendations if it fails
+        }
+
+        setStep("review");
+      } else {
+        throw new Error(data.error || "Scan failed");
+      }
+    } catch (err: any) {
+      setScanError(err.message);
+      toast.error("Couldn't scan that URL — you can set up manually");
+      setStep("url");
+    }
+  }, [state.url]);
+
+  useEffect(() => {
+    if (step === "scanning") {
+      scanBusiness();
+    }
+  }, [step, scanBusiness]);
+
+  const deployAgents = async () => {
+    setDeploying(true);
+    try {
+      const templatesToCreate = state.selectedTemplates.length > 0
+        ? state.selectedTemplates
+        : [currentTemplate];
+
+      for (const slug of templatesToCreate) {
+        const tpl = TEMPLATES.find((t) => t.slug === slug)!;
+        const agentName = templatesToCreate.length === 1
+          ? state.agentName
+          : `${state.agentName} (${tpl.name.split(" ")[1] || tpl.name})`;
+
+        await fetch("/api/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: agentName,
+            template: slug,
+            purpose: tpl.purpose,
+            tools: tpl.tools,
+            config: {
+              name: agentName,
+              template: slug,
+              purpose: tpl.purpose,
+              tone: tpl.tone,
+              tools: tpl.tools,
+              approvalMode: state.approvalMode,
+              business: state.business,
+              setupComplete: false,
+            },
+            guardrails: {
+              maxPrice: null,
+              escalateOn: [],
+              quietHours: null,
+              neverDiscuss: [],
+            },
+          }),
+        });
+      }
+
+      toast.success(
+        templatesToCreate.length > 1
+          ? `${templatesToCreate.length} agents activated!`
+          : `${state.agentName} is live!`
+      );
       router.push("/dashboard");
-    } catch (e: any) {
+    } catch {
       toast.error("Something went wrong");
       setDeploying(false);
     }
   };
 
-  const progress = ((step + 1) / STEPS.length) * 100;
+  const progress = {
+    url: 10,
+    scanning: 25,
+    review: 40,
+    recommend: 55,
+    "manual-template": 55,
+    name: 72,
+    trust: 88,
+    birth: 100,
+  }[step] || 10;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Ambient background */}
-      <div className={`absolute inset-0 opacity-20 bg-gradient-to-br ${colors.bg}`} />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px]" />
+      {/* Ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/8 rounded-full blur-[150px] pointer-events-none" />
 
       {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-gray-800 z-50">
+      <div className="fixed top-0 left-0 right-0 h-1 bg-gray-800/60 z-50">
         <motion.div
           className="h-full bg-gradient-to-r from-indigo-500 to-violet-500"
           animate={{ width: `${progress}%` }}
@@ -251,366 +972,122 @@ export default function CreationFlow() {
         />
       </div>
 
-      {/* Step content */}
-      <div className="relative z-10 w-full max-w-xl mx-auto px-6">
+      {/* BFF brand */}
+      <div className="fixed top-4 left-6 flex items-center gap-2 z-50">
+        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center">
+          <Bot className="w-4 h-4 text-white" />
+        </div>
+        <span className="font-bold text-sm text-gray-400">BFF</span>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-xl mx-auto px-6 py-16">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-8"
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.35 }}
           >
-            {/* Intro step */}
-            {currentStep.id === "intro" && (
+            {/* Scanning loader */}
+            {step === "scanning" && (
               <div className="text-center space-y-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring" }}
-                  className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-indigo-500/30"
-                >
-                  <Sparkles className="w-12 h-12 text-white" />
-                </motion.div>
-                <h1 className="text-4xl font-bold tracking-tight">
-                  {currentStep.question}
-                </h1>
-                <p className="text-lg text-gray-400 leading-relaxed max-w-md mx-auto">
-                  {currentStep.subtext}
-                </p>
-                <motion.button
-                  onClick={next}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="mt-8 px-8 py-4 bg-white text-gray-900 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-all cursor-pointer flex items-center gap-3 mx-auto"
-                >
-                  Begin
-                  <ArrowRight className="w-5 h-5" />
-                </motion.button>
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl mx-auto flex items-center justify-center">
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                </div>
+                <h2 className="text-3xl font-bold">Scanning your business...</h2>
+                <p className="text-gray-400">We&apos;re reading your website and figuring out the best setup for you.</p>
               </div>
             )}
 
-            {/* Template picker step */}
-            {currentStep.type === "template" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    {currentStep.question}
-                  </h2>
-                  {currentStep.subtext && (
-                    <p className="text-gray-400 mt-2">{currentStep.subtext}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {TEMPLATES.map((tpl, i) => (
-                    <motion.button
-                      key={tpl.slug}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.08 }}
-                      onClick={() => {
-                        setConfig((prev) => ({
-                          ...prev,
-                          template: tpl.slug,
-                          purpose: tpl.purpose,
-                          tone: tpl.tone,
-                          tools: tpl.tools,
-                          approvalMode: tpl.approvalMode,
-                        }));
-                        setTimeout(next, 300);
-                      }}
-                      className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer group ${
-                        config.template === tpl.slug
-                          ? "border-white bg-white/10"
-                          : "border-gray-800 hover:border-gray-600 bg-gray-900/50 hover:bg-gray-800/50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl shrink-0`}>
-                          {tpl.emoji}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-lg">{tpl.name}</p>
-                          <p className="text-sm text-gray-500">{tpl.tagline}</p>
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{tpl.description}</p>
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-
-                  {/* Custom option */}
-                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: TEMPLATES.length * 0.08 }}
-                    onClick={() => {
-                      setConfig((prev) => ({ ...prev, template: "custom" }));
-                      setTimeout(next, 300);
-                    }}
-                    className="w-full text-left p-5 rounded-2xl border border-dashed border-gray-700 hover:border-gray-500 bg-gray-900/30 hover:bg-gray-800/30 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-2xl shrink-0">
-                        ✨
-                      </div>
-                      <div>
-                        <p className="font-bold text-lg">Build from Scratch</p>
-                        <p className="text-sm text-gray-500">Full control — configure every detail yourself</p>
-                      </div>
-                    </div>
-                  </motion.button>
-                </div>
-              </div>
+            {step === "url" && (
+              <StepUrl
+                value={state.url}
+                onChange={(url) => setState((p) => ({ ...p, url }))}
+                onNext={() => setStep("scanning")}
+                onSkip={() => setStep("manual-template")}
+              />
             )}
 
-            {/* Text input steps */}
-            {currentStep.type === "text" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    {currentStep.question}
-                  </h2>
-                  {currentStep.subtext && (
-                    <p className="text-gray-400 mt-2">{currentStep.subtext}</p>
-                  )}
-                </div>
-
-                {/* Show the evolving persona */}
-                {config.name && currentStep.id !== "name" && (
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${colors.bg} rounded-xl flex items-center justify-center text-white shadow-lg ${colors.glow}`}>
-                      {config.name[0]?.toUpperCase()}
-                    </div>
-                    <span className="text-gray-500 text-sm">{config.name}</span>
-                  </div>
-                )}
-
-                <form onSubmit={(e) => { e.preventDefault(); handleTextSubmit(); }}>
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputVal}
-                    onChange={(e) => setInputVal(e.target.value)}
-                    placeholder={currentStep.placeholder}
-                    className="w-full bg-transparent border-b-2 border-gray-700 focus:border-white text-2xl font-medium py-4 outline-none transition-colors placeholder:text-gray-600"
-                  />
-                  <div className="flex justify-end mt-6">
-                    <button
-                      type="submit"
-                      disabled={!inputVal.trim()}
-                      className="px-6 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 disabled:opacity-30 transition-all cursor-pointer flex items-center gap-2"
-                    >
-                      Continue
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </form>
-              </div>
+            {step === "review" && state.business && (
+              <StepReview
+                business={state.business}
+                onUpdate={(business) => setState((p) => ({ ...p, business }))}
+                onNext={() => setStep(recommendations.length > 0 ? "recommend" : "manual-template")}
+                onBack={() => setStep("url")}
+              />
             )}
 
-            {/* Choice steps */}
-            {currentStep.type === "choice" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    {currentStep.question}
-                  </h2>
-                  {currentStep.subtext && (
-                    <p className="text-gray-400 mt-2">{currentStep.subtext}</p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  {currentStep.options?.map((opt, i) => (
-                    <motion.button
-                      key={opt.value}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.08 }}
-                      onClick={() => handleChoice(opt.value)}
-                      className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer group ${
-                        config[currentStep.field!] === opt.value
-                          ? "border-white bg-white/10"
-                          : "border-gray-800 hover:border-gray-600 bg-gray-900/50 hover:bg-gray-800/50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <span className="text-2xl">{opt.emoji}</span>
-                        <div>
-                          <p className="font-bold text-lg">{opt.label}</p>
-                          {opt.desc && (
-                            <p className="text-sm text-gray-400 mt-0.5">{opt.desc}</p>
-                          )}
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
+            {step === "recommend" && state.business && (
+              <StepRecommend
+                business={state.business}
+                recommendations={recommendations}
+                selected={state.selectedTemplates}
+                onToggle={(slug) => {
+                  setState((p) => ({
+                    ...p,
+                    selectedTemplates: p.selectedTemplates.includes(slug)
+                      ? p.selectedTemplates.filter((s) => s !== slug)
+                      : [...p.selectedTemplates, slug],
+                  }));
+                }}
+                onNext={() => setStep("name")}
+                onBack={() => setStep("review")}
+                onSkip={() => setStep("manual-template")}
+              />
             )}
 
-            {/* Multi-select steps */}
-            {currentStep.type === "multi" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    {currentStep.question}
-                  </h2>
-                  {currentStep.subtext && (
-                    <p className="text-gray-400 mt-2">{currentStep.subtext}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {currentStep.options?.map((opt, i) => {
-                    const selected = config.tools.includes(opt.value);
-                    return (
-                      <motion.button
-                        key={opt.value}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.06 }}
-                        onClick={() => handleMulti(opt.value)}
-                        className={`text-left p-4 rounded-2xl border transition-all cursor-pointer ${
-                          selected
-                            ? "border-white bg-white/10 ring-1 ring-white/20"
-                            : "border-gray-800 hover:border-gray-600 bg-gray-900/50"
-                        }`}
-                      >
-                        <span className="text-xl">{opt.emoji}</span>
-                        <p className="font-bold text-sm mt-2">{opt.label}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">{opt.desc}</p>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={next}
-                    disabled={config.tools.length === 0}
-                    className="px-6 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 disabled:opacity-30 transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    Continue
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+            {step === "manual-template" && (
+              <StepManualTemplate
+                selected={state.selectedTemplates}
+                onToggle={(slug) => {
+                  setState((p) => ({
+                    ...p,
+                    selectedTemplates: p.selectedTemplates.includes(slug)
+                      ? p.selectedTemplates.filter((s) => s !== slug)
+                      : [...p.selectedTemplates, slug],
+                  }));
+                }}
+                onNext={() => setStep("name")}
+              />
             )}
 
-            {/* Birth/reveal step */}
-            {currentStep.id === "birth" && (
-              <div className="text-center space-y-8">
-                {/* The agent avatar — fully formed */}
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", duration: 0.8 }}
-                  className={`w-32 h-32 bg-gradient-to-br ${colors.bg} rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl ${colors.glow}`}
-                >
-                  <span className="text-5xl font-bold text-white">
-                    {config.name?.[0]?.toUpperCase() || "?"}
-                  </span>
-                </motion.div>
+            {step === "name" && (
+              <StepName
+                templateSlug={currentTemplate}
+                value={state.agentName}
+                onChange={(agentName) => setState((p) => ({ ...p, agentName }))}
+                onNext={() => setStep("trust")}
+                onBack={() =>
+                  setStep(
+                    recommendations.length > 0 ? "recommend" : "manual-template"
+                  )
+                }
+              />
+            )}
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <h2 className="text-4xl font-bold">Meet {config.name}</h2>
-                  <p className="text-gray-400 mt-2">
-                    {config.purpose || "Your new AI assistant"}
-                  </p>
-                </motion.div>
+            {step === "trust" && (
+              <StepTrust
+                agentName={state.agentName}
+                value={state.approvalMode}
+                onChange={(approvalMode) => setState((p) => ({ ...p, approvalMode }))}
+                onNext={() => setStep("birth")}
+                onBack={() => setStep("name")}
+              />
+            )}
 
-                {/* Agent's first words */}
-                {agentReply && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 }}
-                    className="bg-gray-900/80 border border-gray-800 rounded-2xl p-6 max-w-md mx-auto"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-8 h-8 bg-gradient-to-br ${colors.bg} rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-bold`}>
-                        {config.name?.[0]?.toUpperCase()}
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs text-gray-500 font-semibold mb-1">{config.name}</p>
-                        <p className="text-sm text-gray-300 leading-relaxed">{agentReply}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Abilities recap */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.2 }}
-                  className="flex flex-wrap justify-center gap-2"
-                >
-                  {config.tools.map((tool: string) => {
-                    const opt = STEPS.find((s) => s.id === "abilities")?.options?.find((o) => o.value === tool);
-                    return (
-                      <span
-                        key={tool}
-                        className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-full text-xs font-semibold text-gray-300"
-                      >
-                        {opt?.emoji} {opt?.label}
-                      </span>
-                    );
-                  })}
-                </motion.div>
-
-                {/* Deploy button */}
-                <motion.button
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.5 }}
-                  onClick={deploy}
-                  disabled={deploying}
-                  className={`px-10 py-4 bg-gradient-to-r ${colors.bg} text-white rounded-2xl font-bold text-lg shadow-2xl ${colors.glow} hover:scale-105 transition-all cursor-pointer disabled:opacity-50 mx-auto flex items-center gap-3`}
-                >
-                  {deploying ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Bringing {config.name} to life...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-5 h-5" />
-                      Activate {config.name}
-                    </>
-                  )}
-                </motion.button>
-              </div>
+            {step === "birth" && (
+              <StepBirth
+                agentName={state.agentName}
+                templateSlug={currentTemplate}
+                deploying={deploying}
+                onDeploy={deployAgents}
+              />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Step counter */}
-      {step > 0 && step < STEPS.length - 1 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2">
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-all ${
-                i === step
-                  ? "bg-white w-6"
-                  : i < step
-                  ? "bg-gray-500"
-                  : "bg-gray-800"
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

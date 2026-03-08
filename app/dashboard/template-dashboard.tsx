@@ -7,7 +7,7 @@ import {
   Phone, MessageSquare, Users, Settings, Calendar, DollarSign,
   FileText, MapPin, Star, Clock, TrendingUp, Bell, LogOut,
   Sparkles, Bot, ChevronRight, Send, Plus, BarChart3,
-  Hotel, Headphones, Target, Wallet, ArrowRight, CheckCircle,
+  Hotel, Headphones, Target, Wallet, ArrowRight, CheckCircle, ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TEMPLATES } from "@/app/lib/templates";
@@ -346,6 +346,15 @@ export default function TemplateDashboard({ agent, needsSetup }: { agent: any; n
     <div className="min-h-screen bg-gray-950 text-white flex">
       {/* Sidebar */}
       <div className="w-64 bg-gray-900/50 border-r border-gray-800 p-4 flex flex-col">
+        {/* Back to all agents */}
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition mb-4 cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          All Agents
+        </button>
+
         {/* Agent identity */}
         <div className="flex items-center gap-3 mb-8 p-3 rounded-xl bg-gray-800/50">
           <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${dashConfig.color} flex items-center justify-center text-lg`}>
@@ -494,12 +503,27 @@ export default function TemplateDashboard({ agent, needsSetup }: { agent: any; n
           </div>
         </div>
 
-        {/* Recent activity placeholder */}
+        {/* Daily Digest */}
         <div className="mt-6 bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-          <h3 className="font-bold text-lg mb-4">Recent Activity</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Today&apos;s Digest</h3>
+            <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded-full">
+              {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+          </div>
+          <div className="text-center py-8 text-gray-600">
+            <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">No activity yet today.</p>
+            <p className="text-xs text-gray-700 mt-1">Connect a channel and {agent.name} will summarize their work here.</p>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="mt-6 bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
+          <h3 className="font-bold text-lg mb-4">Recent Conversations</h3>
           <div className="text-center py-8 text-gray-600">
             <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No activity yet. Connect a channel to get started!</p>
+            <p className="text-sm">No conversations yet. Connect a channel to get started!</p>
           </div>
         </div>
       </div>

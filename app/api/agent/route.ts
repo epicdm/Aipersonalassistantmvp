@@ -50,6 +50,9 @@ export async function POST(req: Request) {
         tone: body.config?.tone || null,
         tools: JSON.stringify(body.config?.tools || body.tools || []),
         approvalMode: body.config?.approvalMode || "confirm",
+        config: body.config || null,
+        guardrails: body.guardrails || null,
+        status: "active",
       },
     });
 
@@ -80,6 +83,9 @@ export async function POST(req: Request) {
   if (body.whatsappStatus !== undefined) updateData.whatsappStatus = body.whatsappStatus;
   if (body.phoneNumber !== undefined) updateData.phoneNumber = body.phoneNumber;
   if (body.phoneStatus !== undefined) updateData.phoneStatus = body.phoneStatus;
+  if (body.guardrails !== undefined) updateData.guardrails = body.guardrails;
+  if (body.config !== undefined) updateData.config = body.config;
+  if (body.status !== undefined) updateData.status = body.status;
 
   const updated = await prisma.agent.update({
     where: { id: agent.id },

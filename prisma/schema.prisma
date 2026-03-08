@@ -31,6 +31,7 @@ model Agent {
   tools          String   @default("[]")
   approvalMode   String   @default("confirm")
   config         Json?    // Full config object
+  guardrails     Json?    // { maxPrice, escalateOn[], quietHours, neverDiscuss[] }
   soul           String?  // Generated SOUL.md
   status         String   @default("draft") // draft, active, paused
   whatsappStatus String   @default("not_connected")
@@ -44,6 +45,20 @@ model Agent {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations Conversation[]
+  activities    AgentActivity[]
+}
+
+model AgentActivity {
+  id        String   @id @default(cuid())
+  agentId   String
+  type      String   // conversation, appointment, payment, escalation, recommendation
+  summary   String
+  metadata  Json?    // Extra data relevant to the activity
+  createdAt DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, createdAt])
 }
 
 model Contact {
