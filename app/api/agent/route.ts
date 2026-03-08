@@ -41,6 +41,15 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
+    // Generate a unique activation code: BFF- + 10 alphanumeric chars
+    const activationCode =
+      "BFF-" +
+      crypto
+        .randomUUID()
+        .replace(/-/g, "")
+        .toUpperCase()
+        .slice(0, 10);
+
     const agent = await prisma.agent.create({
       data: {
         userId: sessionUser.id,
@@ -53,6 +62,7 @@ export async function POST(req: Request) {
         config: body.config || null,
         guardrails: body.guardrails || null,
         status: "active",
+        activationCode,
       },
     });
 

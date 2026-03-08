@@ -11,17 +11,18 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  plan         String   @default("free") // free, pro, business
-  createdAt     DateTime       @default(now())
-  agents        Agent[]
-  contacts      Contact[]
-  conversations Conversation[]
-  reminders     Reminder[]
-  bills         Bill[]
-  todos         Todo[]
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  plan           String   @default("free") // free, pro, business
+  whatsappPhone  String?  // Primary WhatsApp number
+  createdAt      DateTime       @default(now())
+  agents         Agent[]
+  contacts       Contact[]
+  conversations  Conversation[]
+  reminders      Reminder[]
+  bills          Bill[]
+  todos          Todo[]
 }
 
 model Agent {
@@ -41,17 +42,21 @@ model Agent {
   whatsappNumber String?
   phoneNumber    String?
   phoneStatus    String   @default("pending")
-  isActive       Boolean  @default(true)
-  deployedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive        Boolean  @default(true)
+  activationCode  String?  @unique
+  whatsappPhone   String?  // The user's WhatsApp number bound to this agent
+  activatedAt     DateTime?
+  deployedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
-  activities    AgentActivity[]
-  reminders     Reminder[]
-  bills         Bill[]
-  todos         Todo[]
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations     Conversation[]
+  activities        AgentActivity[]
+  reminders         Reminder[]
+  bills             Bill[]
+  todos             Todo[]
+  whatsAppMessages  WhatsAppMessage[]
 }
 
 model Reminder {
@@ -146,4 +151,17 @@ model Message {
   createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppMessage {
+  id        String   @id @default(cuid())
+  agentId   String
+  phone     String
+  role      String   // "user" or "assistant"
+  content   String
+  timestamp DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id])
+
+  @@index([agentId, phone, timestamp])
 }
