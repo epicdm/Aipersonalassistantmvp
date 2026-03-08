@@ -143,86 +143,55 @@ function detectUrlType(url: string): "facebook" | "instagram" | "google_maps" | 
   return "website";
 }
 
-// ─── Facebook Graph API ───────────────────────────────────────
+// ─── Web Search Enrichment (for Facebook/Instagram/walled gardens) ────────
 
-async function fetchFacebookPage(url: string): Promise<Record<string, any> | null> {
-  // Extract page ID or username from URL
-  const fbMatch = url.match(/facebook\.com\/(?:pages\/[^/]+\/)?([^/?]+)/i);
-  if (!fbMatch) return null;
-  
-  const pageId = fbMatch[1];
-  const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN; // Meta Business token works for Graph API too
-  
-  if (!WHATSAPP_TOKEN) return null;
-
+async function searchBusinessInfo(businessName: string, url: string): Promise<string> {
+  // Use Brave Search API via our server to get real business info
+  // This works even when the source page (Facebook/Instagram) blocks scraping
   try {
-    // Facebook Graph API — get page info with all fields
-    const fields = "name,about,category,category_list,description,emails,phone,website,location,hours,single_line_address,fan_count,cover,picture,general_info,founded,company_overview,products,mission";
-    const res = await fetch(
-      `https://graph.facebook.com/v21.0/${pageId}?fields=${fields}&access_token=${WHATSAPP_TOKEN}`,
-      { signal: AbortSignal.timeout(10000) }
-    );
+    const searchQuery = `"${businessName}" business hours phone address services`;
+    const braveKey = process.env.BRAVE_API_KEY;
     
-    if (!res.ok) {
-      console.warn("Facebook Graph API error:", res.status);
-      return null;
-    }
-    
-    const data = await res.json();
-    
-    // Transform to our format
-    const result: Record<string, any> = {
-      name: data.name,
-      description: data.about || data.description || data.company_overview || null,
-      phone: data.phone || null,
-      email: data.emails?.[0] || null,
-      category: data.category || data.category_list?.[0]?.name || null,
-      website: data.website || null,
-      founded: data.founded || null,
-      mission: data.mission || null,
-      products: data.products || null,
-      generalInfo: data.general_info || null,
-      fanCount: data.fan_count || null,
-      image: data.cover?.source || data.picture?.data?.url || null,
-    };
-
-    // Location
-    if (data.location) {
-      result.location = {
-        address: data.single_line_address || data.location.street,
-        city: data.location.city,
-        state: data.location.state,
-        country: data.location.country,
-        zip: data.location.zip,
-        latitude: data.location.latitude,
-        longitude: data.location.longitude,
-      };
-    }
-
-    // Hours — Facebook returns as {"mon_1_open": "09:00", "mon_1_close": "17:00", ...}
-    if (data.hours) {
-      const dayMap: Record<string, string> = { mon: "monday", tue: "tuesday", wed: "wednesday", thu: "thursday", fri: "friday", sat: "saturday", sun: "sunday" };
-      result.hours = {};
-      for (const [abbr, fullDay] of Object.entries(dayMap)) {
-        const open = data.hours[`${abbr}_1_open`];
-        const close = data.hours[`${abbr}_1_close`];
-        result.hours[fullDay] = {
-          open: open || null,
-          close: close || null,
-          closed: !open,
-        };
+    if (braveKey) {
+      const res = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(searchQuery)}&count=5`,
+        {
+          headers: { "X-Subscription-Token": braveKey, Accept: "application/json" },
+          signal: AbortSignal.timeout(8000),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const snippets = (data.web?.results || [])
+          .map((r: any) => `${r.title}: ${r.description}`)
+          .join("\n");
+        return snippets.slice(0, 3000);
       }
     }
 
-    // Categories as services hint
-    if (data.category_list) {
-      result.categories = data.category_list.map((c: any) => c.name);
-    }
+    // Fallback: try to fetch the business website if it's linked from the social page
+    return `Business name from URL: ${businessName}. Source: ${url}`;
+  } catch {
+    return `Business name: ${businessName}`;
+  }
+}
 
-    return result;
-  } catch (e) {
-    console.warn("Facebook Graph API fetch failed:", e);
-    return null;
+function extractBusinessNameFromUrl(url: string): string {
+  // Facebook: /pagename or /pages/Name/id
+  const fbMatch = url.match(/facebook\.com\/(?:pages\/)?([^/?]+)/i);
+  if (fbMatch) {
+    return fbMatch[1]
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  // Instagram: /username
+  const igMatch = url.match(/instagram\.com\/([^/?]+)/i);
+  if (igMatch) return igMatch[1].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  // Generic
+  try {
+    return new URL(url).hostname.replace("www.", "").split(".")[0];
+  } catch {
+    return url;
   }
 }
 
@@ -251,44 +220,19 @@ export async function POST(req: NextRequest) {
     let sourceData: Record<string, any> = {};
 
     switch (urlType) {
-      case "facebook": {
-        // Try Graph API first (rich data), fall back to HTML scraping
-        const fbApiData = await fetchFacebookPage(fetchUrl);
-        if (fbApiData) {
-          sourceData = fbApiData;
-          // If we got Graph API data, we can skip the AI extraction and return directly
-          if (fbApiData.name) {
-            return NextResponse.json({
-              success: true,
-              data: {
-                name: fbApiData.name,
-                industry: fbApiData.category || "business",
-                description: fbApiData.description || fbApiData.mission || null,
-                phone: fbApiData.phone || null,
-                email: fbApiData.email || null,
-                location: fbApiData.location || null,
-                hours: fbApiData.hours || null,
-                services: fbApiData.categories || [],
-                products: fbApiData.products ? [fbApiData.products] : [],
-                socialMedia: { facebook: fetchUrl, website: fbApiData.website },
-                yearFounded: fbApiData.founded || null,
-                specialFeatures: fbApiData.generalInfo ? [fbApiData.generalInfo] : [],
-                targetAudience: null,
-                pricingTier: null,
-                website: fbApiData.website || fetchUrl,
-                logoUrl: fbApiData.image || null,
-                ratings: { score: null, count: fbApiData.fanCount, source: "facebook" },
-                teamSize: null,
-                languages: [],
-                paymentMethods: [],
-              },
-              source: "facebook_api",
-              confidence: "high",
-            });
-          }
-        }
-        // Fallback to HTML scraping if Graph API fails
-        sourceData = extractFacebookData(html);
+      case "facebook":
+      case "instagram": {
+        // Facebook/Instagram block server-side scraping entirely
+        // Strategy: extract business name from URL, then search the web for real info
+        const bizName = extractBusinessNameFromUrl(fetchUrl);
+        const searchResults = await searchBusinessInfo(bizName, fetchUrl);
+        sourceData = {
+          name: bizName,
+          description: null,
+          searchContext: searchResults,
+          socialUrl: fetchUrl,
+          _overrideText: searchResults, // Will be used instead of HTML text
+        };
         break;
       }
       case "google_maps":
@@ -304,7 +248,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Build comprehensive text content for AI analysis
-    const textContent = html
+    // For walled gardens (Facebook/IG), use search results instead of empty HTML
+    const textContent = sourceData._overrideText || html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
       .replace(/<[^>]+>/g, " ")
