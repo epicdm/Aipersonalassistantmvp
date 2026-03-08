@@ -4,6 +4,6 @@ import IntegrationsClient from "./integrations-client";
 
 export default async function IntegrationsPage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   return <IntegrationsClient />;
 }

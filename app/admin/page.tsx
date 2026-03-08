@@ -4,7 +4,7 @@ import SupervisionClient from "./supervision-client";
 
 export default async function AdminPage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   // MVP: any logged-in user can access supervision
   return <SupervisionClient />;
 }

@@ -4,6 +4,6 @@ import ContactsClient from "./contacts-client";
 
 export default async function ContactsPage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   return <ContactsClient />;
 }

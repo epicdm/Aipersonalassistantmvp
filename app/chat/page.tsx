@@ -5,7 +5,7 @@ import ChatClient from "./chat-client";
 
 export default async function ChatPage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   const agent = await prisma.agent.findFirst({ where: { userId: user.id } });
   return <ChatClient agent={agent} />;
 }

@@ -10,7 +10,7 @@ export default async function AgentDashboardPage({
 }) {
   const { agentId } = await params;
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const agent = await prisma.agent.findFirst({
     where: { id: agentId, userId: user.id },

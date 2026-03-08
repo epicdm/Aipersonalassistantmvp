@@ -5,10 +5,10 @@ import SettingsClient from "./settings-client";
 
 export default async function SettingsPage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
 
   const agent = await prisma.agent.findFirst({ where: { userId: user.id } });
-  if (!agent) redirect("/login");
+  if (!agent) redirect("/sign-in");
 
   return <SettingsClient agent={agent} />;
 }

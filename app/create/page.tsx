@@ -4,6 +4,6 @@ import CreationFlow from "./creation-flow";
 
 export default async function CreatePage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   return <CreationFlow />;
 }

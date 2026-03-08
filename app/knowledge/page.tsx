@@ -4,6 +4,6 @@ import KnowledgeClient from "./knowledge-client";
 
 export default async function KnowledgePage() {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/sign-in");
   return <KnowledgeClient />;
 }

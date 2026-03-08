@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { TEMPLATES } from "@/app/lib/templates";
+import { SignOutButton } from "@clerk/nextjs";
 
 // ─── Template Configs ────────────────────────────────────────
 const TEMPLATE_DASHBOARDS: Record<string, TemplateDashConfig> = {
@@ -400,16 +401,12 @@ export default function TemplateDashboard({ agent, needsSetup }: { agent: any; n
             <Plus className="w-4 h-4" />
             Add Agent
           </button>
-          <button
-            onClick={async () => {
-              await fetch("/api/auth/logout", { method: "POST" });
-              router.push("/login");
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 transition cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
+          <SignOutButton redirectUrl="/">
+            <button className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 transition cursor-pointer">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </SignOutButton>
         </div>
       </div>
 
