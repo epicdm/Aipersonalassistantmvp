@@ -15,16 +15,20 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
 
 // ─── Source Extractors ────────────────────────────────────────
 
-async function fetchWebPage(url: string): Promise<string> {
+async function fetchWebPage(url: string, asCrawler = false): Promise<string> {
   try {
+    const ua = asCrawler
+      ? "Googlebot/2.1 (+http://www.google.com/bot.html)"
+      : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
     const res = await fetch(url, {
       headers: {
-        // Use a real browser user agent to get full content
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "User-Agent": ua,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      signal: AbortSignal.timeout(12000),
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) return "";
@@ -211,8 +215,9 @@ export async function POST(req: NextRequest) {
 
     const urlType = detectUrlType(fetchUrl);
     
-    // Fetch the page
-    const html = await fetchWebPage(fetchUrl);
+    // Fetch the page — use crawler UA for Facebook/Instagram (they serve og: tags to Googlebot)
+    const useCrawler = urlType === "facebook" || urlType === "instagram";
+    const html = await fetchWebPage(fetchUrl, useCrawler);
     
     // Extract data based on source type
     const meta = extractMetaTags(html);
@@ -222,16 +227,39 @@ export async function POST(req: NextRequest) {
     switch (urlType) {
       case "facebook":
       case "instagram": {
-        // Facebook/Instagram block server-side scraping entirely
-        // Strategy: extract business name from URL, then search the web for real info
-        const bizName = extractBusinessNameFromUrl(fetchUrl);
-        const searchResults = await searchBusinessInfo(bizName, fetchUrl);
+        // Facebook/Instagram serve rich og: meta tags to search engine crawlers
+        // This gives us: name, description, location, image, page ID
+        const fbName = meta["og:title"]?.replace(/\s*\|.*$/, "").replace(/\s*[-–].*$/, "").trim();
+        const fbDesc = meta["og:description"] || meta["description"] || "";
+        const fbImage = meta["og:image"] || "";
+        
+        // Extract page ID from al:ios:url or al:android:url (fb://profile/ID)
+        const pageIdMatch = (meta["al:ios:url"] || meta["al:android:url"] || "").match(/(\d+)/);
+        
+        // Also search for additional embedded data in the page JS
+        const embeddedData: Record<string, string> = {};
+        const patterns: [string, RegExp][] = [
+          ["phone", /"telephone":"([^"]+)"/i],
+          ["address", /"streetAddress":"([^"]+)"/i],
+          ["city", /"addressLocality":"([^"]+)"/i],
+          ["country", /"addressCountry":"([^"]+)"/i],
+          ["hours", /"openingHours":"([^"]+)"/i],
+          ["category", /"genre":"([^"]+)"/i],
+          ["email", /"email":"([^"]+)"/i],
+          ["website", /"url":"(https?:\/\/(?!facebook)[^"]+)"/i],
+        ];
+        for (const [key, regex] of patterns) {
+          const m = html.match(regex);
+          if (m) embeddedData[key] = m[1];
+        }
+
         sourceData = {
-          name: bizName,
-          description: null,
-          searchContext: searchResults,
+          name: fbName || extractBusinessNameFromUrl(fetchUrl),
+          description: fbDesc,
+          image: fbImage,
+          pageId: pageIdMatch?.[1] || null,
           socialUrl: fetchUrl,
-          _overrideText: searchResults, // Will be used instead of HTML text
+          ...embeddedData,
         };
         break;
       }
