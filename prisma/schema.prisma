@@ -14,19 +14,24 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  plan         String   @default("free") // free, pro, business
   createdAt    DateTime @default(now())
-  agent        Agent?
+  agents       Agent[]
 }
 
 model Agent {
   id             String   @id @default(cuid())
-  userId         String   @unique
+  userId         String
   name           String
+  template       String?  // template slug: concierge, receptionist, collector, ecommerce, ops
   purpose        String?
+  tone           String?  // professional, friendly, casual, enthusiastic, empathetic
   tools          String   @default("[]") // JSON array stored as string
+  approvalMode   String   @default("confirm") // confirm, notify, auto
   whatsappStatus String   @default("not_connected")
   phoneNumber    String?
   phoneStatus    String   @default("pending")
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

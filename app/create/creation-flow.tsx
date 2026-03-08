@@ -20,6 +20,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TEMPLATES, getTemplate } from "@/app/lib/templates";
 
 /*
  * CREATION FLOW
@@ -28,24 +29,21 @@ import { toast } from "sonner";
  * You're bringing a person into existence, step by step.
  * Each step reveals more of who they are.
  *
- * Inspired by:
- * - Replika: Conversational onboarding (26 steps, feels like a quiz)
- * - Tamagotchi: Emotional bond through creation → responsibility
- * - The Sims: Character creation IS the experience
- * - Character.AI: Personality persistence creates "presence"
+ * Flow: Template → Name → Personality → Abilities → Trust → Birth
+ * Templates pre-fill purpose, tone, and tools — user can still customize.
  *
- * Key design principles:
- * 1. One question at a time (no form overwhelm)
- * 2. Each choice visually transforms the "person"
- * 3. The agent responds to your choices in real-time
- * 4. By the end, they feel ALIVE — not configured
+ * Inspired by:
+ * - Replika: Conversational onboarding
+ * - Tamagotchi: Emotional bond through creation
+ * - The Sims: Character creation IS the experience
+ * - Shopify: Pick your store type, customize from there
  */
 
 type Step = {
   id: string;
   question: string;
   subtext?: string;
-  type: "text" | "choice" | "multi" | "reveal";
+  type: "text" | "choice" | "multi" | "reveal" | "template";
   options?: { value: string; label: string; emoji: string; desc?: string }[];
   field?: string;
   placeholder?: string;
@@ -57,6 +55,13 @@ const STEPS: Step[] = [
     question: "Let's bring someone to life.",
     subtext: "You're about to create an AI that works for you — talks to people, handles tasks, remembers everything. But first, they need a soul.",
     type: "reveal",
+  },
+  {
+    id: "template",
+    question: "What kind of agent do you need?",
+    subtext: "Pick a template to get started fast. You can customize everything after.",
+    type: "template",
+    field: "template",
   },
   {
     id: "name",
@@ -78,21 +83,6 @@ const STEPS: Step[] = [
       { value: "casual", label: "The Friend", emoji: "😎", desc: "Relaxed, natural, like texting a buddy" },
       { value: "enthusiastic", label: "The Spark", emoji: "⚡", desc: "Energetic, positive, infectious enthusiasm" },
       { value: "empathetic", label: "The Listener", emoji: "💜", desc: "Thoughtful, patient, deeply understanding" },
-    ],
-  },
-  {
-    id: "purpose",
-    question: "What will they do for you?",
-    subtext: "Pick their main mission. You can refine it later.",
-    type: "choice",
-    field: "purpose",
-    options: [
-      { value: "Handle customer support and answer questions", label: "Customer Support", emoji: "🎧", desc: "Answer questions, resolve issues, keep clients happy" },
-      { value: "Manage sales outreach and close deals", label: "Sales & Outreach", emoji: "💰", desc: "Follow up with leads, send proposals, close deals" },
-      { value: "Schedule appointments and manage my calendar", label: "Scheduling", emoji: "📅", desc: "Book meetings, send reminders, manage your time" },
-      { value: "Be my personal assistant for daily tasks", label: "Personal Assistant", emoji: "✨", desc: "Emails, messages, reminders, whatever you need" },
-      { value: "Handle operations and team coordination", label: "Operations", emoji: "⚙️", desc: "Coordinate tasks, track progress, keep things moving" },
-      { value: "Collect payments and follow up on invoices", label: "Collections", emoji: "💳", desc: "Chase overdue invoices, send payment reminders" },
     ],
   },
   {
@@ -144,6 +134,7 @@ export default function CreationFlow() {
   const [step, setStep] = useState(0);
   const [config, setConfig] = useState<Record<string, any>>({
     name: "",
+    template: "",
     tone: "",
     purpose: "",
     tools: [],
@@ -219,10 +210,12 @@ export default function CreationFlow() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: config.name,
+          template: config.template,
           purpose: config.purpose,
           tools: config.tools,
           config: {
             name: config.name,
+            template: config.template,
             purpose: config.purpose,
             tone: config.tone,
             tools: config.tools,
@@ -296,6 +289,80 @@ export default function CreationFlow() {
                   Begin
                   <ArrowRight className="w-5 h-5" />
                 </motion.button>
+              </div>
+            )}
+
+            {/* Template picker step */}
+            {currentStep.type === "template" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight">
+                    {currentStep.question}
+                  </h2>
+                  {currentStep.subtext && (
+                    <p className="text-gray-400 mt-2">{currentStep.subtext}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {TEMPLATES.map((tpl, i) => (
+                    <motion.button
+                      key={tpl.slug}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      onClick={() => {
+                        setConfig((prev) => ({
+                          ...prev,
+                          template: tpl.slug,
+                          purpose: tpl.purpose,
+                          tone: tpl.tone,
+                          tools: tpl.tools,
+                          approvalMode: tpl.approvalMode,
+                        }));
+                        setTimeout(next, 300);
+                      }}
+                      className={`w-full text-left p-5 rounded-2xl border transition-all cursor-pointer group ${
+                        config.template === tpl.slug
+                          ? "border-white bg-white/10"
+                          : "border-gray-800 hover:border-gray-600 bg-gray-900/50 hover:bg-gray-800/50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl shrink-0`}>
+                          {tpl.emoji}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-lg">{tpl.name}</p>
+                          <p className="text-sm text-gray-500">{tpl.tagline}</p>
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{tpl.description}</p>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+
+                  {/* Custom option */}
+                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: TEMPLATES.length * 0.08 }}
+                    onClick={() => {
+                      setConfig((prev) => ({ ...prev, template: "custom" }));
+                      setTimeout(next, 300);
+                    }}
+                    className="w-full text-left p-5 rounded-2xl border border-dashed border-gray-700 hover:border-gray-500 bg-gray-900/30 hover:bg-gray-800/30 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-2xl shrink-0">
+                        ✨
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">Build from Scratch</p>
+                        <p className="text-sm text-gray-500">Full control — configure every detail yourself</p>
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
               </div>
             )}
 
