@@ -83,7 +83,7 @@ export function Landing({ onStart }: LandingProps) {
             </span>
           </h1>
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Enter your website and we&apos;ll set up your AI team in 60 seconds — agents that handle calls, messages, sales, and support while you sleep.
+            An AI assistant that works for <em>you</em> — whether you run a business, study for exams, or just need help staying organized. Set it up in 60 seconds.
           </p>
         </motion.div>
 
@@ -102,7 +102,7 @@ export function Landing({ onStart }: LandingProps) {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="yourwebsite.com"
+                placeholder="yourwebsite.com or facebook.com/you"
                 className="w-full bg-gray-900 border border-gray-700 focus:border-indigo-500 rounded-xl pl-12 pr-4 py-4 text-base outline-none transition-colors placeholder:text-gray-600"
               />
             </div>
@@ -211,9 +211,9 @@ export function Landing({ onStart }: LandingProps) {
       <section id="templates" className="relative z-10 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">5 agents, every role covered</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Pick your AI, make it yours</h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              Pick a template and your agent is pre-configured. Customize every detail or let it run out of the box.
+              Templates for life, school, and work. Pick one and your agent is ready in seconds — or build your own from scratch.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -270,12 +270,12 @@ export function Landing({ onStart }: LandingProps) {
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { icon: MessageSquare, title: "WhatsApp Native", desc: "Your agent lives on WhatsApp. Reads, replies, reaches out — just like a real assistant.", color: "text-green-400 bg-green-500/10 border-green-500/20" },
-              { icon: Phone, title: "Voice Calls", desc: "Give your agent a real phone number. It answers calls, takes notes, and follows up automatically.", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-              { icon: Shield, title: "You&apos;re in Control", desc: "Set trust levels. Review before sending, or let your agent act fully autonomously.", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-              { icon: Brain, title: "It Remembers", desc: "Your agent learns your preferences, contacts, and patterns over time — and gets better.", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
-              { icon: Zap, title: "60-Second Setup", desc: "Enter your website, pick a template, name your agent. Done. No code, no config files.", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
-              { icon: Globe, title: "Works Everywhere", desc: "WhatsApp, email, phone, calendar — one agent across all your channels, always on.", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
+              { icon: MessageSquare, title: "Lives on WhatsApp", desc: "Message your AI like you'd message a friend. It replies instantly, 24/7 — no app to download.", color: "text-green-400 bg-green-500/10 border-green-500/20" },
+              { icon: Phone, title: "Takes Phone Calls", desc: "Give it a real number. It answers calls, takes messages, and texts you a summary.", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+              { icon: Shield, title: "You Set the Rules", desc: "Control what it can do. Review everything, or let it run on autopilot — your call.", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+              { icon: Brain, title: "Learns Over Time", desc: "The more you use it, the smarter it gets. Remembers your preferences, contacts, and habits.", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+              { icon: Zap, title: "Ready in 60 Seconds", desc: "Pick a template, name your agent, done. No tech skills needed. No code. No setup guides.", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
+              { icon: Globe, title: "Always On", desc: "WhatsApp, email, phone — your AI works while you sleep, study, or enjoy your weekend.", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
             ].map((f, i) => (
               <motion.div
                 key={i}
@@ -308,7 +308,7 @@ export function Landing({ onStart }: LandingProps) {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 flex flex-col">
               <h3 className="text-lg font-bold mb-1">Free</h3>
               <div className="text-4xl font-extrabold mb-2">$0 <span className="text-base font-normal text-gray-600">/mo</span></div>
-              <p className="text-sm text-gray-500 mb-6">Perfect for trying it out</p>
+              <p className="text-sm text-gray-500 mb-6">Try it, no strings attached</p>
               <ul className="space-y-2.5 mb-8 flex-grow">
                 {["1 AI agent", "50 messages/day", "WhatsApp only", "Basic setup"].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-gray-400">
@@ -328,7 +328,7 @@ export function Landing({ onStart }: LandingProps) {
               </div>
               <h3 className="text-lg font-bold mb-1">Pro</h3>
               <div className="text-4xl font-extrabold mb-2">$29 <span className="text-base font-normal text-indigo-300/60">/mo</span></div>
-              <p className="text-sm text-gray-400 mb-6">For serious businesses</p>
+              <p className="text-sm text-gray-400 mb-6">For people who mean business</p>
               <ul className="space-y-2.5 mb-8 flex-grow">
                 {["3 AI agents", "Unlimited messages", "All channels (WhatsApp + Phone + Email)", "Phone number included", "Knowledge base", "Priority support"].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-gray-300">
@@ -345,7 +345,7 @@ export function Landing({ onStart }: LandingProps) {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 flex flex-col">
               <h3 className="text-lg font-bold mb-1">Business</h3>
               <div className="text-4xl font-extrabold mb-2">$99 <span className="text-base font-normal text-gray-600">/mo</span></div>
-              <p className="text-sm text-gray-500 mb-6">Full team deployment</p>
+              <p className="text-sm text-gray-500 mb-6">Run your whole operation on AI</p>
               <ul className="space-y-2.5 mb-8 flex-grow">
                 {["Unlimited agents", "All channels", "Custom integrations", "Dedicated support", "SLA guarantee", "White-label ready"].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-gray-400">
@@ -371,9 +371,9 @@ export function Landing({ onStart }: LandingProps) {
           <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl mx-auto flex items-center justify-center mb-6">
             <Sparkles className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Ready to hire your AI team?</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Your AI is waiting</h2>
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            Takes less than 60 seconds. No credit card required.
+            60 seconds to set up. Free to start. No credit card needed.
           </p>
           <button
             onClick={onStart}
