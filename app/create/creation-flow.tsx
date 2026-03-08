@@ -54,8 +54,8 @@ type OnboardingState = {
   business: BusinessInfo | null;
   // Step 3: Selected templates
   selectedTemplates: string[];
-  // Step 4: Agent name
-  agentName: string;
+  // Step 4: Agent names (mapped by template slug)
+  agentNames: Record<string, string>;
   // Step 5: Trust level
   approvalMode: string;
 };
@@ -533,16 +533,20 @@ function StepRecommend({
 
 function StepName({
   templateSlug,
+  templateName,
   value,
   onChange,
   onNext,
   onBack,
+  isLastTemplate,
 }: {
   templateSlug: string;
+  templateName: string;
   value: string;
   onChange: (v: string) => void;
   onNext: () => void;
   onBack: () => void;
+  isLastTemplate: boolean;
 }) {
   const tpl = TEMPLATES.find((t) => t.slug === templateSlug);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -561,9 +565,9 @@ function StepName({
         </div>
       )}
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">What&apos;s their name?</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Name your {templateName}</h2>
         <p className="text-gray-400 mt-1">
-          This is how {tpl ? `your ${tpl.name}` : "your agent"} will introduce itself.
+          This is how your {templateName} will introduce itself.
         </p>
       </div>
 
@@ -594,7 +598,7 @@ function StepName({
             disabled={!value.trim()}
             className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2"
           >
-            Continue
+            {isLastTemplate ? "Continue" : "Next Agent"}
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -839,7 +843,7 @@ export default function CreationFlow() {
     url: "",
     business: null,
     selectedTemplates: [],
-    agentName: "",
+    agentNames: {},
     approvalMode: "notify",
   });
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -848,6 +852,7 @@ export default function CreationFlow() {
   const [currentTemplateIdx, setCurrentTemplateIdx] = useState(0);
 
   const currentTemplate = state.selectedTemplates[currentTemplateIdx] || TEMPLATES[0].slug;
+  const currentTemplateName = TEMPLATES.find(t => t.slug === currentTemplate)?.name || "Agent";
 
   // Check if landing page already scanned a business
   useEffect(() => {
@@ -866,10 +871,7 @@ export default function CreationFlow() {
           sessionStorage.removeItem("bff_business");
           sessionStorage.removeItem("bff_scan_url");
           
-          // Skip straight to review, and fetch recommendations
-          setStep("review");
-          
-          // Get recommendations in background
+          // Get recommendations first, then skip to review
           fetch("/api/business/recommend", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -877,9 +879,20 @@ export default function CreationFlow() {
           })
             .then((r) => r.json())
             .then((data) => {
-              if (data.success) setRecommendations(data.recommendations);
+              if (data.success) {
+                setRecommendations(data.recommendations);
+                // If we have recommendations, skip straight to review
+                // The user can then go to recommendations or manual template selection
+                setStep("review");
+              } else {
+                // If no recommendations, go to manual template selection
+                setStep("manual-template");
+              }
             })
-            .catch(() => {});
+            .catch(() => {
+              // On error, still go to review
+              setStep("review");
+            });
         } catch {
           // Invalid data, start fresh
         }
@@ -941,9 +954,9 @@ export default function CreationFlow() {
 
       for (const slug of templatesToCreate) {
         const tpl = TEMPLATES.find((t) => t.slug === slug)!;
-        const agentName = templatesToCreate.length === 1
-          ? state.agentName
-          : `${state.agentName} (${tpl.name.split(" ")[1] || tpl.name})`;
+        // Get the name for this specific template from agentNames mapping
+        // Fallback to template name if not specified
+        const agentName = state.agentNames[slug] || tpl.name;
 
         await fetch("/api/agent", {
           method: "POST",
@@ -976,7 +989,7 @@ export default function CreationFlow() {
       toast.success(
         templatesToCreate.length > 1
           ? `${templatesToCreate.length} agents activated!`
-          : `${state.agentName} is live!`
+          : `${Object.values(state.agentNames)[0] || "Your agent"} is live!`
       );
       router.push("/dashboard");
     } catch {
@@ -1070,7 +1083,10 @@ export default function CreationFlow() {
                       : [...p.selectedTemplates, slug],
                   }));
                 }}
-                onNext={() => setStep("name")}
+                onNext={() => {
+                  setCurrentTemplateIdx(0);
+                  setStep("name");
+                }}
                 onBack={() => setStep("review")}
                 onSkip={() => setStep("manual-template")}
               />
@@ -1087,37 +1103,62 @@ export default function CreationFlow() {
                       : [...p.selectedTemplates, slug],
                   }));
                 }}
-                onNext={() => setStep("name")}
+                onNext={() => {
+                  setCurrentTemplateIdx(0);
+                  setStep("name");
+                }}
               />
             )}
 
             {step === "name" && (
               <StepName
                 templateSlug={currentTemplate}
-                value={state.agentName}
-                onChange={(agentName) => setState((p) => ({ ...p, agentName }))}
-                onNext={() => setStep("trust")}
-                onBack={() =>
-                  setStep(
-                    recommendations.length > 0 ? "recommend" : "manual-template"
-                  )
-                }
+                templateName={currentTemplateName}
+                value={state.agentNames[currentTemplate] || ""}
+                onChange={(name) => setState((p) => ({ 
+                  ...p, 
+                  agentNames: { ...p.agentNames, [currentTemplate]: name } 
+                }))}
+                onNext={() => {
+                  if (currentTemplateIdx < state.selectedTemplates.length - 1) {
+                    // Move to next template for naming
+                    setCurrentTemplateIdx(currentTemplateIdx + 1);
+                  } else {
+                    // All templates named, move to trust step
+                    setStep("trust");
+                  }
+                }}
+                onBack={() => {
+                  if (currentTemplateIdx > 0) {
+                    // Go back to previous template
+                    setCurrentTemplateIdx(currentTemplateIdx - 1);
+                  } else {
+                    // Go back to template selection
+                    setStep(
+                      recommendations.length > 0 ? "recommend" : "manual-template"
+                    );
+                  }
+                }}
+                isLastTemplate={currentTemplateIdx === state.selectedTemplates.length - 1}
               />
             )}
 
             {step === "trust" && (
               <StepTrust
-                agentName={state.agentName}
+                agentName={state.selectedTemplates.length > 1 ? "your agents" : Object.values(state.agentNames)[0] || "your agent"}
                 value={state.approvalMode}
                 onChange={(approvalMode) => setState((p) => ({ ...p, approvalMode }))}
                 onNext={() => setStep("birth")}
-                onBack={() => setStep("name")}
+                onBack={() => {
+                  setCurrentTemplateIdx(state.selectedTemplates.length - 1);
+                  setStep("name");
+                }}
               />
             )}
 
             {step === "birth" && (
               <StepBirth
-                agentName={state.agentName}
+                agentName={state.selectedTemplates.length > 1 ? "your agents" : Object.values(state.agentNames)[0] || "your agent"}
                 templateSlug={currentTemplate}
                 deploying={deploying}
                 onDeploy={deployAgents}

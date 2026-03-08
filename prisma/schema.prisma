@@ -19,6 +19,9 @@ model User {
   agents        Agent[]
   contacts      Contact[]
   conversations Conversation[]
+  reminders     Reminder[]
+  bills         Bill[]
+  todos         Todo[]
 }
 
 model Agent {
@@ -46,6 +49,47 @@ model Agent {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations Conversation[]
   activities    AgentActivity[]
+  reminders     Reminder[]
+  bills         Bill[]
+  todos         Todo[]
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String
+  agentId   String
+  text      String
+  datetime  DateTime
+  recurring String?  // "daily", "weekly", "monthly", null
+  sent      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  agent     Agent    @relation(fields: [agentId], references: [id])
+}
+
+model Bill {
+  id        String   @id @default(cuid())
+  userId    String
+  agentId   String
+  name      String
+  amount    Float
+  dueDate   DateTime
+  recurring String?  // "monthly", "quarterly", "yearly", null
+  paid      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  agent     Agent    @relation(fields: [agentId], references: [id])
+}
+
+model Todo {
+  id        String   @id @default(cuid())
+  userId    String
+  agentId   String
+  text      String
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  agent     Agent    @relation(fields: [agentId], references: [id])
 }
 
 model AgentActivity {
