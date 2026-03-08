@@ -1,93 +1,72 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/app/lib/session";
-import { db, loadDb, saveDb } from "@/app/lib/localdb";
-import { randomUUID } from "crypto";
+import { prisma } from "@/app/lib/prisma";
 
-/**
- * GET /api/contacts — List user's contacts
- */
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  await loadDb();
-  const contacts = (db.data!.contacts || []).filter((c) => c.userId === user.id);
-  return NextResponse.json({ contacts });
+  const contacts = await prisma.contact.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ contacts: contacts.map(c => ({ ...c, tags: JSON.parse(c.tags || "[]") })) });
 }
 
-/**
- * POST /api/contacts — Create a new contact
- */
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { name, phone, email, notes, tags } = await req.json();
+  if (!name) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-  if (!name?.trim()) {
-    return NextResponse.json({ error: "Contact name is required" }, { status: 400 });
-  }
-  if (!phone?.trim() && !email?.trim()) {
-    return NextResponse.json({ error: "Phone or email is required" }, { status: 400 });
-  }
+  const contact = await prisma.contact.create({
+    data: {
+      userId: user.id,
+      name,
+      phone: phone || null,
+      email: email || null,
+      notes: notes || null,
+      tags: JSON.stringify(tags || []),
+    },
+  });
 
-  await loadDb();
-
-  const contact = {
-    id: randomUUID().slice(0, 8),
-    userId: user.id,
-    name: name.trim(),
-    phone: phone?.trim() || undefined,
-    email: email?.trim() || undefined,
-    notes: notes?.trim() || undefined,
-    tags: tags || [],
-    createdAt: new Date().toISOString(),
-  };
-
-  db.data!.contacts.push(contact);
-  await saveDb();
-
-  return NextResponse.json({ contact });
+  return NextResponse.json({ contact: { ...contact, tags: JSON.parse(contact.tags) } }, { status: 201 });
 }
 
-/**
- * PUT /api/contacts — Update a contact
- */
 export async function PUT(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, name, phone, email, notes, tags } = await req.json();
+  if (!id) return NextResponse.json({ error: "Contact ID required" }, { status: 400 });
 
-  await loadDb();
-  const contact = db.data!.contacts.find((c) => c.id === id && c.userId === user.id);
-  if (!contact) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  const contact = await prisma.contact.findFirst({ where: { id, userId: user.id } });
+  if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (name) contact.name = name.trim();
-  if (phone !== undefined) contact.phone = phone?.trim() || undefined;
-  if (email !== undefined) contact.email = email?.trim() || undefined;
-  if (notes !== undefined) contact.notes = notes?.trim() || undefined;
-  if (tags !== undefined) contact.tags = tags;
+  const updated = await prisma.contact.update({
+    where: { id },
+    data: {
+      name: name || contact.name,
+      phone: phone !== undefined ? phone : contact.phone,
+      email: email !== undefined ? email : contact.email,
+      notes: notes !== undefined ? notes : contact.notes,
+      tags: tags ? JSON.stringify(tags) : contact.tags,
+    },
+  });
 
-  await saveDb();
-  return NextResponse.json({ contact });
+  return NextResponse.json({ contact: { ...updated, tags: JSON.parse(updated.tags) } });
 }
 
-/**
- * DELETE /api/contacts — Delete a contact
- */
 export async function DELETE(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await req.json();
+  const contact = await prisma.contact.findFirst({ where: { id, userId: user.id } });
+  if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await loadDb();
-  const idx = db.data!.contacts.findIndex((c) => c.id === id && c.userId === user.id);
-  if (idx === -1) return NextResponse.json({ error: "Contact not found" }, { status: 404 });
-
-  db.data!.contacts.splice(idx, 1);
-  await saveDb();
-
+  await prisma.contact.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

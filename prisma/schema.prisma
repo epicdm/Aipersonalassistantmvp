@@ -3,11 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // Vercel Postgres connection pooling URL
+  directUrl = env("POSTGRES_URL_NON_POOLING") // Direct connection for migrations
 }
 
 model User {
@@ -15,25 +16,76 @@ model User {
   email        String   @unique
   passwordHash String
   plan         String   @default("free") // free, pro, business
-  createdAt    DateTime @default(now())
-  agents       Agent[]
+  createdAt     DateTime       @default(now())
+  agents        Agent[]
+  contacts      Contact[]
+  conversations Conversation[]
 }
 
 model Agent {
   id             String   @id @default(cuid())
   userId         String
   name           String
-  template       String?  // template slug: concierge, receptionist, collector, ecommerce, ops
+  template       String?
   purpose        String?
-  tone           String?  // professional, friendly, casual, enthusiastic, empathetic
-  tools          String   @default("[]") // JSON array stored as string
-  approvalMode   String   @default("confirm") // confirm, notify, auto
+  tone           String?
+  tools          String   @default("[]")
+  approvalMode   String   @default("confirm")
+  config         Json?    // Full config object
+  soul           String?  // Generated SOUL.md
+  status         String   @default("draft") // draft, active, paused
   whatsappStatus String   @default("not_connected")
+  whatsappNumber String?
   phoneNumber    String?
   phoneStatus    String   @default("pending")
   isActive       Boolean  @default(true)
+  deployedAt     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  phone     String?
+  email     String?
+  notes     String?
+  tags      String   @default("[]")
+  createdAt DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  agentId   String
+  contactId String
+  channel   String   @default("whatsapp")
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  direction      String   // inbound, outbound
+  text           String
+  status         String   @default("sent")
+  approvedAt     DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
