@@ -155,7 +155,14 @@ export function Landing({ onStart }: LandingProps) {
                   </div>
                 </div>
                 <button
-                  onClick={onStart}
+                  onClick={() => {
+                    // Store FULL scan result so creation flow skips the scan step
+                    if (typeof window !== "undefined") {
+                      sessionStorage.setItem("bff_business", JSON.stringify(preview));
+                      sessionStorage.setItem("bff_scan_url", url);
+                    }
+                    onStart();
+                  }}
                   className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" />

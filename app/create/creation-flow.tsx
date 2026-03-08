@@ -849,6 +849,44 @@ export default function CreationFlow() {
 
   const currentTemplate = state.selectedTemplates[currentTemplateIdx] || TEMPLATES[0].slug;
 
+  // Check if landing page already scanned a business
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedBusiness = sessionStorage.getItem("bff_business");
+      const savedUrl = sessionStorage.getItem("bff_scan_url");
+      if (savedBusiness) {
+        try {
+          const business = JSON.parse(savedBusiness);
+          setState((prev) => ({
+            ...prev,
+            business,
+            url: savedUrl || "",
+          }));
+          // Clear it so it doesn't persist
+          sessionStorage.removeItem("bff_business");
+          sessionStorage.removeItem("bff_scan_url");
+          
+          // Skip straight to review, and fetch recommendations
+          setStep("review");
+          
+          // Get recommendations in background
+          fetch("/api/business/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(business),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.success) setRecommendations(data.recommendations);
+            })
+            .catch(() => {});
+        } catch {
+          // Invalid data, start fresh
+        }
+      }
+    }
+  }, []);
+
   const scanBusiness = useCallback(async () => {
     setStep("scanning");
     setScanError(null);
