@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/app/lib/session";
 import KnowledgeClient from "./knowledge-client";
