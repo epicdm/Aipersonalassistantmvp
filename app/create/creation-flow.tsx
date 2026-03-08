@@ -837,7 +837,7 @@ function StepActivate({
   activationCode: string | null;
   onContinue: () => void;
 }) {
-  const waNumber = "17672859610";
+  const waNumber = "17672851568";
   const waLink = activationCode
     ? `https://wa.me/${waNumber}?text=${encodeURIComponent(activationCode)}`
     : `https://wa.me/${waNumber}`;
