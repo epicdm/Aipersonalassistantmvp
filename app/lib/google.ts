@@ -1,5 +1,156 @@
 import { clerkClient } from "@clerk/nextjs/server";
 
+// ═══════════════════════════════════════════════════════════════
+// FACEBOOK / INSTAGRAM
+// ═══════════════════════════════════════════════════════════════
+
+export async function getFacebookToken(userId: string): Promise<string | null> {
+  try {
+    const client = await clerkClient();
+    const tokens = await client.users.getUserOauthAccessToken(userId, "oauth_facebook");
+    return tokens.data?.[0]?.token || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function isFacebookUser(userId: string): Promise<boolean> {
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    return user.externalAccounts?.some(a => a.provider === "oauth_facebook") || false;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Instagram Types ───────────────────────────────────────────
+export interface InstagramProfile {
+  id: string;
+  username: string;
+  name: string;
+  followersCount: number;
+  mediaCount: number;
+  profilePicture?: string;
+}
+
+export interface InstagramDM {
+  id: string;
+  from: string;
+  message: string;
+  timestamp: string;
+}
+
+// ─── Get Instagram Business Account via Facebook Page ──────────
+export async function getInstagramProfile(userId: string): Promise<InstagramProfile | null> {
+  const token = await getFacebookToken(userId);
+  if (!token) return null;
+
+  try {
+    // Get user's Facebook Pages
+    const pagesRes = await fetch(
+      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,instagram_business_account&access_token=${token}`
+    );
+    if (!pagesRes.ok) return null;
+    const pagesData = await pagesRes.json();
+
+    // Find first page with Instagram connected
+    const pageWithIG = pagesData.data?.find(
+      (p: Record<string, unknown>) => p.instagram_business_account
+    );
+    if (!pageWithIG) return null;
+
+    const igId = (pageWithIG.instagram_business_account as Record<string, string>).id;
+
+    // Get Instagram profile
+    const igRes = await fetch(
+      `https://graph.facebook.com/v21.0/${igId}?fields=id,username,name,followers_count,media_count,profile_picture_url&access_token=${token}`
+    );
+    if (!igRes.ok) return null;
+    const ig = await igRes.json();
+
+    return {
+      id: ig.id,
+      username: ig.username,
+      name: ig.name || ig.username,
+      followersCount: ig.followers_count || 0,
+      mediaCount: ig.media_count || 0,
+      profilePicture: ig.profile_picture_url,
+    };
+  } catch (e) {
+    console.error("[Instagram] Error:", e);
+    return null;
+  }
+}
+
+// ─── Get recent Instagram DMs ──────────────────────────────────
+export async function getInstagramDMs(userId: string, limit = 5): Promise<InstagramDM[]> {
+  const token = await getFacebookToken(userId);
+  if (!token) return [];
+
+  try {
+    const pagesRes = await fetch(
+      `https://graph.facebook.com/v21.0/me/accounts?fields=id,instagram_business_account&access_token=${token}`
+    );
+    if (!pagesRes.ok) return [];
+    const pagesData = await pagesRes.json();
+
+    const pageWithIG = pagesData.data?.find(
+      (p: Record<string, unknown>) => p.instagram_business_account
+    );
+    if (!pageWithIG) return [];
+
+    const igId = (pageWithIG.instagram_business_account as Record<string, string>).id;
+
+    // Get conversations
+    const convoRes = await fetch(
+      `https://graph.facebook.com/v21.0/${igId}/conversations?fields=participants,messages{message,from,created_time}&limit=${limit}&access_token=${token}`
+    );
+    if (!convoRes.ok) return [];
+    const convoData = await convoRes.json();
+
+    const dms: InstagramDM[] = [];
+    for (const convo of convoData.data || []) {
+      for (const msg of convo.messages?.data || []) {
+        dms.push({
+          id: msg.id,
+          from: msg.from?.username || msg.from?.name || "Unknown",
+          message: msg.message || "",
+          timestamp: msg.created_time,
+        });
+      }
+    }
+    return dms.slice(0, limit);
+  } catch (e) {
+    console.error("[Instagram DMs] Error:", e);
+    return [];
+  }
+}
+
+// ─── Format Instagram context for agent ────────────────────────
+export function formatInstagramForAgent(
+  profile: InstagramProfile | null,
+  dms: InstagramDM[]
+): string {
+  if (!profile) return "";
+
+  let ctx = `📸 Instagram connected: @${profile.username} (${profile.followersCount} followers, ${profile.mediaCount} posts)`;
+
+  if (dms.length > 0) {
+    ctx += `\n\nRecent Instagram DMs:`;
+    for (const dm of dms) {
+      ctx += `\n- From @${dm.from}: "${dm.message.slice(0, 100)}"`;
+    }
+    ctx += `\n\nYou can reference these DMs and offer to reply.`;
+  }
+
+  return ctx;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE
+// ═══════════════════════════════════════════════════════════════
+
 // ─── Get Google OAuth token from Clerk ─────────────────────────
 export async function getGoogleToken(userId: string): Promise<string | null> {
   try {

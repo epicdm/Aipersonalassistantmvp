@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { sendWhatsAppMessage } from "@/app/lib/whatsapp";
 import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
-import { getUpcomingEvents, formatEventsForAgent, getGoogleToken } from "@/app/lib/google";
+import { getUpcomingEvents, formatEventsForAgent, getGoogleToken, getFacebookToken, getInstagramProfile, getInstagramDMs, formatInstagramForAgent } from "@/app/lib/google";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Vercel Pro allows up to 60s, free plan 10s
@@ -111,8 +111,16 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+        // Instagram integration for Facebook users
+        const hasFB = await getFacebookToken(agent.user.clerkId);
+        if (hasFB) {
+          const igProfile = await getInstagramProfile(agent.user.clerkId);
+          if (igProfile) {
+            welcome += `\n\n📸 I also connected to your Instagram (@${igProfile.username})! ${igProfile.followersCount} followers, ${igProfile.mediaCount} posts. I can help manage your DMs and keep you in the loop.`;
+          }
+        }
       } catch (e) {
-        console.error("[Welcome calendar] Error:", e);
+        console.error("[Welcome integrations] Error:", e);
       }
       await sendWhatsAppMessage(from, welcome);
 
@@ -200,6 +208,17 @@ async function handleChat(
         const events = await getUpcomingEvents(agentRecord.user.clerkId, 5, 3);
         if (events.length > 0) {
           extraContext += `📅 User's upcoming calendar events:\n${formatEventsForAgent(events)}\n\nYou can reference these naturally. E.g. "I see you have a meeting at 2pm" or "Don't forget your dentist appointment tomorrow."`;
+        }
+      }
+
+      // Instagram context
+      const hasFacebook = await getFacebookToken(agentRecord.user.clerkId);
+      if (hasFacebook) {
+        const igProfile = await getInstagramProfile(agentRecord.user.clerkId);
+        const igDMs = igProfile ? await getInstagramDMs(agentRecord.user.clerkId, 3) : [];
+        const igCtx = formatInstagramForAgent(igProfile, igDMs);
+        if (igCtx) {
+          extraContext += (extraContext ? "\n\n" : "") + igCtx;
         }
       }
     }
