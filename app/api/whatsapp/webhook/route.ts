@@ -47,9 +47,10 @@ export async function POST(req: NextRequest) {
 
     console.log(`[WA Webhook] Message from ${from}: ${messageText}`);
 
-    // ── Activation flow: code matches BFF-xxxxxxxxxx pattern ──
-    if (/^BFF-[A-Z0-9]{10}$/i.test(messageText)) {
-      const code = messageText.toUpperCase();
+    // ── Activation flow: message contains BFF-xxxxxxxxxx code anywhere ──
+    const codeMatch = messageText.match(/BFF-[A-Z0-9]{10}/i);
+    if (codeMatch) {
+      const code = codeMatch[0].toUpperCase();
       const agent = await prisma.agent.findUnique({
         where: { activationCode: code },
         include: { user: true },

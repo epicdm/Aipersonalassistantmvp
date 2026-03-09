@@ -838,9 +838,10 @@ function StepActivate({
   onContinue: () => void;
 }) {
   const waNumber = "17672851568";
-  const waLink = activationCode
-    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(activationCode)}`
-    : `https://wa.me/${waNumber}`;
+  const waText = activationCode
+    ? `Hey! I just created my BFF agent — activate me! 🚀 ${activationCode}`
+    : "Hey! I want to set up my BFF agent";
+  const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`;
 
   return (
     <div className="text-center space-y-8">
@@ -880,11 +881,9 @@ function StepActivate({
           Start chatting on WhatsApp
         </a>
 
-        {activationCode && (
-          <p className="text-xs text-gray-600">
-            Activation code: <span className="text-gray-400 font-mono">{activationCode}</span>
-          </p>
-        )}
+        <p className="text-sm text-gray-500 mt-2">
+          Tap the button, hit send, and your agent will introduce itself ✨
+        </p>
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
