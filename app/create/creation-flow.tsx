@@ -173,7 +173,7 @@ function StepActivate({
   activationCode: string | null;
   onContinue: () => void;
 }) {
-  const waNumber = "17672851568";
+  const waNumber = "17672950333";
   const waText = activationCode
     ? `Hey! I just created my BFF agent — activate me! 🚀 ${activationCode}`
     : "Hey! I want to set up my BFF agent";

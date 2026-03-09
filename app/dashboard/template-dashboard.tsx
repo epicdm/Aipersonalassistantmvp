@@ -276,7 +276,7 @@ function OverviewTab({
               connectContent={
                 <div className="space-y-2 text-right">
                   <a
-                    href={`https://wa.me/17672851568?text=${encodeURIComponent(`Hey! I just created my BFF agent — activate me! 🚀 ${agent.activationCode || ""}`)}`}
+                    href={`https://wa.me/17672950333?text=${encodeURIComponent(`Hey! I just created my BFF agent — activate me! 🚀 ${agent.activationCode || ""}`)}`}
                     target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded-full transition"
                   >
