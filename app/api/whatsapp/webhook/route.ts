@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { sendWhatsAppMessage } from "@/app/lib/whatsapp";
 import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
+import { getUpcomingEvents, formatEventsForAgent, getGoogleToken } from "@/app/lib/google";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Vercel Pro allows up to 60s, free plan 10s
@@ -163,11 +164,34 @@ async function handleChat(
     .reverse()
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
+  // Build live context (calendar, etc.)
+  let extraContext = "";
+  try {
+    // Look up the agent's owner for Google Calendar
+    const agentRecord = await prisma.agent.findUnique({
+      where: { id: agent.id },
+      include: { user: true },
+    });
+    if (agentRecord?.user?.clerkId) {
+      const hasGoogle = await getGoogleToken(agentRecord.user.clerkId);
+      if (hasGoogle) {
+        const events = await getUpcomingEvents(agentRecord.user.clerkId, 5, 3);
+        if (events.length > 0) {
+          extraContext += `📅 User's upcoming calendar events:\n${formatEventsForAgent(events)}\n\nYou can reference these naturally. E.g. "I see you have a meeting at 2pm" or "Don't forget your dentist appointment tomorrow."`;
+        }
+      }
+    }
+  } catch (e) {
+    // Calendar context is optional — don't break chat if it fails
+    console.error("[Calendar context] Error:", e);
+  }
+
   // Call DeepSeek
   const reply = await getAgentResponse(
     agent as Parameters<typeof getAgentResponse>[0],
     history,
-    userMessage
+    userMessage,
+    extraContext || undefined
   );
 
   // Send reply

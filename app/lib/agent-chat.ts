@@ -161,13 +161,17 @@ RULES:
 export async function getAgentResponse(
   agent: AgentRecord,
   history: ChatMessage[],
-  userMessage: string
+  userMessage: string,
+  extraContext?: string
 ): Promise<string> {
   if (!DEEPSEEK_API_KEY) {
     throw new Error("DEEPSEEK_API_KEY not configured");
   }
 
-  const systemPrompt = getSystemPrompt(agent);
+  let systemPrompt = getSystemPrompt(agent);
+  if (extraContext) {
+    systemPrompt += `\n\n--- LIVE CONTEXT (use naturally in conversation) ---\n${extraContext}`;
+  }
   const recentHistory = history.slice(-10);
 
   const messages: ChatMessage[] = [
