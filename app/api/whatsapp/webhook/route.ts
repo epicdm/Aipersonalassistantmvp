@@ -90,8 +90,30 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Send welcome message
-      const welcome = getWelcomeMessage(agent as Parameters<typeof getWelcomeMessage>[0]);
+      // Send welcome message — enhanced with calendar if Google user
+      let welcome = getWelcomeMessage(agent as Parameters<typeof getWelcomeMessage>[0]);
+      try {
+        if (agent.user.clerkId) {
+          const hasGoogle = await getGoogleToken(agent.user.clerkId);
+          if (hasGoogle) {
+            const events = await getUpcomingEvents(agent.user.clerkId, 3, 2);
+            if (events.length > 0) {
+              welcome += `\n\n📅 Oh, and I already connected to your Google Calendar! Here's what's coming up:\n`;
+              for (const e of events) {
+                const d = new Date(e.start);
+                const time = e.allDay ? "All day" : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+                const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                welcome += `• ${day} ${time} — ${e.summary}\n`;
+              }
+              welcome += `\nI'll remind you before these so you're never caught off guard 😊`;
+            } else {
+              welcome += `\n\n📅 I connected to your Google Calendar — your schedule is clear! Want me to add something?`;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[Welcome calendar] Error:", e);
+      }
       await sendWhatsAppMessage(from, welcome);
 
       // Store welcome in history
