@@ -331,8 +331,15 @@ export function Landing({ onStart }: LandingProps) {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-gray-800/50 text-center text-gray-600 text-xs">
+      <footer className="relative z-10 py-8 border-t border-gray-800/50 text-center text-gray-600 text-xs space-y-2">
         <p>© 2026 BFF AI — Powered by EPIC Communications</p>
+        <p className="flex items-center justify-center gap-4">
+          <a href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</a>
+          <span>·</span>
+          <a href="mailto:info@epic.dm" className="hover:text-gray-400 transition-colors">Contact</a>
+        </p>
       </footer>
     </div>
   );
