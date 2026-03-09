@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { sendWhatsAppMessage } from "@/app/lib/whatsapp";
 import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
+import { transcribeWhatsAppAudio } from "@/app/lib/voice";
 import { getUpcomingEvents, formatEventsForAgent, getGoogleToken, getFacebookToken, getInstagramProfile, getInstagramDMs, formatInstagramForAgent } from "@/app/lib/google";
 
 export const dynamic = "force-dynamic";
@@ -41,13 +42,28 @@ export async function POST(req: NextRequest) {
 
     const msg = value.messages[0];
     const from: string = msg.from; // phone number without +
-    const messageText: string = msg.text?.body?.trim() || "";
+    let messageText: string = msg.text?.body?.trim() || "";
+    let isVoiceNote = false;
+
+    // ── Handle voice notes ──────────────────────────────────────
+    if (msg.type === "audio" && msg.audio?.id) {
+      console.log(`[WA Webhook] Voice note from ${from}, transcribing...`);
+      const transcript = await transcribeWhatsAppAudio(msg.audio.id);
+      if (transcript) {
+        messageText = transcript;
+        isVoiceNote = true;
+        console.log(`[WA Webhook] Transcribed: ${transcript}`);
+      } else {
+        await sendWhatsAppMessage(from, "🎤 I received your voice note but couldn't transcribe it. Could you type that out for me?");
+        return NextResponse.json({ ok: true });
+      }
+    }
 
     if (!messageText) {
       return NextResponse.json({ ok: true });
     }
 
-    console.log(`[WA Webhook] Message from ${from}: ${messageText}`);
+    console.log(`[WA Webhook] Message from ${from}: ${messageText}${isVoiceNote ? " [voice]" : ""}`);
 
     // ── Activation flow: message contains BFF-xxxxxxxxxx code anywhere ──
     const codeMatch = messageText.match(/BFF-[A-Z0-9]{10}/i);
@@ -68,7 +84,7 @@ export async function POST(req: NextRequest) {
 
       if (agent.activatedAt) {
         // Already activated — just route normally
-        await handleChat(from, messageText, agent);
+        await handleChat(from, messageText, agent, isVoiceNote);
         return NextResponse.json({ ok: true });
       }
 
@@ -151,7 +167,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    await handleChat(from, messageText, agent);
+    await handleChat(from, messageText, agent, isVoiceNote);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[WA Webhook] Error:", err);
@@ -170,7 +186,8 @@ async function handleChat(
     purpose: string | null;
     tone: string | null;
     config: unknown;
-  }
+  },
+  isVoiceNote = false
 ) {
   // Store inbound message
   await prisma.whatsAppMessage.create({
