@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { sendWhatsAppMessage } from "@/app/lib/whatsapp";
+import { sendWhatsAppMessage, sendWhatsAppVoiceNote } from "@/app/lib/whatsapp";
 import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
 import { transcribeWhatsAppAudio } from "@/app/lib/voice";
 import { getUpcomingEvents, formatEventsForAgent, getGoogleToken, getFacebookToken, getInstagramProfile, getInstagramDMs, formatInstagramForAgent } from "@/app/lib/google";
@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
         messageText = transcript;
         isVoiceNote = true;
         console.log(`[WA Webhook] Transcribed: ${transcript}`);
+        // Echo transcription so user knows what was heard
+        await sendWhatsAppMessage(from, `🎤 _I heard:_ "${transcript}"`).catch(() => {});
       } else {
         await sendWhatsAppMessage(from, "🎤 I received your voice note but couldn't transcribe it. Could you type that out for me?");
         return NextResponse.json({ ok: true });
@@ -252,8 +254,17 @@ async function handleChat(
     extraContext || undefined
   );
 
-  // Send reply
-  await sendWhatsAppMessage(from, reply);
+  // Send reply — voice note if user sent voice, text otherwise
+  if (isVoiceNote) {
+    try {
+      await sendWhatsAppVoiceNote(from, reply);
+    } catch (e) {
+      console.error("[Voice reply] Failed, falling back to text:", e);
+      await sendWhatsAppMessage(from, reply);
+    }
+  } else {
+    await sendWhatsAppMessage(from, reply);
+  }
 
   // Store outbound message
   await prisma.whatsAppMessage.create({

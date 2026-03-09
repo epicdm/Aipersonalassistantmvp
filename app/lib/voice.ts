@@ -58,6 +58,8 @@ async function transcribeWithGroq(audioBlob: Blob): Promise<string | null> {
     formData.append("file", audioBlob, "voice.ogg");
     formData.append("model", "whisper-large-v3-turbo");
     formData.append("response_format", "text");
+    formData.append("language", "en");
+    formData.append("temperature", "0");
 
     const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
