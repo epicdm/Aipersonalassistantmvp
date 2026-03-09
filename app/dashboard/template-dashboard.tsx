@@ -265,51 +265,48 @@ function OverviewTab({
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">Connected Services</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              {
-                label: "WhatsApp",
-                icon: <Phone className="w-4 h-4 text-green-600 dark:text-green-400" />,
-                connected: connections?.whatsapp?.connected,
-                detail: connections?.whatsapp?.phone,
-                href: "/whatsapp",
-              },
-              {
-                label: "Google Calendar",
-                icon: <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-                connected: connections?.google?.calendar,
-                detail: connections?.google?.signedIn ? "Signed in" : undefined,
-                href: "/integrations",
-              },
-              {
-                label: "Instagram",
-                icon: <Instagram className="w-4 h-4 text-pink-600 dark:text-pink-400" />,
-                connected: connections?.instagram?.connected,
-                detail: connections?.instagram?.username ? `@${connections.instagram.username}` : undefined,
-                href: "/integrations",
-              },
-            ].map(({ label, icon, connected, detail, href }) => (
-              <div key={label} className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-muted">{icon}</div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{label}</p>
-                    {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
-                  </div>
+          <CardContent className="space-y-1">
+
+            {/* WhatsApp */}
+            <ServiceRow
+              icon={<Phone className="w-4 h-4 text-green-600 dark:text-green-400" />}
+              label="WhatsApp"
+              detail={connections?.whatsapp?.phone}
+              connected={!!connections?.whatsapp?.connected}
+              connectContent={
+                <div className="space-y-2 text-right">
+                  <a
+                    href={`https://wa.me/17672851568?text=${encodeURIComponent(`Hey! I just created my BFF agent — activate me! 🚀 ${agent.activationCode || ""}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs bg-green-600 hover:bg-green-700 text-white px-2.5 py-1 rounded-full transition"
+                  >
+                    <Phone className="w-3 h-3" /> Open WhatsApp
+                  </a>
+                  <p className="text-xs text-muted-foreground">or enter your number:</p>
+                  <PhoneConnectInline agentId={agent.id} onConnected={() => window.location.reload()} />
                 </div>
-                <div className="flex items-center gap-2">
-                  {connected ? (
-                    <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                      <Check className="w-3 h-3" /> Connected
-                    </span>
-                  ) : (
-                    <a href={href} className="text-xs text-primary hover:underline underline-offset-2">
-                      Connect →
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
+              }
+            />
+
+            {/* Google Calendar */}
+            <ServiceRow
+              icon={<Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+              label="Google Calendar"
+              detail={connections?.google?.signedIn ? "Signed in with Google" : undefined}
+              connected={!!connections?.google?.calendar}
+              connectHref="/sign-up?strategy=oauth_google"
+              connectLabel={connections?.google?.signedIn ? "Re-connect with Google" : "Sign in with Google"}
+            />
+
+            {/* Instagram */}
+            <ServiceRow
+              icon={<Instagram className="w-4 h-4 text-pink-600 dark:text-pink-400" />}
+              label="Instagram"
+              detail={connections?.instagram?.username ? `@${connections.instagram.username}` : undefined}
+              connected={!!connections?.instagram?.connected}
+              connectLabel="Sign in with Facebook"
+              connectHref="https://bff.epic.dm/sign-up"
+            />
           </CardContent>
         </Card>
 
@@ -1044,6 +1041,87 @@ function DashboardShell({ agent }: { agent: any }) {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+// ─── Service Row helper ───────────────────────────────────────
+function ServiceRow({ icon, label, detail, connected, connectContent, connectHref, connectLabel }: {
+  icon: React.ReactNode;
+  label: string;
+  detail?: string;
+  connected: boolean;
+  connectContent?: React.ReactNode;
+  connectHref?: string;
+  connectLabel?: string;
+}) {
+  const [showConnect, setShowConnect] = useState(false);
+  return (
+    <div className="flex items-start justify-between py-2 border-b last:border-0">
+      <div className="flex items-center gap-2.5">
+        <div className="p-1.5 rounded-lg bg-muted">{icon}</div>
+        <div>
+          <p className="text-sm font-medium">{label}</p>
+          {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
+        </div>
+      </div>
+      <div className="text-right">
+        {connected ? (
+          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+            <Check className="w-3 h-3" /> Connected
+          </span>
+        ) : showConnect && connectContent ? (
+          <div className="space-y-1">{connectContent}</div>
+        ) : connectHref ? (
+          <a href={connectHref} className="text-xs text-primary hover:underline underline-offset-2">
+            {connectLabel || "Connect →"}
+          </a>
+        ) : (
+          <button onClick={() => setShowConnect(true)} className="text-xs text-primary hover:underline underline-offset-2">
+            Connect →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Phone Connect Inline ─────────────────────────────────────
+function PhoneConnectInline({ agentId, onConnected }: { agentId: string; onConnected: () => void }) {
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function connect() {
+    if (!phone.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/agent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: agentId, whatsappPhone: phone.replace(/\D/g, "") }),
+      });
+      if (res.ok) onConnected();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex gap-1">
+      <input
+        type="tel"
+        placeholder="+1 767 000 0000"
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+        className="text-xs border rounded px-2 py-1 w-32 bg-background"
+      />
+      <button
+        onClick={connect}
+        disabled={loading}
+        className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded disabled:opacity-50"
+      >
+        {loading ? "..." : "Save"}
+      </button>
     </div>
   );
 }
