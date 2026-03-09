@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import React from "react";
+import { motion } from "motion/react";
 import {
   ArrowRight, Bot, Shield, Zap, MessageSquare, CheckCircle2,
-  Sparkles, Phone, Brain, Globe, Loader2, Building2,
-  MapPin, Clock, ChevronRight, Star,
+  Sparkles, Phone, Brain, Globe, ChevronRight,
 } from "lucide-react";
 import { TEMPLATES } from "@/app/lib/templates";
 
@@ -14,33 +13,11 @@ interface LandingProps {
 }
 
 export function Landing({ onStart }: LandingProps) {
-  const [url, setUrl] = useState("");
-  const [scanning, setScanning] = useState(false);
-  const [preview, setPreview] = useState<null | { name: string; industry: string; description: string; services: string[] }>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleScan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) {
-      inputRef.current?.focus();
-      return;
+  const handleTemplateClick = (slug: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bff_template", slug);
     }
-    setScanning(true);
-    try {
-      const res = await fetch("/api/business/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setPreview(data.data);
-      }
-    } catch {
-      // ignore — just send them to signup
-    } finally {
-      setScanning(false);
-    }
+    onStart();
   };
 
   return (
@@ -87,115 +64,36 @@ export function Landing({ onStart }: LandingProps) {
           </p>
         </motion.div>
 
-        {/* URL Scan Hero — the wow moment */}
+        {/* 3-step visual */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="max-w-xl mx-auto"
+          className="flex items-center justify-center gap-2 md:gap-4 mb-12 flex-wrap"
         >
-          <form onSubmit={handleScan} className="flex gap-2">
-            <div className="relative flex-1">
-              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="yourwebsite.com or facebook.com/you"
-                className="w-full bg-gray-900 border border-gray-700 focus:border-indigo-500 rounded-xl pl-12 pr-4 py-4 text-base outline-none transition-colors placeholder:text-gray-600"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={scanning}
-              className="px-5 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-violet-700 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shadow-lg shadow-indigo-500/20"
-            >
-              {scanning ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>Scan <ArrowRight className="w-4 h-4" /></>
-              )}
-            </button>
-          </form>
-
-          {/* Preview card */}
-          <AnimatePresence>
-            {preview && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-4 bg-gray-900 border border-indigo-500/30 rounded-2xl p-5 text-left"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-4 h-4 text-indigo-400" />
-                      </div>
-                      <p className="font-bold text-lg">{preview.name}</p>
-                      <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full capitalize">
-                        {preview.industry}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">{preview.description}</p>
-                    {preview.services?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {preview.services.slice(0, 5).map((s, i) => (
-                          <span key={i} className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  </div>
+          {[
+            { step: "1", label: "Pick your AI" },
+            { step: "2", label: "Sign up" },
+            { step: "3", label: "Start chatting" },
+          ].map((item, i) => (
+            <React.Fragment key={item.step}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-sm font-bold shrink-0">
+                  {item.step}
                 </div>
-                <button
-                  onClick={() => {
-                    // Store FULL scan result so creation flow skips the scan step
-                    if (typeof window !== "undefined") {
-                      sessionStorage.setItem("bff_business", JSON.stringify(preview));
-                      sessionStorage.setItem("bff_scan_url", url);
-                    }
-                    onStart();
-                  }}
-                  className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold hover:opacity-90 transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Set up AI for {preview.name}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {!preview && (
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <button
-                onClick={() => {
-                    if (typeof window !== "undefined") {
-                      sessionStorage.setItem("bff_skip_scan", "true");
-                    }
-                    onStart();
-                  }}
-                className="text-sm text-gray-500 hover:text-white transition-colors cursor-pointer"
-              >
-                Or sign up without a website →
-              </button>
-            </div>
-          )}
+                <span className="text-sm font-semibold text-gray-300">{item.label}</span>
+              </div>
+              {i < 2 && <ArrowRight className="w-4 h-4 text-gray-600 shrink-0" />}
+            </React.Fragment>
+          ))}
         </motion.div>
 
         {/* Trust signals */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-12 flex items-center justify-center gap-6 text-sm text-gray-600 flex-wrap"
+          transition={{ delay: 0.4 }}
+          className="flex items-center justify-center gap-6 text-sm text-gray-600 flex-wrap"
         >
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -212,13 +110,13 @@ export function Landing({ onStart }: LandingProps) {
         </motion.div>
       </section>
 
-      {/* Templates section */}
-      <section id="templates" className="relative z-10 py-20">
+      {/* Templates — MAIN CTA */}
+      <section id="templates" className="relative z-10 py-16">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Pick your AI, make it yours</h2>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Pick your AI. Get started in seconds.</h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              Templates for life, school, and work. Pick one and your agent is ready in seconds — or build your own from scratch.
+              Choose a template and your agent is ready instantly — it'll get to know you through conversation.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -229,8 +127,8 @@ export function Landing({ onStart }: LandingProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }}
-                className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-gray-600 transition-all group cursor-pointer relative overflow-hidden"
-                onClick={onStart}
+                className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-gray-900/80 transition-all group cursor-pointer relative overflow-hidden"
+                onClick={() => handleTemplateClick(tpl.slug)}
               >
                 <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tpl.color} opacity-60`} />
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl mb-4`}>
@@ -239,30 +137,72 @@ export function Landing({ onStart }: LandingProps) {
                 <h3 className="font-bold text-lg mb-1">{tpl.name}</h3>
                 <p className="text-sm text-indigo-300/70 mb-2">{tpl.tagline}</p>
                 <p className="text-sm text-gray-500 leading-relaxed">{tpl.description}</p>
-                <div className="mt-4 flex items-center gap-1.5 text-gray-600 group-hover:text-indigo-400 transition-colors text-sm font-medium">
-                  Get started <ChevronRight className="w-4 h-4" />
+                <div className="mt-4 flex items-center gap-1.5 text-indigo-400 group-hover:text-indigo-300 transition-colors text-sm font-semibold">
+                  Get Started <ChevronRight className="w-4 h-4" />
                 </div>
               </motion.div>
             ))}
 
-            {/* CTA card */}
+            {/* Custom / Build from scratch card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: TEMPLATES.length * 0.07 }}
-              className="border-2 border-dashed border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 hover:border-gray-600 transition-all cursor-pointer"
-              onClick={onStart}
+              className="border-2 border-dashed border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 hover:border-indigo-500/40 transition-all cursor-pointer"
+              onClick={() => handleTemplateClick("custom")}
             >
               <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-2xl">
                 ✨
               </div>
               <div>
                 <p className="font-bold">Build from Scratch</p>
-                <p className="text-sm text-gray-500 mt-1">Full control — configure every detail</p>
+                <p className="text-sm text-gray-500 mt-1">Full control — your agent, your way</p>
+              </div>
+              <div className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-white transition-colors">
+                Get Started <ChevronRight className="w-4 h-4" />
               </div>
             </motion.div>
           </div>
+
+          {/* Sign-up method benefits */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 max-w-xl mx-auto bg-gray-900/40 border border-gray-800 rounded-2xl p-6"
+          >
+            <p className="text-sm font-semibold text-gray-400 mb-4 text-center uppercase tracking-wider">How you sign up matters</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center shrink-0 text-base">
+                  🔵
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Sign up with Google</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Agent gets your calendar, email &amp; contacts automatically</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-600/20 border border-blue-600/30 rounded-lg flex items-center justify-center shrink-0 text-base">
+                  🔵
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Sign up with Facebook</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Agent gets your Instagram &amp; business pages</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-gray-700/40 border border-gray-700 rounded-lg flex items-center justify-center shrink-0 text-base">
+                  ✉️
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Sign up with email</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Start basic, connect services later</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -278,8 +218,8 @@ export function Landing({ onStart }: LandingProps) {
               { icon: MessageSquare, title: "Lives on WhatsApp", desc: "Message your AI like you'd message a friend. It replies instantly, 24/7 — no app to download.", color: "text-green-400 bg-green-500/10 border-green-500/20" },
               { icon: Phone, title: "Takes Phone Calls", desc: "Give it a real number. It answers calls, takes messages, and texts you a summary.", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
               { icon: Shield, title: "You Set the Rules", desc: "Control what it can do. Review everything, or let it run on autopilot — your call.", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-              { icon: Brain, title: "Learns Over Time", desc: "The more you use it, the smarter it gets. Remembers your preferences, contacts, and habits.", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
-              { icon: Zap, title: "Ready in 60 Seconds", desc: "Pick a template, name your agent, done. No tech skills needed. No code. No setup guides.", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
+              { icon: Brain, title: "Google & Instagram Ready", desc: "Sign up with Google or Facebook and your agent instantly connects to your calendar, email, contacts, and social pages.", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+              { icon: Zap, title: "Ready in 60 Seconds", desc: "Pick a template, sign up, done. Your agent meets you on WhatsApp and gets to know you through conversation.", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
               { icon: Globe, title: "Always On", desc: "WhatsApp, email, phone — your AI works while you sleep, study, or enjoy your weekend.", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
             ].map((f, i) => (
               <motion.div
