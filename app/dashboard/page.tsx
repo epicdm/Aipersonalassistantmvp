@@ -16,14 +16,13 @@ export default async function DashboardPage() {
   // No agents? Go to creation
   if (agents.length === 0) redirect("/create");
 
-  // Single agent → template dashboard
+  // Single agent → template dashboard (setup wizard removed — agent handles onboarding via WhatsApp)
   if (agents.length === 1) {
     const agent = agents[0];
-    const needsSetup = agent.template && !(agent.config as any)?.setupComplete;
     return (
       <TemplateDashboard
         agent={JSON.parse(JSON.stringify(agent))}
-        needsSetup={!!needsSetup}
+        needsSetup={false}
       />
     );
   }
