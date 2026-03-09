@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   MessageSquare, Settings, Bell, CheckSquare, Bot,
-  Phone, Plus, Trash2, ExternalLink, Wifi, WifiOff, Calendar,
+  Phone, Plus, Trash2, ExternalLink, Calendar,
   Instagram, Menu, Save, AlertTriangle, CreditCard,
-  TrendingUp, Activity, ChevronRight, Check, X, MoreVertical,
-  DollarSign, Clock, Star, Zap, Sun, Moon,
+  Activity, ChevronRight, Check, X, MoreVertical,
+  DollarSign, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserButton } from "@clerk/nextjs";
@@ -18,15 +18,13 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useTheme } from "next-themes";
+import { ModeToggle } from "@/app/components/mode-toggle";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 } from "recharts";
@@ -55,15 +53,12 @@ type Connections = {
 function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 }
-
 function fmtTime(d: string) {
   return new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
-
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString([], { month: "short", day: "numeric" });
 }
-
 function isOverdue(d: string) { return new Date(d) < new Date(); }
 function isDueSoon(d: string) {
   const due = new Date(d);
@@ -76,26 +71,9 @@ function isDueWithin24h(d: string) {
   return due > now && due.getTime() - now.getTime() < 24 * 60 * 60 * 1000;
 }
 
-// Mock chart data
 function getMockChartData() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   return days.map((day) => ({ day, messages: Math.floor(Math.random() * 40) + 5 }));
-}
-
-// ─── Theme Toggle ───────────────────────────────────────────────
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8 text-gray-400 hover:text-white hover:bg-white/10"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-    >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </Button>
-  );
 }
 
 // ─── Sidebar Nav ───────────────────────────────────────────────
@@ -115,25 +93,25 @@ function SidebarContent({
 }) {
   const waConnected = connections?.whatsapp?.connected;
   return (
-    <div className="flex flex-col h-full bg-gray-900 dark:bg-gray-900 border-r border-gray-800">
+    <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Agent Identity */}
-      <div className="p-5 border-b border-gray-800">
+      <div className="p-5 border-b border-border">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-sm">
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-sm">
               {getInitials(agent.name || "BFF")}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="font-semibold text-white text-sm truncate">{agent.name || "My Agent"}</p>
-            <Badge variant="secondary" className="text-[10px] bg-indigo-900/50 text-indigo-300 border-indigo-700 mt-0.5">
+            <p className="font-semibold text-foreground text-sm truncate">{agent.name || "My Agent"}</p>
+            <Badge variant="secondary" className="text-[10px] mt-0.5">
               {agent.template || "personal"}
             </Badge>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${waConnected ? "bg-green-400" : "bg-red-400"} animate-pulse`} />
-          <span className={`text-xs font-medium ${waConnected ? "text-green-400" : "text-red-400"}`}>
+          <span className={`w-2 h-2 rounded-full ${waConnected ? "bg-green-500" : "bg-destructive"} animate-pulse`} />
+          <span className={`text-xs font-medium ${waConnected ? "text-green-500" : "text-destructive"}`}>
             {waConnected ? "Active" : "Setup needed"}
           </span>
         </div>
@@ -147,8 +125,8 @@ function SidebarContent({
             onClick={() => { onTabChange(tab); onClose?.(); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               activeTab === tab
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
             {icon}
@@ -158,15 +136,19 @@ function SidebarContent({
       </nav>
 
       {/* WhatsApp Status */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-border">
         <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
-          waConnected ? "bg-green-900/30 text-green-400 border border-green-800/50" : "bg-gray-800 text-gray-500"
+          waConnected
+            ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+            : "bg-muted text-muted-foreground"
         }`}>
-          <Phone className="w-3.5 h-3.5" />
-          {waConnected
-            ? <span>WhatsApp connected {connections.whatsapp?.phone ? `· ${connections.whatsapp.phone}` : ""}</span>
-            : <span>WhatsApp not connected</span>
-          }
+          <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate">
+            {waConnected
+              ? `Connected${connections.whatsapp?.phone ? ` · ${connections.whatsapp.phone}` : ""}`
+              : "WhatsApp not connected"
+            }
+          </span>
         </div>
       </div>
     </div>
@@ -181,56 +163,59 @@ function Topbar({ agent, activeTab, onMenuClick }: { agent: any; activeTab: Tab;
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm px-4 lg:px-6 py-3 flex items-center gap-3 shrink-0">
+    <header className="sticky top-0 z-20 border-b border-border bg-card/80 backdrop-blur-sm px-4 lg:px-6 py-3 flex items-center gap-3 shrink-0">
       <button
         onClick={onMenuClick}
-        className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+        className="lg:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
       >
         <Menu className="w-5 h-5" />
       </button>
 
       {/* Logo */}
-      <div className="flex items-center gap-2 text-white font-bold">
-        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-          <Bot className="h-4 w-4 text-white" />
+      <div className="flex items-center gap-2 text-foreground font-bold">
+        <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
+          <Bot className="h-4 w-4 text-primary-foreground" />
         </div>
         <span className="text-sm font-semibold hidden sm:block">BFF</span>
       </div>
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-gray-500 ml-1">
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground ml-1">
         <span className="hidden sm:block">Dashboard</span>
         <ChevronRight className="w-3.5 h-3.5 hidden sm:block" />
-        <span className="text-gray-300 font-medium">{agent.name || "Agent"}</span>
-        <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-        <span className="text-gray-400">{tabLabels[activeTab]}</span>
+        <span className="text-foreground font-medium">{agent.name || "Agent"}</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="text-muted-foreground">{tabLabels[activeTab]}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <ThemeToggle />
+        <ModeToggle />
         <UserButton afterSignOutUrl="/" />
       </div>
     </header>
   );
 }
 
-// ─── Overview Tab ─────────────────────────────────────────────
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
+// ─── Stat Card ─────────────────────────────────────────────────
+function StatCard({ icon, label, value, colorClass }: {
+  icon: React.ReactNode; label: string; value: string | number; colorClass: string;
+}) {
   return (
-    <Card className="bg-gray-900 border-gray-800 dark:bg-gray-900 dark:border-gray-800">
+    <Card>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{label}</p>
+            <p className="text-2xl font-bold text-foreground">{value}</p>
           </div>
-          <div className={`p-2 rounded-lg ${color}`}>{icon}</div>
+          <div className={`p-2 rounded-lg ${colorClass}`}>{icon}</div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
+// ─── Overview Tab ─────────────────────────────────────────────
 function OverviewTab({
   agent, reminders, bills, todos, messages, connections, onTabChange,
 }: {
@@ -251,38 +236,54 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<MessageSquare className="w-4 h-4 text-indigo-400" />} label="Messages Today" value={todayMsgs} color="bg-indigo-900/40" />
-        <StatCard icon={<Bell className="w-4 h-4 text-yellow-400" />} label="Active Reminders" value={activeReminders} color="bg-yellow-900/40" />
-        <StatCard icon={<DollarSign className="w-4 h-4 text-red-400" />} label="Bills Due Soon" value={billsDueSoon} color="bg-red-900/40" />
-        <StatCard icon={<CheckSquare className="w-4 h-4 text-green-400" />} label="Pending To-Dos" value={pendingTodos} color="bg-green-900/40" />
+        <StatCard
+          icon={<MessageSquare className="w-4 h-4 text-primary" />}
+          label="Messages Today" value={todayMsgs}
+          colorClass="bg-primary/10"
+        />
+        <StatCard
+          icon={<Bell className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />}
+          label="Active Reminders" value={activeReminders}
+          colorClass="bg-yellow-500/10"
+        />
+        <StatCard
+          icon={<DollarSign className="w-4 h-4 text-destructive" />}
+          label="Bills Due Soon" value={billsDueSoon}
+          colorClass="bg-destructive/10"
+        />
+        <StatCard
+          icon={<CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />}
+          label="Pending To-Dos" value={pendingTodos}
+          colorClass="bg-green-500/10"
+        />
       </div>
 
       {/* Middle grid */}
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Connected Services */}
-        <Card className="bg-gray-900 border-gray-800">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-white">Connected Services</CardTitle>
+            <CardTitle className="text-sm font-semibold">Connected Services</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
               {
                 label: "WhatsApp",
-                icon: <Phone className="w-4 h-4 text-green-400" />,
+                icon: <Phone className="w-4 h-4 text-green-600 dark:text-green-400" />,
                 connected: connections?.whatsapp?.connected,
                 detail: connections?.whatsapp?.phone,
                 href: "/whatsapp",
               },
               {
                 label: "Google Calendar",
-                icon: <Calendar className="w-4 h-4 text-blue-400" />,
+                icon: <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
                 connected: connections?.google?.calendar,
                 detail: connections?.google?.signedIn ? "Signed in" : undefined,
                 href: "/integrations",
               },
               {
                 label: "Instagram",
-                icon: <Instagram className="w-4 h-4 text-pink-400" />,
+                icon: <Instagram className="w-4 h-4 text-pink-600 dark:text-pink-400" />,
                 connected: connections?.instagram?.connected,
                 detail: connections?.instagram?.username ? `@${connections.instagram.username}` : undefined,
                 href: "/integrations",
@@ -290,19 +291,19 @@ function OverviewTab({
             ].map(({ label, icon, connected, detail, href }) => (
               <div key={label} className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2.5">
-                  <div className={`p-1.5 rounded-lg ${connected ? "bg-gray-800" : "bg-gray-800/50"}`}>{icon}</div>
+                  <div className="p-1.5 rounded-lg bg-muted">{icon}</div>
                   <div>
-                    <p className="text-sm font-medium text-gray-200">{label}</p>
-                    {detail && <p className="text-xs text-gray-500">{detail}</p>}
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {connected ? (
-                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full border border-green-800/50">
+                    <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                       <Check className="w-3 h-3" /> Connected
                     </span>
                   ) : (
-                    <a href={href} className="text-xs text-indigo-400 hover:text-indigo-300 underline-offset-2 hover:underline">
+                    <a href={href} className="text-xs text-primary hover:underline underline-offset-2">
                       Connect →
                     </a>
                   )}
@@ -313,29 +314,35 @@ function OverviewTab({
         </Card>
 
         {/* Recent Conversations */}
-        <Card className="bg-gray-900 border-gray-800">
+        <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-white">Recent Conversations</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs text-indigo-400 hover:text-indigo-300 h-7 px-2"
+            <CardTitle className="text-sm font-semibold">Recent Conversations</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary h-7 px-2"
               onClick={() => onTabChange("conversations")}>
               View all <ChevronRight className="w-3 h-3 ml-1" />
             </Button>
           </CardHeader>
           <CardContent className="space-y-2">
             {messages.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No messages yet</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No messages yet</p>
             ) : (
               messages.slice(-5).reverse().map((m) => (
-                <div key={m.id} className={`flex gap-2 p-2 rounded-lg ${m.role === "user" ? "bg-gray-800/50" : "bg-indigo-900/20"}`}>
-                  <div className={`w-1.5 rounded-full flex-shrink-0 ${m.role === "user" ? "bg-gray-600" : "bg-indigo-500"}`} />
+                <div key={m.id} className={`flex gap-2 p-2 rounded-lg ${
+                  m.role === "user" ? "bg-muted/50" : "bg-primary/5"
+                }`}>
+                  <div className={`w-1.5 rounded-full flex-shrink-0 ${
+                    m.role === "user" ? "bg-muted-foreground/30" : "bg-primary"
+                  }`} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span className={`text-[10px] font-semibold uppercase tracking-wide ${m.role === "user" ? "text-gray-400" : "text-indigo-400"}`}>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                        m.role === "user" ? "text-muted-foreground" : "text-primary"
+                      }`}>
                         {m.role === "user" ? m.phone : agent.name}
                       </span>
-                      <span className="text-[10px] text-gray-600">{fmtTime(m.timestamp)}</span>
+                      <span className="text-[10px] text-muted-foreground">{fmtTime(m.timestamp)}</span>
                     </div>
-                    <p className="text-xs text-gray-300 truncate">{m.content}</p>
+                    <p className="text-xs text-foreground/80 truncate">{m.content}</p>
                   </div>
                 </div>
               ))
@@ -345,9 +352,9 @@ function OverviewTab({
       </div>
 
       {/* Activity Chart */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-semibold text-white">Message Activity (Last 7 Days)</CardTitle>
+          <CardTitle className="text-sm font-semibold">Message Activity (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-48">
@@ -355,18 +362,28 @@ function OverviewTab({
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="day" tick={{ fill: "#6b7280", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false}
+                  className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false}
+                  className="text-muted-foreground" />
                 <RechartsTooltip
-                  contentStyle={{ background: "#111827", border: "1px solid #374151", borderRadius: "8px", color: "#fff" }}
-                  labelStyle={{ color: "#9ca3af" }}
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    color: "hsl(var(--foreground))",
+                  }}
                 />
-                <Area type="monotone" dataKey="messages" stroke="#6366f1" fill="url(#colorMessages)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="messages"
+                  stroke="hsl(var(--primary))"
+                  fill="url(#colorMessages)"
+                  strokeWidth={2} dot={false}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -388,31 +405,31 @@ function ConversationsTab({ messages, agent }: { messages: WhatsAppMessage[]; ag
     <div className="flex flex-col h-full max-h-[calc(100vh-140px)]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold text-white">Conversations</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{messages.length} messages total</p>
+          <h2 className="text-base font-semibold text-foreground">Conversations</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{messages.length} messages total</p>
         </div>
         <a href="/whatsapp" target="_blank" rel="noopener noreferrer">
-          <Button size="sm" variant="outline" className="border-gray-700 text-gray-300 hover:text-white text-xs h-8">
+          <Button size="sm" variant="outline" className="text-xs h-8">
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open WhatsApp
           </Button>
         </a>
       </div>
 
-      <Card className="bg-gray-900 border-gray-800 flex-1 overflow-hidden">
+      <Card className="flex-1 overflow-hidden">
         <ScrollArea className="h-full p-4">
           <div className="space-y-3">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <MessageSquare className="w-10 h-10 text-gray-700 mb-3" />
-                <p className="text-gray-500 text-sm">No messages yet</p>
-                <p className="text-gray-600 text-xs mt-1">Connect WhatsApp to start chatting</p>
+                <MessageSquare className="w-10 h-10 text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground text-sm">No messages yet</p>
+                <p className="text-muted-foreground/60 text-xs mt-1">Connect WhatsApp to start chatting</p>
               </div>
             ) : (
               messages.map((m) => (
                 <div key={m.id} className={`flex gap-2.5 ${m.role === "assistant" ? "justify-start" : "justify-end"}`}>
                   {m.role === "assistant" && (
                     <Avatar className="h-7 w-7 flex-shrink-0 mt-0.5">
-                      <AvatarFallback className="bg-indigo-600 text-white text-[10px]">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">
                         {getInitials(agent.name || "AI")}
                       </AvatarFallback>
                     </Avatar>
@@ -420,12 +437,12 @@ function ConversationsTab({ messages, agent }: { messages: WhatsAppMessage[]; ag
                   <div className={`max-w-[72%] ${m.role === "assistant" ? "items-start" : "items-end"} flex flex-col`}>
                     <div className={`px-3 py-2 rounded-2xl text-sm ${
                       m.role === "user"
-                        ? "bg-indigo-600 text-white rounded-tr-sm"
-                        : "bg-gray-800 text-gray-200 rounded-tl-sm"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm"
+                        : "bg-muted text-foreground rounded-tl-sm"
                     }`}>
                       {m.content}
                     </div>
-                    <span className="text-[10px] text-gray-600 mt-1 px-1">
+                    <span className="text-[10px] text-muted-foreground mt-1 px-1">
                       {m.role === "user" ? m.phone + " · " : ""}{fmtTime(m.timestamp)}
                     </span>
                   </div>
@@ -477,24 +494,24 @@ function RemindersTab({ agentId }: { agentId: string }) {
     toast.success("Reminder deleted");
   }
 
-  function getReminderColor(r: Reminder) {
-    if (r.sent) return "border-gray-700 bg-gray-900";
-    if (isOverdue(r.datetime)) return "border-red-800/50 bg-red-950/20";
-    if (isDueWithin24h(r.datetime)) return "border-yellow-800/50 bg-yellow-950/20";
-    return "border-gray-800 bg-gray-900";
+  function getReminderClasses(r: Reminder) {
+    if (r.sent) return "border bg-card";
+    if (isOverdue(r.datetime)) return "border border-destructive/40 bg-destructive/5";
+    if (isDueWithin24h(r.datetime)) return "border border-yellow-500/40 bg-yellow-500/5";
+    return "border bg-card";
   }
 
   return (
     <div className="space-y-4">
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input value={text} onChange={e => setText(e.target.value)} placeholder="Reminder text..."
-              className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" />
-            <input type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <Button onClick={addReminder} disabled={saving || !text.trim() || !datetime}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white">
+            <Input value={text} onChange={e => setText(e.target.value)} placeholder="Reminder text..." className="flex-1" />
+            <input
+              type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <Button onClick={addReminder} disabled={saving || !text.trim() || !datetime}>
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
@@ -502,34 +519,36 @@ function RemindersTab({ agentId }: { agentId: string }) {
       </Card>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500 text-sm">Loading reminders...</div>
+        <div className="text-center py-10 text-muted-foreground text-sm">Loading reminders...</div>
       ) : reminders.length === 0 ? (
         <div className="text-center py-10">
-          <Bell className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">No reminders yet. Add one above!</p>
+          <Bell className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">No reminders yet. Add one above!</p>
         </div>
       ) : (
         <div className="space-y-2">
           {reminders.sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime()).map((r) => (
-            <Card key={r.id} className={`border ${getReminderColor(r)} transition-colors`}>
+            <Card key={r.id} className={getReminderClasses(r)}>
               <CardContent className="p-4 flex items-start gap-3">
                 <div className={`mt-0.5 p-1.5 rounded-lg flex-shrink-0 ${
-                  r.sent ? "bg-gray-800" : isOverdue(r.datetime) ? "bg-red-900/40" : isDueWithin24h(r.datetime) ? "bg-yellow-900/40" : "bg-gray-800"
+                  r.sent ? "bg-muted" : isOverdue(r.datetime) ? "bg-destructive/10" : isDueWithin24h(r.datetime) ? "bg-yellow-500/10" : "bg-muted"
                 }`}>
                   <Bell className={`w-4 h-4 ${
-                    r.sent ? "text-gray-500" : isOverdue(r.datetime) ? "text-red-400" : isDueWithin24h(r.datetime) ? "text-yellow-400" : "text-gray-400"
+                    r.sent ? "text-muted-foreground" : isOverdue(r.datetime) ? "text-destructive" : isDueWithin24h(r.datetime) ? "text-yellow-600 dark:text-yellow-400" : "text-muted-foreground"
                   }`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${r.sent ? "text-gray-500 line-through" : "text-gray-200"}`}>{r.text}</p>
+                  <p className={`text-sm font-medium ${r.sent ? "text-muted-foreground line-through" : "text-foreground"}`}>{r.text}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500">{fmtDate(r.datetime)} · {fmtTime(r.datetime)}</span>
-                    {r.sent && <Badge variant="secondary" className="text-[10px] bg-gray-800 text-gray-500 border-gray-700">Sent</Badge>}
-                    {!r.sent && isOverdue(r.datetime) && <Badge className="text-[10px] bg-red-900/40 text-red-400 border-red-800">Overdue</Badge>}
-                    {!r.sent && isDueWithin24h(r.datetime) && <Badge className="text-[10px] bg-yellow-900/40 text-yellow-400 border-yellow-800">Due soon</Badge>}
+                    <span className="text-xs text-muted-foreground">{fmtDate(r.datetime)} · {fmtTime(r.datetime)}</span>
+                    {r.sent && <Badge variant="secondary" className="text-[10px]">Sent</Badge>}
+                    {!r.sent && isOverdue(r.datetime) && <Badge variant="destructive" className="text-[10px]">Overdue</Badge>}
+                    {!r.sent && isDueWithin24h(r.datetime) && (
+                      <Badge className="text-[10px] bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">Due soon</Badge>
+                    )}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-600 hover:text-red-400"
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
                   onClick={() => deleteReminder(r.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -575,8 +594,7 @@ function BillsTab({ agentId }: { agentId: string }) {
   }
 
   async function markPaid(id: string) {
-    await fetch(`/api/agents/${agentId}/bills/${id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
+    await fetch(`/api/agents/${agentId}/bills/${id}`, {      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paid: true }),
     });
     setBills(prev => prev.map(b => b.id === id ? { ...b, paid: true } : b));
@@ -590,25 +608,22 @@ function BillsTab({ agentId }: { agentId: string }) {
   }
 
   function getBillBadge(b: Bill) {
-    if (b.paid) return <Badge className="text-[10px] bg-green-900/40 text-green-400 border-green-800">Paid</Badge>;
-    if (isOverdue(b.dueDate)) return <Badge className="text-[10px] bg-red-900/40 text-red-400 border-red-800">Overdue</Badge>;
-    if (isDueSoon(b.dueDate)) return <Badge className="text-[10px] bg-yellow-900/40 text-yellow-400 border-yellow-800">Due soon</Badge>;
-    return <Badge variant="secondary" className="text-[10px] bg-gray-800 text-gray-400 border-gray-700">Upcoming</Badge>;
+    if (b.paid) return <Badge className="text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">Paid</Badge>;
+    if (isOverdue(b.dueDate)) return <Badge variant="destructive" className="text-[10px]">Overdue</Badge>;
+    if (isDueSoon(b.dueDate)) return <Badge className="text-[10px] bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">Due soon</Badge>;
+    return <Badge variant="secondary" className="text-[10px]">Upcoming</Badge>;
   }
 
   return (
     <div className="space-y-4">
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Bill name..."
-              className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" />
-            <Input value={amount} onChange={e => setAmount(e.target.value)} type="number" placeholder="Amount ($)"
-              className="w-32 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" />
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Bill name..." className="flex-1" />
+            <Input value={amount} onChange={e => setAmount(e.target.value)} type="number" placeholder="Amount ($)" className="w-32" />
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <Button onClick={addBill} disabled={saving || !name.trim() || !amount || !dueDate}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white">
+              className="px-3 py-2 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <Button onClick={addBill} disabled={saving || !name.trim() || !amount || !dueDate}>
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
@@ -616,32 +631,32 @@ function BillsTab({ agentId }: { agentId: string }) {
       </Card>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500 text-sm">Loading bills...</div>
+        <div className="text-center py-10 text-muted-foreground text-sm">Loading bills...</div>
       ) : bills.length === 0 ? (
         <div className="text-center py-10">
-          <DollarSign className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">No bills tracked yet. Add one above!</p>
+          <DollarSign className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="text-muted-foreground text-sm">No bills tracked yet. Add one above!</p>
         </div>
       ) : (
-        <Card className="bg-gray-900 border-gray-800">
-          <div className="divide-y divide-gray-800">
+        <Card>
+          <div className="divide-y divide-border">
             {bills.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).map((b) => (
               <div key={b.id} className="flex items-center gap-3 p-4">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${b.paid ? "text-gray-500 line-through" : "text-gray-200"}`}>{b.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Due {fmtDate(b.dueDate)}</p>
+                  <p className={`text-sm font-medium ${b.paid ? "text-muted-foreground line-through" : "text-foreground"}`}>{b.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Due {fmtDate(b.dueDate)}</p>
                 </div>
-                <span className={`text-sm font-semibold ${b.paid ? "text-gray-500" : "text-white"}`}>
+                <span className={`text-sm font-semibold ${b.paid ? "text-muted-foreground" : "text-foreground"}`}>
                   ${b.amount.toFixed(2)}
                 </span>
                 {getBillBadge(b)}
                 {!b.paid && (
-                  <Button size="sm" variant="outline" className="border-green-800 text-green-400 hover:bg-green-900/30 text-xs h-7"
+                  <Button size="sm" variant="outline" className="border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 text-xs h-7"
                     onClick={() => markPaid(b.id)}>
                     <Check className="w-3 h-3 mr-1" /> Paid
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-600 hover:text-red-400"
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
                   onClick={() => deleteBill(b.id)}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -697,17 +712,19 @@ function TodosTab({ agentId }: { agentId: string }) {
   function TodoItem({ t }: { t: Todo }) {
     const [hovered, setHovered] = useState(false);
     return (
-      <div className={`flex items-center gap-3 p-3 rounded-lg group transition-colors ${t.done ? "opacity-60" : "hover:bg-gray-800/50"}`}
-        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <div
+        className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-accent/50"
+        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      >
         <button onClick={() => toggleTodo(t.id, t.done)}
           className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center transition-all ${
-            t.done ? "bg-indigo-600 border-indigo-600" : "border-gray-600 hover:border-indigo-500"
+            t.done ? "bg-primary border-primary" : "border-border hover:border-primary"
           }`}>
-          {t.done && <Check className="w-3 h-3 text-white" />}
+          {t.done && <Check className="w-3 h-3 text-primary-foreground" />}
         </button>
-        <span className={`flex-1 text-sm ${t.done ? "line-through text-gray-500" : "text-gray-200"}`}>{t.text}</span>
+        <span className={`flex-1 text-sm ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>{t.text}</span>
         {hovered && (
-          <button onClick={() => deleteTodo(t.id)} className="text-gray-600 hover:text-red-400 transition-colors">
+          <button onClick={() => deleteTodo(t.id)} className="text-muted-foreground/50 hover:text-destructive transition-colors">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -717,28 +734,27 @@ function TodosTab({ agentId }: { agentId: string }) {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardContent className="p-4">
           <Input
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={addTodo}
             placeholder="Add a new to-do (press Enter)"
-            className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
           />
         </CardContent>
       </Card>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500 text-sm">Loading todos...</div>
+        <div className="text-center py-10 text-muted-foreground text-sm">Loading todos...</div>
       ) : (
         <div className="space-y-4">
           {pending.length > 0 && (
-            <Card className="bg-gray-900 border-gray-800">
+            <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4 text-gray-400" /> To Do
-                  <Badge variant="secondary" className="bg-gray-800 text-gray-400 border-gray-700 text-[10px]">{pending.length}</Badge>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-muted-foreground" /> To Do
+                  <Badge variant="secondary" className="text-[10px]">{pending.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 space-y-0.5">
@@ -748,11 +764,11 @@ function TodosTab({ agentId }: { agentId: string }) {
           )}
 
           {done.length > 0 && (
-            <Card className="bg-gray-900 border-gray-800">
+            <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                   <Check className="w-4 h-4" /> Done
-                  <Badge variant="secondary" className="bg-gray-800 text-gray-500 border-gray-700 text-[10px]">{done.length}</Badge>
+                  <Badge variant="secondary" className="text-[10px]">{done.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 space-y-0.5">
@@ -763,8 +779,8 @@ function TodosTab({ agentId }: { agentId: string }) {
 
           {todos.length === 0 && (
             <div className="text-center py-10">
-              <CheckSquare className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">No to-dos yet. Add one above!</p>
+              <CheckSquare className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">No to-dos yet. Add one above!</p>
             </div>
           )}
         </div>
@@ -811,99 +827,94 @@ function SettingsTab({ agent }: { agent: any }) {
   return (
     <div className="space-y-4 max-w-2xl">
       {/* Agent Profile */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-semibold text-white">Agent Profile</CardTitle>
-          <CardDescription className="text-xs text-gray-500">Customize your agent's name and personality</CardDescription>
+          <CardTitle className="text-sm font-semibold">Agent Profile</CardTitle>
+          <CardDescription className="text-xs">Customize your agent's name and personality</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-gray-400">Agent Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. Max" />
+            <Label className="text-xs">Agent Name</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Max" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-gray-400">Personality / Tone</Label>
+            <Label className="text-xs">Personality / Tone</Label>
             <Select value={personality} onValueChange={setPersonality}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
+              <SelectContent>
                 {["friendly", "professional", "casual", "enthusiastic"].map(v => (
-                  <SelectItem key={v} value={v} className="text-white hover:bg-gray-700 capitalize">{v.charAt(0).toUpperCase() + v.slice(1)}</SelectItem>
+                  <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={saveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+          <Button onClick={saveProfile} disabled={saving}>
             <Save className="w-4 h-4 mr-2" /> {saving ? "Saving..." : "Save Profile"}
           </Button>
         </CardContent>
       </Card>
 
       {/* Notifications */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-semibold text-white">Notifications</CardTitle>
-          <CardDescription className="text-xs text-gray-500">Configure notification preferences</CardDescription>
+          <CardTitle className="text-sm font-semibold">Notifications</CardTitle>
+          <CardDescription className="text-xs">Configure notification preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-gray-400">Quiet Hours Start</Label>
+              <Label className="text-xs">Quiet Hours Start</Label>
               <input type="time" value={quietHours} onChange={e => setQuietHours(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-gray-400">Daily Digest Time</Label>
+              <Label className="text-xs">Daily Digest Time</Label>
               <input type="time" value={digestTime} onChange={e => setDigestTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full px-3 py-2 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
           </div>
-          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-800/50">
+          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
             <div>
-              <p className="text-sm font-medium text-gray-200">Daily WhatsApp Digest</p>
-              <p className="text-xs text-gray-500">Send a daily summary via WhatsApp</p>
+              <p className="text-sm font-medium text-foreground">Daily WhatsApp Digest</p>
+              <p className="text-xs text-muted-foreground">Send a daily summary via WhatsApp</p>
             </div>
             <Switch checked={dailyDigest} onCheckedChange={setDailyDigest} />
           </div>
-          <Button onClick={() => toast.success("Notification preferences saved!")} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+          <Button onClick={() => toast.success("Notification preferences saved!")}>
             <Save className="w-4 h-4 mr-2" /> Save Preferences
           </Button>
         </CardContent>
       </Card>
 
       {/* Billing / Plan */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm font-semibold text-white">Billing & Plan</CardTitle>
-              <CardDescription className="text-xs text-gray-500">Your current plan and usage</CardDescription>
+              <CardTitle className="text-sm font-semibold">Billing & Plan</CardTitle>
+              <CardDescription className="text-xs">Your current plan and usage</CardDescription>
             </div>
-            <Badge className={`capitalize ${
-              plan === "free" ? "bg-gray-800 text-gray-300 border-gray-700" :
-              plan === "pro" ? "bg-indigo-900/50 text-indigo-300 border-indigo-700" :
-              "bg-yellow-900/50 text-yellow-300 border-yellow-700"
-            }`}>{plan}</Badge>
+            <Badge variant={plan === "free" ? "secondary" : "default"} className="capitalize">{plan}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex justify-between text-xs mb-1.5">
-              <span className="text-gray-400">Messages today</span>
-              <span className="text-gray-300 font-medium">{usedToday} / {limit === 9999 ? "∞" : limit}</span>
+              <span className="text-muted-foreground">Messages today</span>
+              <span className="text-foreground font-medium">{usedToday} / {limit === 9999 ? "∞" : limit}</span>
             </div>
-            <Progress value={limit === 9999 ? 10 : (usedToday / limit) * 100} className="h-2 bg-gray-800" />
+            <Progress value={limit === 9999 ? 10 : (usedToday / limit) * 100} className="h-2" />
           </div>
 
           <div className="space-y-1.5">
             {plan === "free" && (
               <>
-                <p className="text-xs text-gray-400 font-medium mb-2">Free Plan includes:</p>
+                <p className="text-xs text-muted-foreground font-medium mb-2">Free Plan includes:</p>
                 {["1 AI agent", "50 messages/day", "WhatsApp integration", "Reminders & bills"].map(f => (
-                  <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
-                    <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" /> {f}
+                  <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" /> {f}
                   </div>
                 ))}
               </>
@@ -912,7 +923,7 @@ function SettingsTab({ agent }: { agent: any }) {
 
           {plan === "free" && (
             <a href="/upgrade">
-              <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white">
+              <Button className="w-full">
                 <Zap className="w-4 h-4 mr-2" /> Upgrade to Pro
               </Button>
             </a>
@@ -921,32 +932,30 @@ function SettingsTab({ agent }: { agent: any }) {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="bg-gray-900 border-red-900/50">
+      <Card className="border-destructive/30">
         <CardHeader>
-          <CardTitle className="text-sm font-semibold text-red-400 flex items-center gap-2">
+          <CardTitle className="text-sm font-semibold text-destructive flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" /> Danger Zone
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500">Irreversible actions — proceed with caution</CardDescription>
+          <CardDescription className="text-xs">Irreversible actions — proceed with caution</CardDescription>
         </CardHeader>
         <CardContent>
           <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <DialogTrigger>
-              <Button variant="outline" className="border-red-900 text-red-400 hover:bg-red-900/30 hover:border-red-700">
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10">
                 <Trash2 className="w-4 h-4 mr-2" /> Delete Agent
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 border-gray-800 text-white">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle className="text-red-400">Delete Agent?</DialogTitle>
-                <DialogDescription className="text-gray-400">
-                  This will permanently delete <strong className="text-white">{agent.name}</strong> and all its data — messages, reminders, bills, todos. This cannot be undone.
+                <DialogTitle className="text-destructive">Delete Agent?</DialogTitle>
+                <DialogDescription>
+                  This will permanently delete <strong>{agent.name}</strong> and all its data — messages, reminders, bills, todos. This cannot be undone.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter className="gap-2 sm:gap-0">
-                <Button variant="ghost" className="text-gray-400" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                <Button onClick={deleteAgent} className="bg-red-600 hover:bg-red-500 text-white">
-                  Yes, delete permanently
-                </Button>
+                <Button variant="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={deleteAgent}>Yes, delete permanently</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -997,47 +1006,45 @@ function DashboardShell({ agent }: { agent: any }) {
   );
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-gray-950 dark:bg-gray-950 text-white flex flex-col">
-        <Topbar agent={agent} activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <Topbar agent={agent} activeTab={activeTab} onMenuClick={() => setSidebarOpen(true)} />
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden lg:flex w-56 xl:w-64 flex-shrink-0 h-[calc(100vh-57px)] sticky top-[57px]">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex w-56 xl:w-64 flex-shrink-0 h-[calc(100vh-57px)] sticky top-[57px]">
+          {SidebarInner}
+        </aside>
+
+        {/* Mobile sidebar (Sheet) */}
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="p-0 w-64">
             {SidebarInner}
-          </aside>
+          </SheetContent>
+        </Sheet>
 
-          {/* Mobile sidebar (Sheet) */}
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetContent side="left" className="p-0 w-64 border-gray-800">
-              {SidebarInner}
-            </SheetContent>
-          </Sheet>
-
-          {/* Main content */}
-          <main className="flex-1 min-w-0 overflow-auto">
-            <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-              {activeTab === "overview" && (
-                <OverviewTab
-                  agent={agent}
-                  reminders={reminders}
-                  bills={bills}
-                  todos={todos}
-                  messages={messages}
-                  connections={connections}
-                  onTabChange={setActiveTab}
-                />
-              )}
-              {activeTab === "conversations" && <ConversationsTab messages={messages} agent={agent} />}
-              {activeTab === "reminders" && <RemindersTab agentId={agent.id} />}
-              {activeTab === "bills" && <BillsTab agentId={agent.id} />}
-              {activeTab === "todos" && <TodosTab agentId={agent.id} />}
-              {activeTab === "settings" && <SettingsTab agent={agent} />}
-            </div>
-          </main>
-        </div>
+        {/* Main content */}
+        <main className="flex-1 min-w-0 overflow-auto">
+          <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+            {activeTab === "overview" && (
+              <OverviewTab
+                agent={agent}
+                reminders={reminders}
+                bills={bills}
+                todos={todos}
+                messages={messages}
+                connections={connections}
+                onTabChange={setActiveTab}
+              />
+            )}
+            {activeTab === "conversations" && <ConversationsTab messages={messages} agent={agent} />}
+            {activeTab === "reminders" && <RemindersTab agentId={agent.id} />}
+            {activeTab === "bills" && <BillsTab agentId={agent.id} />}
+            {activeTab === "todos" && <TodosTab agentId={agent.id} />}
+            {activeTab === "settings" && <SettingsTab agent={agent} />}
+          </div>
+        </main>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
 

@@ -68,8 +68,8 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 dark:bg-gray-950`}>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
             <Toaster richColors />
           </ThemeProvider>
