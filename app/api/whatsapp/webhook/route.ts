@@ -35,6 +35,30 @@ export async function POST(req: NextRequest) {
     const change = entry?.changes?.[0];
     const value = change?.value;
 
+    // ── Handle call events ─────────────────────────────────────
+    if (value?.calls?.length) {
+      const call = value.calls[0]
+      console.log(`[WA Webhook] Call event: ${call.event} from ${call.from} → ${call.to}`)
+      
+      if (call.event === 'connect') {
+        // Log call attempt - the actual call is handled by the SIP voice agent
+        // Just notify the agent owner via WhatsApp that a call is coming in
+        const agent = await prisma.agent.findFirst({
+          where: { phoneNumber: call.to?.replace(/\D/g, ''), phoneStatus: 'active' },
+          include: { user: true },
+        }).catch(() => null)
+        
+        if (agent?.whatsappPhone) {
+          await sendWhatsAppMessage(
+            agent.whatsappPhone,
+            `📞 Incoming WhatsApp call to *${agent.name}* from +${call.from}`
+          )
+        }
+      }
+      
+      return NextResponse.json({ ok: true })
+    }
+
     // Ignore non-message events (status updates etc.)
     if (!value?.messages?.length) {
       return NextResponse.json({ ok: true });
