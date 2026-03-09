@@ -185,9 +185,10 @@ export async function getAgentResponse(
     body: JSON.stringify({
       model: "deepseek-chat",
       messages,
-      max_tokens: 500,
+      max_tokens: 300,
       temperature: 0.8,
     }),
+    signal: AbortSignal.timeout(7000), // 7s timeout to stay within Vercel's 10s limit
   });
 
   if (!res.ok) {

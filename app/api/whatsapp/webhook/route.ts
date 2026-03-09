@@ -4,6 +4,7 @@ import { sendWhatsAppMessage } from "@/app/lib/whatsapp";
 import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Vercel Pro allows up to 60s, free plan 10s
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "epic-wa-2026";
 
