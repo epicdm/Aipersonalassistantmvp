@@ -883,6 +883,8 @@ function StepActivate({
 
         <p className="text-sm text-gray-500 mt-2">
           Tap the button, hit send, and your agent will introduce itself ✨
+          <br />
+          🎤 You can type or send voice notes — your agent understands both!
         </p>
       </motion.div>
 
