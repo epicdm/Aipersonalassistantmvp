@@ -29,10 +29,10 @@ export async function PATCH(req: Request) {
   const { inboundRouting } = body;
 
   // Validate routing value
-  const validRouting = ["whatsapp", "ai", "whatsapp_then_ai"];
+  const validRouting = ["whatsapp", "ai", "whatsapp_then_ai", "livekit"];
   if (!validRouting.includes(inboundRouting)) {
     return NextResponse.json(
-      { error: "Invalid routing value. Must be one of: whatsapp, ai, whatsapp_then_ai" },
+      { error: "Invalid routing value. Must be one of: whatsapp, ai, whatsapp_then_ai, livekit" },
       { status: 400 }
     );
   }
