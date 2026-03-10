@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 import { sendWhatsAppMessage } from '@/app/lib/whatsapp'
 
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'bff-internal-2026'
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   const { agentId, callerPhone, duration, startTime } = await req.json()
 
-  const prisma = getPrisma()
+  // prisma imported above
 
   const agent = await prisma.agent.findUnique({
     where: { id: agentId },

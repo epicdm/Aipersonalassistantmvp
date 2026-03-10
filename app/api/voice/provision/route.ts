@@ -5,19 +5,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthUser } from '@/app/lib/session'
-import { getPrisma } from '@/app/lib/prisma'
+import { getSessionUser } from '@/app/lib/session'
+import { prisma } from '@/app/lib/prisma'
 import { provisionAgentDID } from '@/app/lib/magnus'
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthUser(req)
+    const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { agentId } = await req.json()
     if (!agentId) return NextResponse.json({ error: 'agentId required' }, { status: 400 })
 
-    const prisma = getPrisma()
+    // prisma imported above
 
     // Verify agent belongs to user
     const agent = await prisma.agent.findFirst({
@@ -84,14 +84,14 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getAuthUser(req)
+    const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const agentId = searchParams.get('agentId')
     if (!agentId) return NextResponse.json({ error: 'agentId required' }, { status: 400 })
 
-    const prisma = getPrisma()
+    // prisma imported above
     const agent = await prisma.agent.findFirst({
       where: { id: agentId, userId: user.id },
       select: { phoneNumber: true, phoneStatus: true },

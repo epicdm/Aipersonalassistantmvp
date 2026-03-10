@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/app/lib/prisma'
+import { prisma } from '@/app/lib/prisma'
 
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'bff-internal-2026'
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const did = searchParams.get('did')
   if (!did) return NextResponse.json({ error: 'did required' }, { status: 400 })
 
-  const prisma = getPrisma()
+  // prisma imported above
 
   // Find agent with this DID
   const agent = await prisma.agent.findFirst({
