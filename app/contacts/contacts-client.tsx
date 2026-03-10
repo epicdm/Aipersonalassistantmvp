@@ -203,7 +203,19 @@ export default function ContactsClient() {
           <h2 className="text-2xl font-bold">Who do I know?</h2>
           <p className="text-gray-500 text-sm">These are the people I can reach out to for you</p>
         </div>
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all cursor-pointer self-start md:self-auto"
+        >
+          <Upload className="w-4 h-4" /> Import CSV
+        </button>
       </div>
+
+      <ContactImportModal
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
+        onSuccess={() => { setShowImportModal(false); loadContacts(); }}
+      />
 
       {/* Quick add bar — always visible */}
       <div className="mb-6">
