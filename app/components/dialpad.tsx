@@ -12,7 +12,7 @@ const sipConfig = {
   password: "BffPhone2026!",
   ws_servers: "wss://api.bff.epic.dm:8089/ws",
   display_name: "EPIC AI Phone",
-  debug: false,
+  debug: true,
   session_timers_refresh_method: "invite",
 }
 
