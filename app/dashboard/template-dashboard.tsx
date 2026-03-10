@@ -10,7 +10,8 @@ import {
   Phone, Plus, Trash2, ExternalLink, Calendar,
   Instagram, Menu, Save, AlertTriangle, CreditCard,
   Activity, ChevronRight, Check, X, MoreVertical,
-  DollarSign, Zap,
+  DollarSign, Zap, Megaphone, Send, Users, Clock,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserButton } from "@clerk/nextjs";
@@ -34,7 +35,7 @@ import {
 } from "recharts";
 
 // ─── Types ─────────────────────────────────────────────────────
-type Tab = "overview" | "conversations" | "reminders" | "bills" | "todos" | "settings" | "calls";
+type Tab = "overview" | "conversations" | "reminders" | "bills" | "todos" | "settings" | "calls" | "broadcasts";
 
 type WhatsAppMessage = {
   id: string;
@@ -88,6 +89,7 @@ const NAV_ITEMS: { tab: Tab; label: string; icon: React.ReactNode }[] = [
   { tab: "bills", label: "Bills", icon: <DollarSign className="w-4 h-4" /> },
   { tab: "todos", label: "To-Dos", icon: <CheckSquare className="w-4 h-4" /> },
   { tab: "calls", label: "Calls", icon: <Phone className="w-4 h-4" /> },
+  { tab: "broadcasts", label: "Broadcasts", icon: <Megaphone className="w-4 h-4" /> },
   { tab: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
 ];
 
@@ -169,7 +171,7 @@ function SidebarContent({
 function Topbar({ agent, activeTab, onMenuClick }: { agent: any; activeTab: Tab; onMenuClick: () => void }) {
   const tabLabels: Record<Tab, string> = {
     overview: "Overview", conversations: "Conversations", reminders: "Reminders",
-    bills: "Bills", todos: "To-Dos", settings: "Settings", calls: "Calls",
+    bills: "Bills", todos: "To-Dos", settings: "Settings", calls: "Calls", broadcasts: "Broadcasts",
   };
 
   return (
@@ -808,6 +810,299 @@ function TodosTab({ agentId }: { agentId: string }) {
   );
 }
 
+// ─── Broadcasts Tab ────────────────────────────────────────────
+function BroadcastsTab({ agent, userPlan }: { agent: any; userPlan: string }) {
+  const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewBroadcast, setViewBroadcast] = useState<any | null>(null);
+
+  // Form state
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [phones, setPhones] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const fetchBroadcasts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/broadcast");
+      const data = await res.json();
+      setBroadcasts(data.broadcasts || []);
+    } catch {
+      toast.error("Failed to load broadcasts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchBroadcasts(); }, []);
+
+  const handleCreate = async (sendNow: boolean) => {
+    if (!name.trim() || !message.trim()) {
+      toast.error("Name and message are required");
+      return;
+    }
+    const phoneList = phones.split("\n").map(p => p.trim()).filter(Boolean);
+    if (phoneList.length === 0) {
+      toast.error("Add at least one recipient phone number");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const res = await fetch("/api/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, message, agentId: agent.id, phones: phoneList }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create broadcast");
+        return;
+      }
+
+      toast.success("Broadcast created!");
+      setDialogOpen(false);
+      setName(""); setMessage(""); setPhones("");
+      await fetchBroadcasts();
+
+      if (sendNow) {
+        await triggerSend(data.broadcast.id);
+      }
+    } catch {
+      toast.error("Failed to create broadcast");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const triggerSend = async (id: string) => {
+    setSending(id);
+    try {
+      const res = await fetch(`/api/broadcast/${id}/send`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to send broadcast");
+      } else {
+        toast.success(`Sent ${data.sentCount} messages${data.failedCount > 0 ? `, ${data.failedCount} failed` : ""}`);
+        await fetchBroadcasts();
+      }
+    } catch {
+      toast.error("Send failed");
+    } finally {
+      setSending(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/broadcast/${id}`, { method: "DELETE" });
+      setBroadcasts(prev => prev.filter(b => b.id !== id));
+      toast.success("Deleted");
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      draft: "bg-muted text-muted-foreground",
+      sending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      sent: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    };
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${map[status] || map.draft}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  if (userPlan === "free") {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">📢 Broadcasts</h2>
+          <p className="text-muted-foreground">Send a message to multiple contacts at once</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6 text-center py-16">
+            <Megaphone className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">Upgrade to Send Broadcasts</h3>
+            <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+              WhatsApp broadcasts are available on Pro and Business plans. Reach up to 500 contacts at once.
+            </p>
+            <Button onClick={() => window.location.href = "/upgrade"}>
+              Upgrade Now
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">📢 Broadcasts</h2>
+          <p className="text-muted-foreground">Send a message to multiple contacts at once</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={fetchBroadcasts} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Broadcast
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Create Broadcast</DialogTitle>
+                <DialogDescription>
+                  Send a WhatsApp message to multiple contacts at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div>
+                  <Label htmlFor="bc-name">Campaign Name</Label>
+                  <Input
+                    id="bc-name"
+                    placeholder="e.g. July Promotion"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bc-msg">Message</Label>
+                  <textarea
+                    id="bc-msg"
+                    placeholder="Type your WhatsApp message here..."
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    rows={4}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{message.length} characters</p>
+                </div>
+                <div>
+                  <Label htmlFor="bc-phones">Recipients (one phone number per line)</Label>
+                  <textarea
+                    id="bc-phones"
+                    placeholder={"14165550100\n18005551234\n..."}
+                    value={phones}
+                    onChange={e => setPhones(e.target.value)}
+                    rows={5}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {phones.split("\n").filter(p => p.trim()).length} numbers entered
+                    {userPlan === "pro" ? " · Pro plan: max 500 recipients" : " · Business plan: unlimited"}
+                  </p>
+                </div>
+                <div className="rounded-md bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3 text-xs text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Recipients must have messaged your agent in the last 24 hours, or you must use an approved Meta template. Free-form messages only work within the 24-hour conversation window.
+                </div>
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => handleCreate(false)} disabled={creating}>
+                  Save as Draft
+                </Button>
+                <Button onClick={() => handleCreate(true)} disabled={creating}>
+                  <Send className="w-4 h-4 mr-2" />
+                  {creating ? "Creating..." : "Create & Send"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Broadcast list */}
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading broadcasts...</div>
+      ) : broadcasts.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 text-center py-16">
+            <Megaphone className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-muted-foreground">No broadcasts yet. Create your first one!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {broadcasts.map(b => (
+            <Card key={b.id}>
+              <CardContent className="py-4 px-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-semibold truncate">{b.name}</span>
+                      {statusBadge(b.status)}
+                      {b.agent && (
+                        <span className="text-xs text-muted-foreground">· {b.agent.name}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate mb-2">{b.message}</p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {b.recipientCount} recipients
+                      </span>
+                      {b.status !== "draft" && (
+                        <>
+                          <span className="text-green-600 dark:text-green-400">✓ {b.sentCount} sent</span>
+                          {b.failedCount > 0 && (
+                            <span className="text-red-600 dark:text-red-400">✗ {b.failedCount} failed</span>
+                          )}
+                        </>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(b.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {b.status === "draft" && (
+                      <Button
+                        size="sm"
+                        onClick={() => triggerSend(b.id)}
+                        disabled={sending === b.id}
+                      >
+                        {sending === b.id ? (
+                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="w-3 h-3 mr-1" />
+                        )}
+                        {sending === b.id ? "Sending..." : "Send"}
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(b.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Settings Tab ─────────────────────────────────────────────
 function SettingsTab({ agent }: { agent: any }) {
   const [name, setName] = useState(agent.name || "");
@@ -1148,6 +1443,7 @@ function DashboardShell({ agent }: { agent: any }) {
             {activeTab === "reminders" && <RemindersTab agentId={agent.id} />}
             {activeTab === "bills" && <BillsTab agentId={agent.id} />}
             {activeTab === "todos" && <TodosTab agentId={agent.id} />}
+            {activeTab === "broadcasts" && <BroadcastsTab agent={agent} userPlan={agent.plan || "free"} />}
             {activeTab === "settings" && <SettingsTab agent={agent} />}
             {activeTab === "calls" && (
               <div className="space-y-6">

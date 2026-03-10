@@ -26,6 +26,7 @@ model User {
   reminders        Reminder[]
   bills            Bill[]
   todos            Todo[]
+  broadcasts       Broadcast[]
 }
 
 model Agent {
@@ -65,6 +66,7 @@ model Agent {
   bills             Bill[]
   todos             Todo[]
   whatsAppMessages  WhatsAppMessage[]
+  broadcasts        Broadcast[]
 }
 
 model Reminder {
@@ -172,4 +174,35 @@ model WhatsAppMessage {
   agent Agent @relation(fields: [agentId], references: [id])
 
   @@index([agentId, phone, timestamp])
+}
+
+model Broadcast {
+  id             String    @id @default(cuid())
+  userId         String
+  agentId        String
+  name           String
+  message        String
+  status         String    @default("draft") // draft | sending | sent | failed
+  recipientCount Int       @default(0)
+  sentCount      Int       @default(0)
+  failedCount    Int       @default(0)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent      Agent               @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  recipients BroadcastRecipient[]
+}
+
+model BroadcastRecipient {
+  id          String    @id @default(cuid())
+  broadcastId String
+  phone       String
+  name        String?
+  status      String    @default("pending") // pending | sent | failed
+  sentAt      DateTime?
+  error       String?
+
+  broadcast Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
 }
