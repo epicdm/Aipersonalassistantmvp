@@ -11,18 +11,21 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  passwordHash   String
-  plan           String   @default("free") // free, pro, business
-  whatsappPhone  String?  // Primary WhatsApp number
-  createdAt      DateTime       @default(now())
-  agents         Agent[]
-  contacts       Contact[]
-  conversations  Conversation[]
-  reminders      Reminder[]
-  bills          Bill[]
-  todos          Todo[]
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String
+  plan             String   @default("free") // free, pro, business
+  pendingPlan      String?  // Plan pending payment confirmation
+  pendingPlanSince DateTime?
+  lastBillingDate  DateTime?
+  whatsappPhone    String?  // Primary WhatsApp number
+  createdAt        DateTime @default(now())
+  agents           Agent[]
+  contacts         Contact[]
+  conversations    Conversation[]
+  reminders        Reminder[]
+  bills            Bill[]
+  todos            Todo[]
 }
 
 model Agent {
@@ -42,6 +45,10 @@ model Agent {
   whatsappNumber String?
   phoneNumber    String?
   phoneStatus    String   @default("pending")
+  didNumber      String?  // Magnus provisioned DID number
+  didSipUser     String?  // SIP username
+  didSipPass     String?  // SIP password
+  didSipServer   String?  // SIP server
   isActive        Boolean  @default(true)
   activationCode  String?  @unique
   whatsappPhone   String?  // The user's WhatsApp number bound to this agent

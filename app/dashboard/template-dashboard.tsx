@@ -150,6 +150,11 @@ function SidebarContent({
             }
           </span>
         </div>
+        
+        {/* Voice Calling Status */}
+        <div className="mt-3">
+          <VoiceStatusSection agent={agent} userPlan={agent.plan} />
+        </div>
       </div>
     </div>
   );
@@ -306,6 +311,18 @@ function OverviewTab({
               connected={!!connections?.instagram?.connected}
               connectLabel="Sign in with Facebook"
               connectHref="https://bff.epic.dm/sign-up"
+            />
+
+            {/* Voice Calling */}
+            <ServiceRow
+              icon={<Phone className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+              label="Voice Calling"
+              detail={agent.didNumber || agent.phoneNumber
+                ? `DID: ${agent.didNumber || agent.phoneNumber}`
+                : agent.plan === "free" ? "Pro/Business plan required" : undefined}
+              connected={!!(agent.didNumber || (agent.phoneNumber && agent.phoneStatus === "active"))}
+              connectHref={agent.plan === "free" ? "/upgrade" : undefined}
+              connectLabel={agent.plan === "free" ? "Upgrade to Pro →" : "Activate number →"}
             />
           </CardContent>
         </Card>
@@ -1083,6 +1100,67 @@ function ServiceRow({ icon, label, detail, connected, connectContent, connectHre
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Voice Status Section ────────────────────────────────────
+function VoiceStatusSection({ agent, userPlan }: { agent: any; userPlan?: string }) {
+  const plan = userPlan || agent.plan || "free";
+  const hasDID = !!(agent.didNumber || agent.phoneNumber);
+  const didNumber = agent.didNumber || agent.phoneNumber;
+  const [provisioning, setProvisioning] = useState(false);
+
+  const provisionDID = async () => {
+    setProvisioning(true);
+    try {
+      const res = await fetch("/api/voice/provision-did", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: agent.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Voice number provisioned: ${data.didNumber}`);
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error(data.error || "Failed to provision DID");
+      }
+    } catch {
+      toast.error("Error provisioning voice number");
+    } finally {
+      setProvisioning(false);
+    }
+  };
+
+  if (plan === "free") {
+    return (
+      <a href="/upgrade" className="block">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer">
+          <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate">Upgrade for voice calling</span>
+        </div>
+      </a>
+    );
+  }
+
+  if (hasDID) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+        <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="truncate font-mono">{didNumber}</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={provisionDID}
+      disabled={provisioning}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+    >
+      <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+      <span className="truncate">{provisioning ? "Provisioning…" : "Activate voice number"}</span>
+    </button>
   );
 }
 
