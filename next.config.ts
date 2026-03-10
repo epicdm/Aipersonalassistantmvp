@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     "sharp",
     "jimp",
     "ssh2",
+    "web-push",
   ],
   typescript: {
     ignoreBuildErrors: true,

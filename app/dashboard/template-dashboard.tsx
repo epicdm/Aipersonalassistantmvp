@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 const Softphone = dynamic(() => import("@/app/components/softphone"), { ssr: false });
+const ReactSoftPhone = dynamic(() => import("react-softphone").then(m => m.default || m), { ssr: false });
 import {
   MessageSquare, Settings, Bell, CheckSquare, Bot,
   Phone, Plus, Trash2, ExternalLink, Calendar,
@@ -1453,26 +1454,121 @@ function DashboardShell({ agent }: { agent: any }) {
             {activeTab === "broadcasts" && <BroadcastsTab agent={agent} userPlan={agent.plan || "free"} />}
             {activeTab === "settings" && <SettingsTab agent={agent} />}
             {activeTab === "calls" && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold">Calls</h2>
-                  <p className="text-muted-foreground">Make and receive calls from your browser</p>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Softphone />
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Calls</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground text-sm">Call history coming soon</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+              <CallsTab />
             )}
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+// ─── Calls Tab ───────────────────────────────────────────────
+function CallsTab() {
+  const [pushStatus, setPushStatus] = useState<'idle' | 'enabled' | 'denied' | 'loading'>('idle');
+
+  useEffect(() => {
+    registerPush();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function registerPush() {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { setPushStatus('denied'); return; }
+      setPushStatus('loading');
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) return;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub.toJSON()),
+      });
+      setPushStatus('enabled');
+    } catch (e) {
+      console.error('Push registration error:', e);
+      setPushStatus('denied');
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  const sipConfig = {
+    domain: 'api.bff.epic.dm',
+    uri: 'sip:softphone-user1@api.bff.epic.dm',
+    password: 'BffPhone2026!',
+    ws_servers: 'wss://api.bff.epic.dm:8089/ws',
+    display_name: 'BFF Phone',
+    debug: false,
+    session_timers_refresh_method: 'invite' as const,
+  };
+
+  const [callVolume, setCallVolume] = useState(0.8);
+  const [ringVolume, setRingVolume] = useState(0.6);
+  const [notifications, setNotifications] = useState(true);
+  const [connectOnStart, setConnectOnStart] = useState(false);
+  const [softPhoneOpen, setSoftPhoneOpen] = useState(true);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Calls</h2>
+          <p className="text-muted-foreground">Make and receive calls from your browser</p>
+        </div>
+        <div>
+          {pushStatus === 'enabled' && (
+            <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1">🔔 Push enabled</span>
+          )}
+          {pushStatus === 'denied' && (
+            <button onClick={registerPush} className="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full px-3 py-1 hover:bg-yellow-500/20">
+              Enable notifications
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* react-softphone dialpad */}
+        <Card>
+          <CardHeader>
+            <CardTitle>📞 Dialpad</CardTitle>
+            <CardDescription>SIP softphone — make and receive calls</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0 overflow-hidden rounded-b-lg">
+            <ReactSoftPhone
+              softPhoneOpen={softPhoneOpen}
+              setSoftPhoneOpen={setSoftPhoneOpen}
+              callVolume={callVolume}
+              ringVolume={ringVolume}
+              connectOnStart={connectOnStart}
+              notifications={notifications}
+              config={sipConfig}
+              setConnectOnStartToLocalStorage={(v: boolean) => { setConnectOnStart(v); localStorage.setItem('softphone-connect-on-start', String(v)); }}
+              setNotifications={(v: boolean) => { setNotifications(v); localStorage.setItem('softphone-notifications', String(v)); }}
+              setCallVolume={(v: number) => { setCallVolume(v); localStorage.setItem('softphone-call-volume', String(v)); }}
+              setRingVolume={(v: number) => { setRingVolume(v); localStorage.setItem('softphone-ring-volume', String(v)); }}
+              builtInLauncher={false}
+              asteriskAccounts={[]}
+              timelocale="UTC"
+            />
+          </CardContent>
+        </Card>
+
+        {/* AI Assistant (Jenny) */}
+        <Softphone />
       </div>
     </div>
   );

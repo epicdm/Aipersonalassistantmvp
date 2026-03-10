@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "BFF — AI Personal Assistant",
   description: "Your AI, Your Rules. Create AI agents that work for your business.",
+  manifest: '/manifest.webmanifest',
 };
 
 export default function RootLayout({
