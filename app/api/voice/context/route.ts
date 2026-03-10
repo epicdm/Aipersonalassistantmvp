@@ -35,7 +35,6 @@ export async function GET(req: NextRequest) {
         user: {
           select: {
             id: true,
-            name: true,
             email: true,
             plan: true,
           },
@@ -73,7 +72,7 @@ IMPORTANT VOICE RULES: This is a live phone call. Keep replies VERY short — ma
     } else {
       // Default personality with agent name
       const agentName = agent.name || 'Jenny'
-      const ownerName = agent.user?.name || 'your service provider'
+      const ownerName = agent.user?.email?.split('@')[0] || 'your service provider'
       systemPrompt = `You are ${agentName}, an AI voice assistant for ${ownerName}.
 Be warm, helpful, and VERY concise. This is a voice call — maximum 2 short sentences per reply.
 Never use markdown, lists, or special characters. Speak naturally as if on the phone.
@@ -86,7 +85,7 @@ If you cannot help, offer to connect them with a human.`
       agentName: agent.name,
       systemPrompt,
       voice: agentConfig.voice || 'en-US-JennyNeural',
-      ownerName: agent.user?.name || null,
+      ownerName: agent.user?.email?.split('@')[0] || null,
       ownerEmail: agent.user?.email || null,
       phoneNumber: agent.phoneNumber || agent.didNumber,
     })
