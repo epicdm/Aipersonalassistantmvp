@@ -1221,6 +1221,13 @@ function SettingsTab({ agent }: { agent: any }) {
                 <p className="text-xs text-muted-foreground">Your WhatsApp rings for 20s, AI picks up if missed</p>
               </div>
             </div>
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-input hover:bg-accent/50 cursor-pointer" onClick={() => setInboundRouting("livekit")}>
+              <div className={`w-4 h-4 mt-0.5 rounded-full border ${inboundRouting === "livekit" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Ring my browser (LiveKit)</p>
+                <p className="text-xs text-muted-foreground">Calls ring in your dashboard — answer from any browser</p>
+              </div>
+            </div>
           </div>
 
           <Button onClick={saveRouting} disabled={savingRouting} className="w-full">
