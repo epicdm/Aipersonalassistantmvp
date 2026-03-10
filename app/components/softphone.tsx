@@ -9,7 +9,7 @@ import {
   useConnectionState,
   useRoomContext,
   useTrackToggle,
-  useAgent,
+  useVoiceAssistant,
 } from "@livekit/components-react"
 import { ConnectionState, Track } from "livekit-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +38,9 @@ function CallControls({ onDisconnect }: { onDisconnect: () => void }) {
   const connectionState = useConnectionState()
   const { buttonProps, enabled: micEnabled } = useTrackToggle({ source: Track.Source.Microphone })
   const room = useRoomContext()
-  const agent = useAgent()
+
+  // useVoiceAssistant uses RoomContext (not SessionContext) — works inside LiveKitRoom
+  const { state: agentState, audioTrack: agentAudioTrack } = useVoiceAssistant()
 
   const [duration, setDuration] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -65,7 +67,6 @@ function CallControls({ onDisconnect }: { onDisconnect: () => void }) {
   }, [room, onDisconnect])
 
   // Agent state label
-  const agentState = agent.state
   const agentLabel =
     agentState === "listening" ? "🎙 Listening"
     : agentState === "speaking" ? "🔊 Speaking"
@@ -76,9 +77,6 @@ function CallControls({ onDisconnect }: { onDisconnect: () => void }) {
 
   const isConnecting = connectionState === ConnectionState.Connecting
   const isConnected = connectionState === ConnectionState.Connected
-
-  // Agent microphone track for visualizer (only available when isConnected)
-  const agentMicTrack = agent.isConnected ? agent.microphoneTrack : undefined
 
   return (
     <div className="space-y-4">
@@ -105,18 +103,20 @@ function CallControls({ onDisconnect }: { onDisconnect: () => void }) {
               <span className="text-xs text-muted-foreground">{agentLabel}</span>
             )}
           </div>
-          {agentMicTrack ? (
+          {agentAudioTrack ? (
             <BarVisualizer
               state={agentState}
               barCount={12}
-              trackRef={agentMicTrack}
+              trackRef={agentAudioTrack}
               className="h-10 w-full"
               options={{ minHeight: 3 }}
             />
           ) : (
             <div className="h-10 flex items-center justify-center">
               <span className="text-xs text-muted-foreground">
-                {agent.isPending ? "Waiting for agent…" : "Agent connected"}
+                {agentState === "connecting" || agentState === "disconnected"
+                  ? "Waiting for agent…"
+                  : "Agent connected"}
               </span>
             </div>
           )}
