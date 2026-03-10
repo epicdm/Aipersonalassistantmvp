@@ -169,7 +169,7 @@ function SidebarContent({
 function Topbar({ agent, activeTab, onMenuClick }: { agent: any; activeTab: Tab; onMenuClick: () => void }) {
   const tabLabels: Record<Tab, string> = {
     overview: "Overview", conversations: "Conversations", reminders: "Reminders",
-    bills: "Bills", todos: "To-Dos", settings: "Settings",
+    bills: "Bills", todos: "To-Dos", settings: "Settings", calls: "Calls",
   };
 
   return (
