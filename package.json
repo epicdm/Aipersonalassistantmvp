@@ -12,6 +12,8 @@
   "dependencies": {
     "@base-ui/react": "^1.2.0",
     "@clerk/nextjs": "^6",
+    "@livekit/components-react": "^2.9.20",
+    "@livekit/components-styles": "^1.2.0",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
@@ -20,6 +22,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.4.0",
     "jsonwebtoken": "^9.0.3",
+    "livekit-client": "^2.17.2",
     "livekit-server-sdk": "^2.15.0",
     "lucide-react": "^0.563.0",
     "motion": "^12.33.0",

@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ModeToggle } from "@/app/components/mode-toggle";
+import { VoiceCall } from "@/app/components/voice-call";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 } from "recharts";
@@ -151,9 +152,9 @@ function SidebarContent({
           </span>
         </div>
         
-        {/* Voice Calling Status */}
+        {/* Voice Calling */}
         <div className="mt-3">
-          <VoiceStatusSection agent={agent} userPlan={agent.plan} />
+          <VoiceCall agentName={agent.name || 'Agent'} userPlan={agent.plan || 'free'} />
         </div>
       </div>
     </div>
