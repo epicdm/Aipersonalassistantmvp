@@ -110,6 +110,67 @@ export function Landing({ onStart }: LandingProps) {
         </motion.div>
       </section>
 
+      {/* Social Proof */}
+      <section className="relative z-10 py-12 border-y border-gray-800/50">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">
+            Join 500+ businesses already using BFF
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {[
+              { emoji: "🏪", label: "Retail" },
+              { emoji: "🏥", label: "Healthcare" },
+              { emoji: "🏠", label: "Real Estate" },
+              { emoji: "🍕", label: "Food & Bev" },
+              { emoji: "💼", label: "Consulting" },
+            ].map((industry) => (
+              <span
+                key={industry.label}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900/60 border border-gray-800 rounded-full text-sm text-gray-400 font-medium"
+              >
+                {industry.emoji} {industry.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="relative z-10 py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold mb-4">How it works</h2>
+            <p className="text-gray-500">From zero to AI-powered in under a minute.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { icon: "🤖", step: "1", title: "Pick a template", desc: "Choose from 7 AI personalities built for your business. Each one is pre-trained and ready to go." },
+              { icon: "📱", step: "2", title: "Connect WhatsApp", desc: "Link your WhatsApp in 30 seconds. No technical setup, no downloads — just scan and go." },
+              { icon: "🚀", step: "3", title: "Go live", desc: "Your AI starts handling messages instantly. It learns your style and gets smarter every day." },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="relative text-center"
+              >
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t border-dashed border-gray-800" />
+                )}
+                <div className="w-20 h-20 bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 relative z-10">
+                  {item.icon}
+                </div>
+                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Step {item.step}</div>
+                <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Templates — MAIN CTA */}
       <section id="templates" className="relative z-10 py-16">
         <div className="max-w-6xl mx-auto px-6">
