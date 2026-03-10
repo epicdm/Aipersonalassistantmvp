@@ -1545,7 +1545,11 @@ function CallsTab() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setCallError(data.error || "Call failed")
+        if (data.upgrade) {
+          setCallError("📞 PSTN calling requires Pro plan — upgrade to call any number")
+        } else {
+          setCallError(data.error || "Call failed")
+        }
         setCallState("idle")
         return
       }
@@ -1659,7 +1663,14 @@ function CallsTab() {
                   ))}
                 </select>
               )}
-              {callError && <p className="text-xs text-destructive">{callError}</p>}
+              {callError && (
+                <p className="text-xs text-destructive">
+                  {callError}
+                  {callError.includes("Pro plan") && (
+                    <a href="/upgrade" className="ml-1 underline font-medium">Upgrade →</a>
+                  )}
+                </p>
+              )}
               <Button
                 className="w-full"
                 onClick={handleDialOut}
