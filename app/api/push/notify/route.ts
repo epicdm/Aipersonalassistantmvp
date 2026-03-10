@@ -1,74 +1,87 @@
-import { NextRequest, NextResponse } from 'next/server'
-import webpush from 'web-push'
-import { prisma } from '@/app/lib/prisma'
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/app/lib/prisma"
+import webpush from "web-push"
 
-export async function POST(req: NextRequest) {
-  // Set VAPID details inside handler so env vars are available at runtime
-  webpush.setVapidDetails(
-    `mailto:${process.env.VAPID_CONTACT_EMAIL || 'admin@epic.dm'}`,
-    process.env.VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-  )
+webpush.setVapidDetails(
+  `mailto:${process.env.VAPID_CONTACT_EMAIL || "admin@epic.dm"}`,
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!,
+)
+
+export async function POST(request: NextRequest) {
+  // Internal only — bearer token auth
+  const auth = request.headers.get("authorization") || ""
+  if (auth !== "Bearer bff-internal-2026") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
-    // Bearer token auth
-    const auth = req.headers.get('authorization')
-    if (auth !== 'Bearer bff-internal-2026') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { did, caller, roomName } = await request.json()
 
-    const body = await req.json()
-    const { did, caller, roomName } = body
-
-    if (!did) {
-      return NextResponse.json({ error: 'Missing did' }, { status: 400 })
-    }
-
-    // Find agent by DID number
+    // Find which agent owns this DID
     const agent = await prisma.agent.findFirst({
-      where: { didNumber: did },
-      select: { userId: true },
+      where: {
+        OR: [
+          { didNumber: did },
+          { phoneNumber: did },
+          { didNumber: did?.replace(/^\+1/, "") },
+          { phoneNumber: did?.replace(/^\+1/, "") },
+        ],
+      },
+      select: { userId: true, name: true },
     })
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found for DID' }, { status: 404 })
+      console.log(`push/notify: no agent found for DID ${did}`)
+      return NextResponse.json({ ok: true, sent: 0 })
     }
 
     // Get all push subscriptions for this user
-    const subscriptions = await prisma.pushSubscription.findMany({
+    const subs = await prisma.pushSubscription.findMany({
       where: { userId: agent.userId },
     })
 
-    if (subscriptions.length === 0) {
-      return NextResponse.json({ message: 'No subscriptions found', sent: 0 })
+    if (subs.length === 0) {
+      return NextResponse.json({ ok: true, sent: 0 })
     }
 
     const payload = JSON.stringify({
-      title: '📞 Incoming Call',
-      body: `From: ${caller || 'Unknown'}`,
+      title: "📞 Incoming Call",
+      body: `From: ${caller || "Unknown"}`,
       data: { roomName, caller, did },
     })
 
-    const results = await Promise.allSettled(
-      subscriptions.map((sub) =>
-        webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
-          },
-          payload
-        )
-      )
+    let sent = 0
+    const staleEndpoints: string[] = []
+
+    await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+          )
+          sent++
+        } catch (err: unknown) {
+          const status = (err as { statusCode?: number })?.statusCode
+          if (status === 410 || status === 404) {
+            // Subscription expired — clean up
+            staleEndpoints.push(sub.endpoint)
+          } else {
+            console.error("push send error:", err)
+          }
+        }
+      }),
     )
 
-    const sent = results.filter((r) => r.status === 'fulfilled').length
-    const failed = results.filter((r) => r.status === 'rejected').length
+    // Clean up expired subscriptions
+    if (staleEndpoints.length > 0) {
+      await prisma.pushSubscription.deleteMany({ where: { endpoint: { in: staleEndpoints } } })
+    }
 
-    return NextResponse.json({ success: true, sent, failed })
-  } catch (error) {
-    console.error('Push notify error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ ok: true, sent })
+  } catch (e) {
+    console.error("push/notify:", e)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
