@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
-import { provisionAgentDID } from '@/app/lib/magnus'
+import { provisionDID } from '@/app/lib/did-provisioner'
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,43 +51,33 @@ export async function POST(req: NextRequest) {
       const toProvision = agents.slice(0, maxAgents)
 
       let provisioned = 0
+      const errors: string[] = []
+
       for (const agent of toProvision) {
         // Skip if already has DID
-        if (agent.didNumber || (agent.phoneNumber && agent.phoneStatus === 'active')) {
-          console.log(`[Billing Webhook] Agent ${agent.id} already has DID, skipping`)
+        if (agent.didNumber && agent.phoneStatus === 'active') {
+          console.log(`[Billing Webhook] Agent ${agent.id} already has DID ${agent.didNumber}, skipping`)
           continue
         }
 
+        // Determine WhatsApp phone for notification: agent-bound → user's primary
+        const whatsappPhone =
+          agent.whatsappPhone || agent.whatsappNumber || user.whatsappPhone || ''
+
         try {
-          const result = await provisionAgentDID(agent.id, agent.name, user.email || '')
+          const result = await provisionDID(agent.id, whatsappPhone)
 
           if (result.success) {
-            await prisma.agent.update({
-              where: { id: agent.id },
-              data: {
-                didNumber: result.didNumber,
-                didSipUser: result.sipUsername,
-                didSipPass: result.sipPassword,
-                didSipServer: result.sipServer,
-                phoneNumber: result.didNumber,
-                phoneStatus: 'active',
-                config: {
-                  ...(agent.config as object || {}),
-                  voice: {
-                    didNumber: result.didNumber,
-                    sipUsername: result.sipUsername,
-                    sipServer: result.sipServer,
-                    magnusUserId: result.magnusUserId,
-                  },
-                },
-              },
-            })
             provisioned++
             console.log(`[Billing Webhook] Provisioned DID ${result.didNumber} for agent ${agent.id}`)
           } else {
-            console.error(`[Billing Webhook] DID provision failed for ${agent.id}: ${result.error}`)
+            const errMsg = `Agent ${agent.id}: ${result.error}`
+            errors.push(errMsg)
+            console.error(`[Billing Webhook] DID provision failed - ${errMsg}`)
           }
         } catch (err: any) {
+          const errMsg = `Agent ${agent.id}: ${err.message}`
+          errors.push(errMsg)
           console.error(`[Billing Webhook] Error for agent ${agent.id}:`, err.message)
         }
       }
@@ -96,6 +86,7 @@ export async function POST(req: NextRequest) {
         success: true,
         plan,
         agentsProvisioned: provisioned,
+        ...(errors.length ? { provisionErrors: errors } : {}),
       })
     }
 

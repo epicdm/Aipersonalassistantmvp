@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const Softphone = dynamic(() => import("@/app/components/softphone"), { ssr: false });
 import {
   MessageSquare, Settings, Bell, CheckSquare, Bot,
   Phone, Plus, Trash2, ExternalLink, Calendar,
@@ -31,7 +34,7 @@ import {
 } from "recharts";
 
 // ─── Types ─────────────────────────────────────────────────────
-type Tab = "overview" | "conversations" | "reminders" | "bills" | "todos" | "settings";
+type Tab = "overview" | "conversations" | "reminders" | "bills" | "todos" | "settings" | "calls";
 
 type WhatsAppMessage = {
   id: string;
@@ -84,6 +87,7 @@ const NAV_ITEMS: { tab: Tab; label: string; icon: React.ReactNode }[] = [
   { tab: "reminders", label: "Reminders", icon: <Bell className="w-4 h-4" /> },
   { tab: "bills", label: "Bills", icon: <DollarSign className="w-4 h-4" /> },
   { tab: "todos", label: "To-Dos", icon: <CheckSquare className="w-4 h-4" /> },
+  { tab: "calls", label: "Calls", icon: <Phone className="w-4 h-4" /> },
   { tab: "settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
 ];
 
@@ -813,7 +817,45 @@ function SettingsTab({ agent }: { agent: any }) {
   const [dailyDigest, setDailyDigest] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [inboundRouting, setInboundRouting] = useState("whatsapp");
+  const [savingRouting, setSavingRouting] = useState(false);
   const router = useRouter();
+
+  // Load call routing on mount
+  useEffect(() => {
+    async function loadRouting() {
+      try {
+        const res = await fetch("/api/agent/routing");
+        if (res.ok) {
+          const data = await res.json();
+          setInboundRouting(data.inboundRouting || "whatsapp");
+        }
+      } catch (error) {
+        console.error("Failed to load call routing:", error);
+      }
+    }
+    loadRouting();
+  }, []);
+
+  async function saveRouting() {
+    setSavingRouting(true);
+    try {
+      const res = await fetch("/api/agent/routing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inboundRouting }),
+      });
+      if (res.ok) {
+        toast.success("Call routing saved!");
+      } else {
+        toast.error("Failed to save routing");
+      }
+    } catch {
+      toast.error("Failed to save routing");
+    } finally {
+      setSavingRouting(false);
+    }
+  }
 
   async function saveProfile() {
     setSaving(true);
@@ -841,6 +883,57 @@ function SettingsTab({ agent }: { agent: any }) {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {/* Call Routing */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Phone className="w-4 h-4" /> Inbound Call Routing
+          </CardTitle>
+          <CardDescription className="text-xs">Choose how incoming calls to your number are handled</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {agent.didNumber ? (
+            <div className="text-sm font-medium text-foreground">
+              Your number: <span className="text-primary">+1 (767) 818-{agent.didNumber.slice(-4)}</span>
+            </div>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              Upgrade to Pro to get a number
+            </Badge>
+          )}
+
+          <div className="space-y-3">
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-input hover:bg-accent/50 cursor-pointer" onClick={() => setInboundRouting("whatsapp")}>
+              <div className={`w-4 h-4 mt-0.5 rounded-full border ${inboundRouting === "whatsapp" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Ring my WhatsApp</p>
+                <p className="text-xs text-muted-foreground">Your WhatsApp rings when someone calls your number</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-input hover:bg-accent/50 cursor-pointer" onClick={() => setInboundRouting("ai")}>
+              <div className={`w-4 h-4 mt-0.5 rounded-full border ${inboundRouting === "ai" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <div className="flex-1">
+                <p className="text-sm font-medium">AI Agent answers</p>
+                <p className="text-xs text-muted-foreground">Jenny picks up immediately and handles the call</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-input hover:bg-accent/50 cursor-pointer" onClick={() => setInboundRouting("whatsapp_then_ai")}>
+              <div className={`w-4 h-4 mt-0.5 rounded-full border ${inboundRouting === "whatsapp_then_ai" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <div className="flex-1">
+                <p className="text-sm font-medium">WhatsApp first, then AI</p>
+                <p className="text-xs text-muted-foreground">Your WhatsApp rings for 20s, AI picks up if missed</p>
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={saveRouting} disabled={savingRouting} className="w-full">
+            <Save className="w-4 h-4 mr-2" /> {savingRouting ? "Saving..." : "Save Routing"}
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Agent Profile */}
       <Card>
         <CardHeader>
@@ -1056,6 +1149,25 @@ function DashboardShell({ agent }: { agent: any }) {
             {activeTab === "bills" && <BillsTab agentId={agent.id} />}
             {activeTab === "todos" && <TodosTab agentId={agent.id} />}
             {activeTab === "settings" && <SettingsTab agent={agent} />}
+            {activeTab === "calls" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold">Calls</h2>
+                  <p className="text-muted-foreground">Make and receive calls from your browser</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Softphone />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Calls</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground text-sm">Call history coming soon</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
