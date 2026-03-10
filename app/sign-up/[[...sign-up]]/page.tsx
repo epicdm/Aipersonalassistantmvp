@@ -4,7 +4,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center">
       <SignUp
-        afterSignUpUrl="/create"
+        fallbackRedirectUrl="/create"
         signInUrl="/sign-in"
         appearance={{
           elements: {

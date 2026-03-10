@@ -378,8 +378,8 @@ function OverviewTab({
           <CardTitle className="text-sm font-semibold">Message Activity (Last 7 Days)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-48" style={{ minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={0}>
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
