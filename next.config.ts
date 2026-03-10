@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "@whiskeysockets/baileys",
     "sharp",
     "jimp",
+    "ssh2",
   ],
   typescript: {
     ignoreBuildErrors: true,

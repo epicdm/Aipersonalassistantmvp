@@ -5,6 +5,7 @@ import DarkShell from "@/app/components/dark-shell";
 import { Users, Plus, Phone, Mail, MessageSquare, Search, X, Send, Check, Clock, Upload, BookOpen, Smartphone, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
+import { ContactImportModal } from "@/app/components/contact-import-modal";
 
 type Contact = { id: string; name: string; phone?: string; email?: string; notes?: string; tags?: string[]; createdAt: string };
 type ConversationMessage = { id: string; direction: string; text: string; status: string; timestamp: string };
@@ -19,6 +20,7 @@ export default function ContactsClient() {
   const [showCompose, setShowCompose] = useState<Contact | null>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Manual form
   const [newName, setNewName] = useState("");
