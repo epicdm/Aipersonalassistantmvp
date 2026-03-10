@@ -20,7 +20,7 @@ import {
 type CallState = "idle" | "connecting" | "ready" | "calling" | "ringing" | "in-call" | "error"
 
 const SIP_CONFIG = {
-  server: "wss://api.bff.epic.dm:8089",
+  server: "wss://api.bff.epic.dm:8089/ws",
   username: "softphone-user1",
   password: "BffPhone2026!",
   realm: "api.bff.epic.dm",
