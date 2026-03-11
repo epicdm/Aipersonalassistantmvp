@@ -8,6 +8,7 @@ import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PushStatusBadge } from "@/app/components/push-badge";
+import { DashboardShell } from "@/app/dashboard/dashboard-shell";
 
 type AgentOption = { id: string; name: string; didNumber: string | null };
 
@@ -15,7 +16,6 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
   const { state, audioTrack } = useVoiceAssistant();
   const room = useRoomContext();
   return (
-    <DashboardShell>
     <div className="flex flex-col items-center gap-6 py-12">
       <div className="relative">
         <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
@@ -39,7 +39,6 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
         Hang Up
       </Button>
     </div>
-    </DashboardShell>
   );
 }
 
@@ -144,6 +143,7 @@ export default function CallsPage() {
   };
 
   return (
+    <DashboardShell>
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
