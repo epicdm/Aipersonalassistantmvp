@@ -39,6 +39,7 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
         Hang Up
       </Button>
     </div>
+    </DashboardShell>
   );
 }
 
