@@ -1498,7 +1498,8 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
 }
 
 function CallsTab() {
-  const { userId } = useUser()
+  const { user } = useUser()
+  const userId = user?.id
   const [dialNumber, setDialNumber] = useState("")
   const [callState, setCallState] = useState<"idle" | "calling" | "connected" | "incoming">("idle")
   const [lkToken, setLkToken] = useState("")
