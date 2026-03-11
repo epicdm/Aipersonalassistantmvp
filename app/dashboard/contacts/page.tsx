@@ -1,4 +1,5 @@
 "use client";
+import DashboardShell from "@/app/components/dashboard-shell";
 
 import { useEffect, useState } from "react";
 import { Users, Search, Plus, Upload, Phone, Mail, Tag } from "lucide-react";

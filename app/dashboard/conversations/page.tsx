@@ -1,4 +1,5 @@
 "use client";
+import DashboardShell from "@/app/components/dashboard-shell";
 
 import { useEffect, useState, useRef } from "react";
 import { MessageCircle, Search, Bot, Clock } from "lucide-react";
