@@ -14,22 +14,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "https://api.bff.epic.dm/api/:path*",
-      },
-      {
-        source: "/v2/:path*",
-        destination: "https://api.bff.epic.dm/v2/:path*",
-      },
-      {
-        source: "/v2",
-        destination: "https://api.bff.epic.dm/v2/",
-      },
-    ];
-  },
 };
 
 export default nextConfig;
+  async rewrites() { return []; },
