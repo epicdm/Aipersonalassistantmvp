@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import DashboardShell from "@/app/components/dashboard-shell";
 import { Bot, Plus, Settings, MessageCircle, Phone } from "lucide-react";
 
 type Agent = {
@@ -49,6 +50,7 @@ export default function AgentsPage() {
   }, []);
 
   return (
+    <DashboardShell>
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -154,5 +156,6 @@ export default function AgentsPage() {
         </div>
       )}
     </div>
+    </DashboardShell>
   );
 }

@@ -15,6 +15,7 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
   const { state, audioTrack } = useVoiceAssistant();
   const room = useRoomContext();
   return (
+    <DashboardShell>
     <div className="flex flex-col items-center gap-6 py-12">
       <div className="relative">
         <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
@@ -279,5 +280,6 @@ export default function CallsPage() {
         </div>
       )}
     </div>
+    </DashboardShell>
   );
 }

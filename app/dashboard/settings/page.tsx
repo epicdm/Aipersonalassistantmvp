@@ -3,11 +3,13 @@
 import { useUser } from "@clerk/nextjs";
 import { UserProfile } from "@clerk/nextjs";
 import { Settings } from "lucide-react";
+import DashboardShell from "@/app/components/dashboard-shell";
 
 export default function DashboardSettingsPage() {
   const { user } = useUser();
 
   return (
+    <DashboardShell>
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
@@ -38,5 +40,6 @@ export default function DashboardSettingsPage() {
         />
       </div>
     </div>
+    </DashboardShell>
   );
 }

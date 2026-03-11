@@ -77,6 +77,7 @@ export default function ConversationsPage() {
   };
 
   return (
+    <DashboardShell>
     <div className="flex h-full overflow-hidden">
       {/* Left: conversation list */}
       <div className="w-72 border-r border-zinc-800 flex flex-col shrink-0">
@@ -201,5 +202,6 @@ export default function ConversationsPage() {
         )}
       </div>
     </div>
+    </DashboardShell>
   );
 }

@@ -54,6 +54,7 @@ export default function ContactsPage() {
   );
 
   return (
+    <DashboardShell>
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -143,5 +144,6 @@ export default function ContactsPage() {
 
       <ContactImportModal open={importOpen} onOpenChange={setImportOpen} onSuccess={fetchContacts} />
     </div>
+    </DashboardShell>
   );
 }

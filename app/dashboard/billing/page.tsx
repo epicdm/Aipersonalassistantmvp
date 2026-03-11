@@ -90,6 +90,7 @@ export default function BillingPage() {
   };
 
   return (
+    <DashboardShell>
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div>
@@ -185,5 +186,6 @@ export default function BillingPage() {
         Payments processed securely via Fiserv. Cancel anytime. No hidden fees.
       </p>
     </div>
+    </DashboardShell>
   );
 }
