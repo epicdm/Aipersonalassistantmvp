@@ -8,7 +8,7 @@ import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PushStatusBadge } from "@/app/components/push-badge";
-import { DashboardShell } from "@/app/dashboard/dashboard-shell";
+import { DashboardShell } from "@/app/components/dashboard-shell";
 
 type AgentOption = { id: string; name: string; didNumber: string | null };
 
