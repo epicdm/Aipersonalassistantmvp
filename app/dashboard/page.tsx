@@ -53,10 +53,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/agent").then((r) => r.json()).catch(() => []),
+      fetch("/api/agent?all=true").then((r) => r.json()).catch(() => []),
       fetch("/api/conversations").then((r) => r.json()).catch(() => []),
     ]).then(([agentData, msgData]) => {
-      setAgents(Array.isArray(agentData) ? agentData : []);
+      // API returns { agents: [...], plan: "..." } when ?all=true
+      const agentList = Array.isArray(agentData) ? agentData : (agentData.agents || []);
+      setAgents(agentList);
       // conversations returns array of conversations with messages
       const msgs: RecentMessage[] = [];
       if (Array.isArray(msgData)) {

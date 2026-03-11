@@ -39,10 +39,10 @@ export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/agent")
+    fetch("/api/agent?all=true")
       .then((r) => r.json())
       .then((data) => {
-        setAgents(Array.isArray(data) ? data : []);
+        setAgents(Array.isArray(data) ? data : (data.agents || []));
         setLoading(false);
       })
       .catch(() => setLoading(false));
