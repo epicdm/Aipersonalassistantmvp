@@ -4,15 +4,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionUser } from '@/app/lib/session'
+import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/app/lib/prisma'
 
 const FISERV_API_URL = process.env.FISERV_API_URL || 'https://api01.epic.dm'
 
 export async function POST(req: NextRequest) {
   try {
-    const sessionUser = await getSessionUser()
-    if (!sessionUser) {
+    const { userId } = await auth()
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: sessionUser.id },
+      where: { id: userId },
     })
 
     if (!user) {
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: sessionUser.id,
+        userId: userId,
         email: user.email,
         plan,
         amount: planPrices[plan],
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Store pending upgrade
     await prisma.user.update({
-      where: { id: sessionUser.id },
+      where: { id: userId },
       data: {
         pendingPlan: plan,
         pendingPlanSince: new Date(),

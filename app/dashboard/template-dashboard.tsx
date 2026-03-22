@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const Softphone = dynamic(() => import("@/app/components/softphone"), { ssr: false });
-const ReactSoftPhone = dynamic(() => import("react-softphone").then(m => m.default || m), { ssr: false });
+
 import {
   MessageSquare, Settings, Bell, CheckSquare, Bot,
   Phone, Plus, Trash2, ExternalLink, Calendar,
@@ -15,7 +14,10 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { LiveKitRoom, useVoiceAssistant, BarVisualizer, RoomAudioRenderer, useRoomContext } from '@livekit/components-react'
+import '@livekit/components-styles'
+import { PushStatusBadge } from '@/app/components/push-badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1464,114 +1466,249 @@ function DashboardShell({ agent }: { agent: any }) {
 }
 
 // ─── Calls Tab ───────────────────────────────────────────────
+function CallInProgress({ onHangup }: { onHangup: () => void }) {
+  const { state, audioTrack } = useVoiceAssistant()
+  const room = useRoomContext()
+  return (
+    <div className="flex flex-col items-center gap-6 py-8">
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+          <span className="text-2xl">📞</span>
+        </div>
+        <p className="text-sm font-medium text-foreground">
+          {state === "speaking" ? "Jenny is speaking..." : state === "listening" ? "Jenny is listening..." : "Connected"}
+        </p>
+        <Badge variant="outline" className="text-xs text-green-600 border-green-500">
+          ● Live
+        </Badge>
+      </div>
+      <div className="w-full max-w-xs h-12">
+        <BarVisualizer state={state} trackRef={audioTrack} barCount={7} style={{ width: "100%", height: "100%" }} />
+      </div>
+      <Button
+        variant="destructive"
+        size="lg"
+        className="rounded-full px-8"
+        onClick={() => { room.disconnect(); onHangup(); }}
+      >
+        Hang Up
+      </Button>
+    </div>
+  )
+}
+
 function CallsTab() {
-  const [pushStatus, setPushStatus] = useState<'idle' | 'enabled' | 'denied' | 'loading'>('idle');
+  const { user } = useUser()
+  const userId = user?.id
+  const [dialNumber, setDialNumber] = useState("")
+  const [callState, setCallState] = useState<"idle" | "calling" | "connected" | "incoming">("idle")
+  const [lkToken, setLkToken] = useState("")
+  const [lkUrl, setLkUrl] = useState("")
+  const [roomName, setRoomName] = useState("")
+  const [incomingCaller, setIncomingCaller] = useState("")
+  const [callError, setCallError] = useState("")
+  const [agents, setAgents] = useState<Array<{ id: string; name: string; didNumber: string | null }>>([])
+  const [selectedAgent, setSelectedAgent] = useState("")
 
+  // Load agents for caller ID selection
   useEffect(() => {
-    registerPush();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetch("/api/agent").then(r => r.json()).then(data => {
+      if (Array.isArray(data)) { setAgents(data); if (data.length > 0) setSelectedAgent(data[0].id) }
+    }).catch(() => {})
+  }, [])
 
-  async function registerPush() {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  // Poll for incoming calls
+  useEffect(() => {
+    if (callState !== "idle") return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/calls/incoming?userId=${userId}`)
+        const data = await res.json()
+        if (data?.call) {
+          setIncomingCaller(data.call.caller || "Unknown")
+          setRoomName(data.call.roomName || "")
+          setCallState("incoming")
+        }
+      } catch {}
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [callState, userId])
+
+  const handleDialOut = async () => {
+    if (!dialNumber.trim()) return
+    setCallError("")
+    setCallState("calling")
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') { setPushStatus('denied'); return; }
-      setPushStatus('loading');
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) return;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub.toJSON()),
-      });
-      setPushStatus('enabled');
+      const res = await fetch("/api/calls/outbound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toNumber: dialNumber, agentId: selectedAgent }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        if (data.upgrade) {
+          setCallError("📞 PSTN calling requires Pro plan — upgrade to call any number")
+        } else {
+          setCallError(data.error || "Call failed")
+        }
+        setCallState("idle")
+        return
+      }
+      setLkToken(data.token)
+      setLkUrl(data.url)
+      setRoomName(data.roomName)
+      setCallState("connected")
     } catch (e) {
-      console.error('Push registration error:', e);
-      setPushStatus('denied');
+      setCallError("Network error — please try again")
+      setCallState("idle")
     }
   }
 
-  function urlBase64ToUint8Array(base64String: string) {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
+  const handleAnswerIncoming = async () => {
+    setCallError("")
+    setCallState("calling")
+    try {
+      const res = await fetch("/api/livekit/token")
+      const data = await res.json()
+      if (!res.ok) { setCallError(data.error || "Failed to join call"); setCallState("idle"); return }
+      await fetch("/api/calls/incoming", { method: "DELETE" })
+      setLkToken(data.token)
+      setLkUrl(data.url)
+      setRoomName(data.roomName)
+      setCallState("connected")
+    } catch {
+      setCallError("Failed to answer call")
+      setCallState("idle")
+    }
   }
 
-  const sipConfig = {
-    domain: 'api.bff.epic.dm',
-    uri: 'sip:softphone-user1@api.bff.epic.dm',
-    password: 'BffPhone2026!',
-    ws_servers: 'wss://api.bff.epic.dm:8089/ws',
-    display_name: 'BFF Phone',
-    debug: false,
-    session_timers_refresh_method: 'invite' as const,
-  };
+  const handleDeclineIncoming = async () => {
+    await fetch("/api/calls/incoming", { method: "DELETE" })
+    setCallState("idle")
+    setIncomingCaller("")
+  }
 
-  const [callVolume, setCallVolume] = useState(0.8);
-  const [ringVolume, setRingVolume] = useState(0.6);
-  const [notifications, setNotifications] = useState(true);
-  const [connectOnStart, setConnectOnStart] = useState(false);
-  const [softPhoneOpen, setSoftPhoneOpen] = useState(true);
+  const handleHangup = () => {
+    setCallState("idle")
+    setLkToken("")
+    setLkUrl("")
+    setRoomName("")
+    setDialNumber("")
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Calls</h2>
-          <p className="text-muted-foreground">Make and receive calls from your browser</p>
-        </div>
-        <div>
-          {pushStatus === 'enabled' && (
-            <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 rounded-full px-3 py-1">🔔 Push enabled</span>
-          )}
-          {pushStatus === 'denied' && (
-            <button onClick={registerPush} className="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full px-3 py-1 hover:bg-yellow-500/20">
-              Enable notifications
-            </button>
-          )}
-        </div>
+    <div className="space-y-4">
+      {/* Push notification banner */}
+      <div className="px-1">
+        <PushStatusBadge />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* react-softphone dialpad */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📞 Dialpad</CardTitle>
-            <CardDescription>SIP softphone — make and receive calls</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0 overflow-hidden rounded-b-lg">
-            <ReactSoftPhone
-              softPhoneOpen={softPhoneOpen}
-              setSoftPhoneOpen={setSoftPhoneOpen}
-              callVolume={callVolume}
-              ringVolume={ringVolume}
-              connectOnStart={connectOnStart}
-              notifications={notifications}
-              config={sipConfig}
-              setConnectOnStartToLocalStorage={(v: boolean) => { setConnectOnStart(v); localStorage.setItem('softphone-connect-on-start', String(v)); }}
-              setNotifications={(v: boolean) => { setNotifications(v); localStorage.setItem('softphone-notifications', String(v)); }}
-              setCallVolume={(v: number) => { setCallVolume(v); localStorage.setItem('softphone-call-volume', String(v)); }}
-              setRingVolume={(v: number) => { setRingVolume(v); localStorage.setItem('softphone-ring-volume', String(v)); }}
-              builtInLauncher={false}
-              asteriskAccounts={[]}
-              timelocale="UTC"
-            />
+
+      {/* Incoming call alert */}
+      {callState === "incoming" && (
+        <Card className="border-green-500 bg-green-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-foreground">📲 Incoming Call</p>
+                <p className="text-sm text-muted-foreground">From: {incomingCaller}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleAnswerIncoming}>Answer</Button>
+                <Button size="sm" variant="destructive" onClick={handleDeclineIncoming}>Decline</Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* AI Assistant (Jenny) */}
-        <Softphone />
-      </div>
+      {/* Active call via LiveKit */}
+      {callState === "connected" && lkToken && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Active Call {roomName && <span className="text-xs font-normal text-muted-foreground ml-2">{roomName}</span>}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LiveKitRoom token={lkToken} serverUrl={lkUrl} connect={true} audio={true} video={false} onDisconnected={handleHangup}>
+              <RoomAudioRenderer />
+              <CallInProgress onHangup={handleHangup} />
+            </LiveKitRoom>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dialer + AI status — shown when not in a call */}
+      {(callState === "idle" || callState === "calling") && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Dialer */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">📞 Make a Call</CardTitle>
+              <CardDescription className="text-xs">Dial any number — Jenny assists or you talk directly</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input
+                placeholder="e.g. 7675551234 or +17675551234"
+                value={dialNumber}
+                onChange={e => setDialNumber(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleDialOut()}
+                disabled={callState === "calling"}
+              />
+              {agents.length > 1 && (
+                <select
+                  value={selectedAgent}
+                  onChange={e => setSelectedAgent(e.target.value)}
+                  className="w-full text-sm border rounded-md px-3 py-2 bg-background text-foreground"
+                >
+                  {agents.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}{a.didNumber ? ` (${a.didNumber})` : ""}</option>
+                  ))}
+                </select>
+              )}
+              {callError && (
+                <p className="text-xs text-destructive">
+                  {callError}
+                  {callError.includes("Pro plan") && (
+                    <a href="/upgrade" className="ml-1 underline font-medium">Upgrade →</a>
+                  )}
+                </p>
+              )}
+              <Button
+                className="w-full"
+                onClick={handleDialOut}
+                disabled={callState === "calling" || !dialNumber.trim()}
+              >
+                {callState === "calling" ? "Connecting..." : "Call"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* AI Assistant status */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">🤖 AI Assistant</CardTitle>
+              <CardDescription className="text-xs">Jenny answers your calls automatically when you're away</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
+                <span className="text-sm text-muted-foreground">Active — ready to answer</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When someone calls your DID, Jenny picks up instantly. You can join any active call by clicking Answer above.
+              </p>
+              <Button variant="outline" size="sm" className="w-full" onClick={async () => {
+                const res = await fetch("/api/livekit/token")
+                const data = await res.json()
+                if (data.token) { setLkToken(data.token); setLkUrl(data.url); setRoomName(data.roomName); setCallState("connected") }
+              }}>
+                Talk to Jenny
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
-  );
+  )
 }
 
 // ─── Service Row helper ───────────────────────────────────────
