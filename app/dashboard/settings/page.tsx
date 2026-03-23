@@ -5,6 +5,7 @@ import { UserProfile } from "@clerk/nextjs";
 import { Settings, MessageCircle, Smartphone, Copy, Check, RefreshCw, XCircle } from "lucide-react";
 import DashboardShell from "@/app/components/dashboard-shell";
 import { useEffect, useState } from "react";
+import CallRoutingCard from "./call-routing-card";
 
 function WhatsAppConnectionCard() {
   const [agent, setAgent] = useState<any>(null);
@@ -177,6 +178,9 @@ export default function DashboardSettingsPage() {
 
       {/* WhatsApp Connection */}
       <WhatsAppConnectionCard />
+
+      {/* Call Routing */}
+      <CallRoutingCard />
 
       {/* Clerk User Profile */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">

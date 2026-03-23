@@ -105,6 +105,42 @@ export async function POST(req: Request) {
   return NextResponse.json({ agent: updated });
 }
 
+/**
+ * PATCH /api/agent
+ * Update agent call routing and context settings.
+ * Accepts: { agentId, callRouting: { enabled, destination, sipExtension, voiceAgentEnabled, handoffInstructions } }
+ */
+export async function PATCH(req: Request) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+  const { agentId, callRouting, inboundRouting, soul } = body;
+
+  const agent = await prisma.agent.findFirst({
+    where: { id: agentId, userId: user.id },
+  });
+  if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
+
+  // Merge callRouting into the existing config JSON
+  const existingConfig = (agent.config as Record<string, any>) || {};
+  const updatedConfig = {
+    ...existingConfig,
+    ...(callRouting !== undefined ? { callRouting } : {}),
+  };
+
+  const updated = await prisma.agent.update({
+    where: { id: agent.id },
+    data: {
+      config: updatedConfig,
+      ...(inboundRouting !== undefined ? { inboundRouting } : {}),
+      ...(soul !== undefined ? { soul } : {}),
+    },
+  });
+
+  return NextResponse.json({ agent: updated });
+}
+
 export async function DELETE(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

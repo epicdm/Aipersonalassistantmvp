@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { AccessToken, AgentDispatchClient } from 'livekit-server-sdk'
+import { prisma } from '@/app/lib/prisma'
 
 const LK_URL = process.env.LIVEKIT_URL || ''
 const LK_API_KEY = process.env.LIVEKIT_API_KEY || ''
@@ -24,6 +25,41 @@ export async function GET() {
 
   const roomName = `agent-${userId}`
 
+  // Load agent config to pass context to the voice agent
+  // The voice agent uses the same soul/context as the text agent
+  let agentMeta: Record<string, any> = { userId }
+  try {
+    const agent = await prisma.agent.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        soul: true,
+        purpose: true,
+        tone: true,
+        template: true,
+        config: true,
+      },
+    })
+    if (agent) {
+      const cfg = (agent.config as Record<string, any>) || {}
+      agentMeta = {
+        userId,
+        agentId: agent.id,
+        agentName: agent.name,
+        template: agent.template,
+        purpose: agent.purpose || '',
+        tone: agent.tone || '',
+        soul: agent.soul || '',
+        // Pass call routing context so the voice agent knows the handoff instructions
+        handoffInstructions: cfg.callRouting?.handoffInstructions || '',
+        callRouting: cfg.callRouting || {},
+      }
+    }
+  } catch (err) {
+    console.warn('[LiveKit] Could not load agent context:', err)
+  }
+
   // Create access token
   const at = new AccessToken(LK_API_KEY, LK_API_SECRET, {
     identity: userId,
@@ -37,12 +73,12 @@ export async function GET() {
   })
   const token = await at.toJwt()
 
-  // Dispatch agent to the room
+  // Dispatch agent to the room with full context metadata
   try {
     const httpUrl = wsToHttp(LK_URL)
     const dispatchClient = new AgentDispatchClient(httpUrl, LK_API_KEY, LK_API_SECRET)
     await dispatchClient.createDispatch(roomName, AGENT_NAME, {
-      metadata: JSON.stringify({ userId }),
+      metadata: JSON.stringify(agentMeta),
     })
   } catch (err) {
     // Agent dispatch may fail if already dispatched or room doesn't exist yet — non-fatal
