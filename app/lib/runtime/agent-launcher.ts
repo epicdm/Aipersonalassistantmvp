@@ -41,32 +41,38 @@ interface AgentUser {
 }
 
 /**
- * Choose the default model for AIVA agents.
- * Uses cost-efficient models — users aren't paying for Opus.
+ * Choose the default model for customer-facing AIVA agents.
+ *
+ * IMPORTANT: Anthropic/Claude is reserved for internal BFF ops only
+ * (Aria, Dev agents). It must NEVER be used for customer-facing agents.
+ * Customer tiers use DeepSeek (day-to-day) and Moonshot/Kimi (higher reasoning).
+ * Customers may also supply their own API keys.
  */
 function getAgentModel(tier: "free" | "starter" | "pro" = "starter") {
   switch (tier) {
     case "free":
+      // Free: DeepSeek only — lowest cost
       return {
         primary: "deepseek/deepseek-chat",
-        fallbacks: ["ollama/qwen2.5:7b-instruct-q4_K_M"],
+        fallbacks: ["deepseek/deepseek-chat-v3"],
       };
     case "starter":
+      // Starter: DeepSeek day-to-day, Kimi for heavier tasks
+      return {
+        primary: "deepseek/deepseek-chat",
+        fallbacks: [
+          "kimi/kimi-k2.5",
+          "deepseek/deepseek-chat-v3",
+        ],
+      };
+    case "pro":
+      // Pro: Kimi (Moonshot) for higher reasoning, DeepSeek as workhorse
+      // NOTE: Claude is NOT used here — reserved for internal ops only
       return {
         primary: "kimi/kimi-k2.5",
         fallbacks: [
           "deepseek/deepseek-chat",
-          "openai/gpt-5-nano",
-          "google/gemini-2.5-flash-lite",
-        ],
-      };
-    case "pro":
-      return {
-        primary: "anthropic/claude-sonnet-4-6",
-        fallbacks: [
-          "kimi/kimi-k2.5",
-          "deepseek/deepseek-chat",
-          "openai/gpt-5-mini",
+          "deepseek/deepseek-r1",
         ],
       };
   }
