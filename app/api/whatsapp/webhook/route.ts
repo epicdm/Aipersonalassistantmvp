@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
 import { buildKnowledgeContext } from '@/app/lib/knowledge'
-import { extractKnowledge, getOnboardingOpener } from '@/app/lib/onboarding'
+import { extractKnowledge, getOnboardingOpener, TEMPLATE_QUESTIONS } from '@/app/lib/onboarding'
 import { transcribeVoiceNote } from "@/app/lib/transcribe"
 import { sendWhatsAppMessage, sendTypingIndicator, sendWhatsAppVoiceNote, sendInteractiveButtons } from "@/app/lib/whatsapp"
 
@@ -246,73 +246,95 @@ async function findOrCreateContact(agent: any, phone: string, fallbackName?: str
 }
 
 async function handleOnboarding(from: string, text: string, agent: any, metaMessageId?: string | null, wasVoiceNote = false, phoneId?: string) {
-  // Use agent's own phone ID if they connected via Embedded Signup
   const effectivePhoneId = (agent.config as any)?.phoneNumberId || phoneId
   await ensureConversation(agent, from, 'owner', null)
   await recordMessage(agent.id, from, 'user', text, 'owner', metaMessageId)
 
-  const history = await prisma.whatsAppMessage.findMany({
-    where: { agentId: agent.id, phone: from, sessionType: 'owner' },
-    orderBy: { timestamp: 'asc' },
-    take: 20,
-  }).catch(() => [])
+  const template = agent.template || 'support'
+  const questions = TEMPLATE_QUESTIONS[template] || TEMPLATE_QUESTIONS['support']
+  const currentStep = agent.onboardingStep || 0
+  const config = asObject(agent.config)
+  const knowledge = asObject(config.knowledge)
 
-  const transcript = history.map((message) => `${message.role === 'user' ? 'Owner' : agent.name}: ${message.content}`)
-  const newStep = (agent.onboardingStep || 0) + 1
-
-  if (newStep >= 4 || /\bready\b|\blet'?s go\b/i.test(text)) {
-    const extracted = await extractKnowledge([...transcript, `Owner: ${text}`], agent.name)
-    const config = asObject(agent.config)
-    const mergedConfig = {
-      ...config,
-      knowledge: {
-        ...asObject(config.knowledge),
-        ...asObject(extracted),
-      },
+  // Save the answer to the previous question
+  if (currentStep > 0 && currentStep <= questions.length) {
+    const prevQuestion = questions[currentStep - 1]
+    if (prevQuestion) {
+      knowledge[prevQuestion.key] = text
     }
+  }
 
-    const summary = [
-      `Got it — ${agent.name} is trained up and ready 🚀`,
-      '',
-      'Here is the business profile I will use:',
-      ...Object.entries(asObject(mergedConfig.knowledge))
-        .filter(([, value]) => typeof value === 'string' && value.trim())
-        .map(([key, value]) => `• ${key}: ${String(value)}`),
-      '',
-      'You can refine this anytime from the dashboard knowledge base.',
-    ].join('\n')
+  // Check if owner wants to skip remaining questions
+  const wantsToFinish = /\b(ready|done|that'?s? ?(it|all)|skip|finish|let'?s? go)\b/i.test(text)
+
+  // Determine if we are done (answered all questions or owner said ready)
+  const answeredRequired = questions.filter((q: any) => q.required).every((q: any) => knowledge[q.key])
+  const allAnswered = currentStep >= questions.length
+  const isDone = allAnswered || (wantsToFinish && answeredRequired)
+
+  if (isDone) {
+    // Extract structured knowledge from full conversation
+    const history = await prisma.whatsAppMessage.findMany({
+      where: { agentId: agent.id, phone: from, sessionType: 'owner' },
+      orderBy: { timestamp: 'asc' },
+      take: 30,
+    }).catch(() => [] as any[])
+
+    const transcript = history.map((m: any) => `${m.role === 'user' ? 'Owner' : agent.name}: ${m.content}`)
+    const extracted = await extractKnowledge(transcript, agent.name)
+    const mergedKnowledge = { ...knowledge, ...extracted }
+    const mergedConfig = { ...config, knowledge: mergedKnowledge }
+
+    // Build completion summary
+    const knowledgeSummary = Object.entries(mergedKnowledge)
+      .filter(([, v]) => typeof v === 'string' && (v as string).trim())
+      .slice(0, 8)
+      .map(([k, v]) => `• ${k}: ${String(v).slice(0, 80)}`)
+      .join('\n')
+
+    const completionMsg = [
+      `✅ Perfect! I'm fully set up and ready to go.\n`,
+      knowledgeSummary ? `Here's what I know:\n${knowledgeSummary}\n` : '',
+      `\nI'll start handling your ${template === 'assistant' ? 'tasks' : 'customers'} right away. You can update my knowledge base anytime from the dashboard at bff.epic.dm`,
+    ].join('')
 
     await prisma.agent.update({
       where: { id: agent.id },
       data: {
         onboardingStatus: 'complete',
-        onboardingStep: 5,
+        onboardingStep: questions.length,
+        status: 'active',
         config: mergedConfig,
       },
     })
 
-    await recordMessage(agent.id, from, 'assistant', summary, 'owner')
-    await sendWhatsAppMessage(from, summary, effectivePhoneId)
+    await recordMessage(agent.id, from, 'assistant', completionMsg, 'owner')
+    await sendWhatsAppMessage(from, completionMsg, effectivePhoneId)
     return
   }
 
-  const prompt = `You are ${agent.name}, onboarding a business owner on WhatsApp. Ask one short follow-up question to learn the business profile. Focus on business name, services, hours, FAQs, escalation rules, and restrictions.`
-  const reply = await callLLM([
-    { role: 'system', content: prompt },
-    ...history.slice(-8).map((message) => ({
-      role: message.role === 'user' ? 'user' : 'assistant',
-      content: message.content,
-    })),
-    { role: 'user', content: text },
-  ], 'Thanks — and what are your business hours and the top questions customers usually ask?')
+  // Ask the next question
+  const nextQuestion = questions[currentStep]
+  const nextStep = currentStep + 1
+
+  // Add progress indicator
+  const answeredCount = Math.min(currentStep, questions.length)
+  const progressNote = currentStep > 0 ? `(${answeredCount}/${questions.length})` : ''
+  const questionMsg = progressNote ? `${progressNote} ${nextQuestion.question}` : nextQuestion.question
+
+  const mergedConfig = { ...config, knowledge }
 
   await prisma.agent.update({
     where: { id: agent.id },
-    data: { onboardingStatus: 'in_progress', onboardingStep: newStep },
+    data: {
+      onboardingStatus: 'in_progress',
+      onboardingStep: nextStep,
+      config: mergedConfig,
+    },
   })
 
-  await recordMessage(agent.id, from, 'assistant', reply, 'owner')
-  await sendWhatsAppMessage(from, reply, effectivePhoneId)
+  await recordMessage(agent.id, from, 'assistant', questionMsg, 'owner')
+  await sendWhatsAppMessage(from, questionMsg, effectivePhoneId)
 }
 
 async function handleOwnerCommand(agent: any, command: string) {
