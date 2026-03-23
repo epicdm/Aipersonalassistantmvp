@@ -1,302 +1,750 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/app/lib/prisma";
-import { sendWhatsAppMessage, sendWhatsAppVoiceNote } from "@/app/lib/whatsapp";
-import { getAgentResponse, getWelcomeMessage } from "@/app/lib/agent-chat";
-import { transcribeWhatsAppAudio } from "@/app/lib/voice";
-import { getUpcomingEvents, formatEventsForAgent, getGoogleToken, getFacebookToken, getInstagramProfile, getInstagramDMs, formatInstagramForAgent } from "@/app/lib/google";
+import crypto from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/app/lib/prisma'
+import { buildKnowledgeContext } from '@/app/lib/knowledge'
+import { extractKnowledge, getOnboardingOpener } from '@/app/lib/onboarding'
+import { transcribeVoiceNote } from "@/app/lib/transcribe"
+import { sendWhatsAppMessage, sendTypingIndicator, sendWhatsAppVoiceNote, sendInteractiveButtons } from "@/app/lib/whatsapp"
 
-export const dynamic = "force-dynamic";
-export const maxDuration = 30; // Vercel Pro allows up to 60s, free plan 10s
+const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN || 'epic-wa-2026'
+const WA_TOKEN = process.env.META_WA_TOKEN || ''
+const PHONE_ID = process.env.META_PHONE_ID || '1003873729481088'
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
+const DAILY_FREE_LIMIT = 50
+const DAILY_UPGRADE_WARN_AT = 48
+const WA_BASE_URL = `https://graph.facebook.com/v21.0/${PHONE_ID}/messages`
 
-const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "epic-wa-2026";
+type SessionType = 'owner' | 'customer'
 
-// ─── GET: Webhook verification ────────────────────────────────
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("[WA Webhook] Verified");
-    return new NextResponse(challenge, { status: 200 });
-  }
-
-  return new NextResponse("Forbidden", { status: 403 });
+type ChatMessage = {
+  role: 'system' | 'user' | 'assistant'
+  content: string
 }
 
-// ─── POST: Inbound messages ───────────────────────────────────
-export async function POST(req: NextRequest) {
+function asObject(value: unknown): Record<string, any> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, any>)
+    : {}
+}
+
+function startOfToday() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function greetingForAgent(agent: any): string {
+  const config = asObject(agent.config)
+  const knowledge = asObject(config.knowledge)
+  const businessName = knowledge.businessName || agent.name
+  return `Hi! I'm ${agent.name} 👋 Thanks for reaching out to ${businessName}. How can I help you today?`
+}
+
+function getAwayMessage(agent: any): string {
+  const config = asObject(agent.config)
+  return config.awayMessage || "Hi! We're currently unavailable but will get back to you as soon as possible. 🙏"
+}
+
+function buildSystemPrompt(agent: any, sessionType: SessionType, knowledgeContext: string): string {
+  const config = asObject(agent.config)
+  const knowledge = asObject(config.knowledge)
+  const businessName = knowledge.businessName ? `You work for ${knowledge.businessName}.` : ''
+  const language = config.language ? `Reply in ${config.language} unless the customer uses another language.` : ''
+  const restrictions = knowledge.restrictions ? `Restrictions: ${knowledge.restrictions}` : ''
+  const escalation = knowledge.escalation || knowledge.escalationTriggers
+    ? `Escalate when: ${knowledge.escalation || knowledge.escalationTriggers}`
+    : ''
+
+  const baseRules = [
+    `You are ${agent.name}, an AI WhatsApp assistant.`,
+    businessName,
+    language,
+    restrictions,
+    escalation,
+    'Keep replies short and natural for WhatsApp.',
+    'Use plain text only. No markdown tables.',
+    knowledgeContext ? `Knowledge base:\n${knowledgeContext}` : '',
+    'If the answer is not in the knowledge you have, say so plainly and offer the next best help. Do not invent business facts.',
+  ].filter(Boolean).join('\n')
+
+  if (sessionType === 'owner') {
+    return [
+      baseRules,
+      'You are speaking with the business owner, not a customer.',
+      'Be direct, operational, and useful. Help with setup, instructions, and quick status questions.',
+      'If the owner gives new business facts, acknowledge them and suggest updating the knowledge base when helpful.',
+    ].join('\n')
+  }
+
+  const template = agent.template || 'support'
+  const templateRules: Record<string, string> = {
+    receptionist: 'Be warm and professional. Capture intent clearly and ask one useful follow-up when needed.',
+    sales: 'Be consultative, friendly, and focused on qualifying the lead without sounding pushy.',
+    collections: 'Be respectful and solution-oriented. Never shame or threaten.',
+    concierge: 'Be enthusiastic, specific, and locally helpful.',
+    support: 'Be calm, step-by-step, and avoid jargon.',
+    assistant: 'Be proactive and organized.',
+  }
+
+  return [
+    baseRules,
+    templateRules[template] || templateRules.support,
+    'If a human is clearly needed, include the token ESCALATE once in the reply.',
+  ].join('\n')
+}
+
+async function callLLM(messages: ChatMessage[], fallback: string): Promise<string> {
+  if (!DEEPSEEK_KEY) return fallback
+
   try {
-    const body = await req.json();
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DEEPSEEK_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages,
+        max_tokens: 280,
+        temperature: 0.5,
+      }),
+      signal: AbortSignal.timeout(15000),
+    })
 
-    // Extract message data from WhatsApp Cloud API payload
-    const entry = body?.entry?.[0];
-    const change = entry?.changes?.[0];
-    const value = change?.value;
-
-    // ── Handle call events ─────────────────────────────────────
-    if (value?.calls?.length) {
-      const call = value.calls[0]
-      console.log(`[WA Webhook] Call event: ${call.event} from ${call.from} → ${call.to}`)
-      
-      if (call.event === 'connect') {
-        // Log call attempt - the actual call is handled by the SIP voice agent
-        // Just notify the agent owner via WhatsApp that a call is coming in
-        const agent = await prisma.agent.findFirst({
-          where: { phoneNumber: call.to?.replace(/\D/g, ''), phoneStatus: 'active' },
-          include: { user: true },
-        }).catch(() => null)
-        
-        if (agent?.whatsappPhone) {
-          await sendWhatsAppMessage(
-            agent.whatsappPhone,
-            `📞 Incoming WhatsApp call to *${agent.name}* from +${call.from}`
-          )
-        }
-      }
-      
-      return NextResponse.json({ ok: true })
+    if (!response.ok) {
+      const err = await response.text()
+      console.error('[WA LLM]', err)
+      return fallback
     }
 
-    // Ignore non-message events (status updates etc.)
-    if (!value?.messages?.length) {
-      return NextResponse.json({ ok: true });
+    const data = await response.json()
+    return data?.choices?.[0]?.message?.content?.trim() || fallback
+  } catch (error: any) {
+    console.error('[WA LLM Error]', error?.message || error)
+    return fallback
+  }
+}
+
+
+async function ensureConversation(agent: any, phone: string, sessionType: SessionType, contactId?: string | null) {
+  let conversation = await prisma.conversation.findFirst({
+    where: { agentId: agent.id, phone, sessionType },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  if (!conversation) {
+    conversation = await prisma.conversation.create({
+      data: {
+        userId: agent.userId,
+        agentId: agent.id,
+        contactId: contactId ?? null,
+        phone,
+        channel: 'whatsapp',
+        sessionType,
+        status: 'active',
+        lastMessageAt: new Date(),
+      },
+    })
+  } else {
+    conversation = await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        contactId: contactId ?? conversation.contactId,
+        lastMessageAt: new Date(),
+        status: 'active',
+      },
+    })
+  }
+
+  return conversation
+}
+
+async function recordMessage(agentId: string, phone: string, role: 'user' | 'assistant', content: string, sessionType: SessionType, metaMessageId?: string | null, escalationFlag?: string | null) {
+  return prisma.whatsAppMessage.create({
+    data: {
+      agentId,
+      phone,
+      role,
+      content,
+      sessionType,
+      metaMessageId: metaMessageId || null,
+      escalationFlag: escalationFlag || null,
+    },
+  }).catch((error: any) => {
+    console.error('[WA Store]', error?.message || error)
+    return null
+  })
+}
+
+async function maybeWarnUpgrade(agent: any, todayCount: number) {
+  if (!agent.ownerPhone || todayCount < DAILY_UPGRADE_WARN_AT || todayCount >= DAILY_FREE_LIMIT) return
+
+  const dayKey = new Date().toISOString().slice(0, 10)
+  const existing = await prisma.agentActivity.findFirst({
+    where: {
+      agentId: agent.id,
+      type: 'health',
+      summary: `upgrade-threshold:${dayKey}`,
+    },
+  })
+
+  if (existing) return
+
+  await prisma.agentActivity.create({
+    data: {
+      agentId: agent.id,
+      type: 'health',
+      summary: `upgrade-threshold:${dayKey}`,
+      metadata: { todayCount, limit: DAILY_FREE_LIMIT },
+    },
+  }).catch(() => null)
+
+  await sendWhatsAppMessage(
+    agent.ownerPhone,
+    `⚠️ You've used ${todayCount}/${DAILY_FREE_LIMIT} customer messages today on the free plan. Upgrade at bff.epic.dm/upgrade before you hit the limit.`
+  )
+}
+
+async function findOrCreateContact(agent: any, phone: string, fallbackName?: string) {
+  let contact = await prisma.contact.findFirst({
+    where: { userId: agent.userId, phone },
+  })
+
+  if (!contact) {
+    contact = await prisma.contact.create({
+      data: {
+        userId: agent.userId,
+        primaryAgentId: agent.id,
+        name: fallbackName || phone,
+        phone,
+      },
+    })
+  }
+
+  const agentContact = await prisma.agentContact.findFirst({
+    where: { agentId: agent.id, contactId: contact.id },
+  })
+
+  if (!agentContact) {
+    await prisma.agentContact.create({
+      data: {
+        id: crypto.randomUUID(),
+        agentId: agent.id,
+        contactId: contact.id,
+      },
+    }).catch(() => null)
+  } else {
+    await prisma.agentContact.update({
+      where: { id: agentContact.id },
+      data: { lastContactAt: new Date() },
+    }).catch(() => null)
+  }
+
+  return contact
+}
+
+async function handleOnboarding(from: string, text: string, agent: any, metaMessageId?: string | null, wasVoiceNote = false) {
+  await ensureConversation(agent, from, 'owner', null)
+  await recordMessage(agent.id, from, 'user', text, 'owner', metaMessageId)
+
+  const history = await prisma.whatsAppMessage.findMany({
+    where: { agentId: agent.id, phone: from, sessionType: 'owner' },
+    orderBy: { timestamp: 'asc' },
+    take: 20,
+  }).catch(() => [])
+
+  const transcript = history.map((message) => `${message.role === 'user' ? 'Owner' : agent.name}: ${message.content}`)
+  const newStep = (agent.onboardingStep || 0) + 1
+
+  if (newStep >= 4 || /\bready\b|\blet'?s go\b/i.test(text)) {
+    const extracted = await extractKnowledge([...transcript, `Owner: ${text}`], agent.name)
+    const config = asObject(agent.config)
+    const mergedConfig = {
+      ...config,
+      knowledge: {
+        ...asObject(config.knowledge),
+        ...asObject(extracted),
+      },
     }
 
-    const msg = value.messages[0];
-    const from: string = msg.from; // phone number without +
-    let messageText: string = msg.text?.body?.trim() || "";
-    let isVoiceNote = false;
+    const summary = [
+      `Got it — ${agent.name} is trained up and ready 🚀`,
+      '',
+      'Here is the business profile I will use:',
+      ...Object.entries(asObject(mergedConfig.knowledge))
+        .filter(([, value]) => typeof value === 'string' && value.trim())
+        .map(([key, value]) => `• ${key}: ${String(value)}`),
+      '',
+      'You can refine this anytime from the dashboard knowledge base.',
+    ].join('\n')
 
-    // ── Handle voice notes ──────────────────────────────────────
-    if (msg.type === "audio" && msg.audio?.id) {
-      console.log(`[WA Webhook] Voice note from ${from}, transcribing...`);
-      const transcript = await transcribeWhatsAppAudio(msg.audio.id);
-      if (transcript) {
-        messageText = transcript;
-        isVoiceNote = true;
-        console.log(`[WA Webhook] Transcribed: ${transcript}`);
-        // Echo transcription so user knows what was heard
-        await sendWhatsAppMessage(from, `🎤 _I heard:_ "${transcript}"`).catch(() => {});
-      } else {
-        await sendWhatsAppMessage(from, "🎤 I received your voice note but couldn't transcribe it. Could you type that out for me?");
-        return NextResponse.json({ ok: true });
-      }
+    await prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        onboardingStatus: 'complete',
+        onboardingStep: 5,
+        config: mergedConfig,
+      },
+    })
+
+    await recordMessage(agent.id, from, 'assistant', summary, 'owner')
+    await sendWhatsAppMessage(from, summary)
+    return
+  }
+
+  const prompt = `You are ${agent.name}, onboarding a business owner on WhatsApp. Ask one short follow-up question to learn the business profile. Focus on business name, services, hours, FAQs, escalation rules, and restrictions.`
+  const reply = await callLLM([
+    { role: 'system', content: prompt },
+    ...history.slice(-8).map((message) => ({
+      role: message.role === 'user' ? 'user' : 'assistant',
+      content: message.content,
+    })),
+    { role: 'user', content: text },
+  ], 'Thanks — and what are your business hours and the top questions customers usually ask?')
+
+  await prisma.agent.update({
+    where: { id: agent.id },
+    data: { onboardingStatus: 'in_progress', onboardingStep: newStep },
+  })
+
+  await recordMessage(agent.id, from, 'assistant', reply, 'owner')
+  await sendWhatsAppMessage(from, reply)
+}
+
+async function handleOwnerCommand(agent: any, command: string) {
+  const today = startOfToday()
+
+  if (command === 'help') {
+    await sendInteractiveButtons(
+      agent.ownerPhone!,
+      `Here are the commands for ${agent.name}. You can also type: summary, stop`,
+      [
+        { id: 'cmd_status', title: '📊 Status' },
+        { id: 'cmd_pause', title: '⏸️ Pause' },
+        { id: 'cmd_resume', title: '▶️ Resume' },
+      ],
+      `${agent.name} Commands`,
+      'Type help anytime'
+    )
+    return true
+  }
+
+  if (command === 'pause') {
+    await prisma.agent.update({ where: { id: agent.id }, data: { status: 'paused' } })
+    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is paused. Customers will get your away message until you send resume.`)
+    return true
+  }
+
+  if (command === 'resume') {
+    await prisma.agent.update({ where: { id: agent.id }, data: { status: 'active' } })
+    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is back online 🟢`)
+    return true
+  }
+
+  if (command === 'stop') {
+    await prisma.agent.update({ where: { id: agent.id }, data: { ownerPhone: null, status: 'draft' } })
+    await sendWhatsAppMessage(agent.ownerPhone!, `Disconnected ${agent.name}. Generate a new activation code in the dashboard when you're ready to reconnect.`)
+    return true
+  }
+
+  if (command === 'status' || command === 'summary') {
+    const [todayMessages, hotLeads, escalations] = await Promise.all([
+      prisma.whatsAppMessage.count({
+        where: { agentId: agent.id, sessionType: 'customer', timestamp: { gte: today } },
+      }),
+      prisma.agentActivity.count({
+        where: { agentId: agent.id, type: 'intent', createdAt: { gte: today }, summary: { contains: 'hot_lead' } },
+      }).catch(() => 0),
+      prisma.agentActivity.count({
+        where: { agentId: agent.id, type: 'escalation', createdAt: { gte: today } },
+      }),
+    ])
+
+    await sendWhatsAppMessage(
+      agent.ownerPhone!,
+      `${agent.name} — ${agent.status === 'active' ? '🟢 Live' : agent.status === 'paused' ? '⏸️ Paused' : '⚪ Draft'}\n` +
+        `• ${todayMessages} customer messages today\n` +
+        `• ${hotLeads} hot leads\n` +
+        `• ${escalations} escalations`
+    )
+    return true
+  }
+
+  return false
+}
+
+async function handleOwnerChat(agent: any, from: string, text: string, metaMessageId?: string | null, wasVoiceNote = false) {
+  await ensureConversation(agent, from, 'owner', null)
+  await recordMessage(agent.id, from, 'user', text, 'owner', metaMessageId)
+
+  const history = await prisma.whatsAppMessage.findMany({
+    where: { agentId: agent.id, phone: from, sessionType: 'owner' },
+    orderBy: { timestamp: 'asc' },
+    take: 20,
+  }).catch(() => [])
+
+  const knowledgeContext = await buildKnowledgeContext(agent.id, agent.config)
+  const reply = await callLLM([
+    { role: 'system', content: buildSystemPrompt(agent, 'owner', knowledgeContext) },
+    ...history.slice(-10).map((message) => ({
+      role: message.role === 'user' ? 'user' : 'assistant',
+      content: message.content,
+    })),
+    { role: 'user', content: text },
+  ], `Got it. I can help with status, setup, or customer handling for ${agent.name}.`)
+
+  await recordMessage(agent.id, from, 'assistant', reply, 'owner')
+  if (wasVoiceNote) {
+    try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply) }
+  } else {
+    await sendWhatsAppMessage(from, reply)
+  }
+}
+
+async function handleCustomer(agent: any, from: string, text: string, contactName?: string, metaMessageId?: string | null, wasVoiceNote = false) {
+  const contact = await findOrCreateContact(agent, from, contactName)
+
+  if (contact.doNotContact) {
+    if (/^(start|resume)$/i.test(text.trim())) {
+      await prisma.contact.update({
+        where: { id: contact.id },
+        data: { doNotContact: false, doNotContactAt: null },
+      })
+    } else {
+      return
     }
+  }
 
-    if (!messageText) {
-      return NextResponse.json({ ok: true });
+  if (/^(stop|unsubscribe)$/i.test(text.trim())) {
+    await prisma.contact.update({
+      where: { id: contact.id },
+      data: { doNotContact: true, doNotContactAt: new Date() },
+    })
+
+    await sendWhatsAppMessage(from, `Understood — you won't receive more messages from ${agent.name}. Reply START anytime to opt back in.`)
+    if (agent.ownerPhone) {
+      await sendWhatsAppMessage(agent.ownerPhone, `🔕 ${contact.name || from} opted out of ${agent.name}.`)
     }
+    return
+  }
 
-    console.log(`[WA Webhook] Message from ${from}: ${messageText}${isVoiceNote ? " [voice]" : ""}`);
+  const conversation = await ensureConversation(agent, from, 'customer', contact.id)
 
-    // ── Activation flow: message contains BFF-xxxxxxxxxx code anywhere ──
-    const codeMatch = messageText.match(/BFF-[A-Z0-9]{10}/i);
-    if (codeMatch) {
-      const code = codeMatch[0].toUpperCase();
-      const agent = await prisma.agent.findUnique({
-        where: { activationCode: code },
-        include: { user: true },
-      });
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: {
+      contactId: contact.id,
+      lastMessageAt: new Date(),
+      lastMessagePreview: text.slice(0, 200),
+      status: 'active',
+    },
+  }).catch(() => null)
 
-      if (!agent) {
-        await sendWhatsAppMessage(
-          from,
-          "Hmm, that activation code doesn't match any agent. Double-check and try again!"
-        );
-        return NextResponse.json({ ok: true });
-      }
+  await recordMessage(agent.id, from, 'user', text, 'customer', metaMessageId)
 
-      if (agent.activatedAt) {
-        // Already activated — just route normally
-        await handleChat(from, messageText, agent, isVoiceNote);
-        return NextResponse.json({ ok: true });
-      }
+  const user = await prisma.user.findUnique({ where: { id: agent.userId } })
+  const plan = user?.plan || 'free'
+  const todayCount = await prisma.whatsAppMessage.count({
+    where: {
+      agentId: agent.id,
+      sessionType: 'customer',
+      role: 'user',
+      timestamp: { gte: startOfToday() },
+    },
+  }).catch(() => 0)
 
-      // Bind WhatsApp number and activate
-      await prisma.agent.update({
-        where: { id: agent.id },
-        data: {
-          whatsappPhone: from,
-          activatedAt: new Date(),
-          status: "active",
-        },
-      });
-
-      // Also store on user record (first agent wins)
-      if (!agent.user.whatsappPhone) {
-        await prisma.user.update({
-          where: { id: agent.userId },
-          data: { whatsappPhone: from },
-        });
-      }
-
-      // Send welcome message — enhanced with calendar if Google user
-      let welcome = getWelcomeMessage(agent as Parameters<typeof getWelcomeMessage>[0]);
-      try {
-        if (agent.user.clerkId) {
-          const hasGoogle = await getGoogleToken(agent.user.clerkId);
-          if (hasGoogle) {
-            const events = await getUpcomingEvents(agent.user.clerkId, 3, 2);
-            if (events.length > 0) {
-              welcome += `\n\n📅 Oh, and I already connected to your Google Calendar! Here's what's coming up:\n`;
-              for (const e of events) {
-                const d = new Date(e.start);
-                const time = e.allDay ? "All day" : d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-                const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-                welcome += `• ${day} ${time} — ${e.summary}\n`;
-              }
-              welcome += `\nI'll remind you before these so you're never caught off guard 😊`;
-            } else {
-              welcome += `\n\n📅 I connected to your Google Calendar — your schedule is clear! Want me to add something?`;
-            }
-          }
-        }
-        // Instagram integration for Facebook users
-        const hasFB = await getFacebookToken(agent.user.clerkId);
-        if (hasFB) {
-          const igProfile = await getInstagramProfile(agent.user.clerkId);
-          if (igProfile) {
-            welcome += `\n\n📸 I also connected to your Instagram (@${igProfile.username})! ${igProfile.followersCount} followers, ${igProfile.mediaCount} posts. I can help manage your DMs and keep you in the loop.`;
-          }
-        }
-      } catch (e) {
-        console.error("[Welcome integrations] Error:", e);
-      }
-      await sendWhatsAppMessage(from, welcome);
-
-      // Store welcome in history
-      await prisma.whatsAppMessage.create({
-        data: {
-          agentId: agent.id,
-          phone: from,
-          role: "assistant",
-          content: welcome,
-        },
-      });
-
-      return NextResponse.json({ ok: true });
+  if (plan === 'free') {
+    await maybeWarnUpgrade(agent, todayCount)
+    if (todayCount >= DAILY_FREE_LIMIT) {
+      await sendWhatsAppMessage(from, `We've hit today's free plan message limit. Please try again later, or the owner can upgrade at bff.epic.dm/upgrade.`)
+      return
     }
+  }
 
-    // ── Regular chat: look up agent by phone ──────────────────
-    const agent = await prisma.agent.findFirst({
-      where: { whatsappPhone: from },
-    });
+  if (agent.status === 'paused') {
+    await sendWhatsAppMessage(from, getAwayMessage(agent))
+    return
+  }
+
+  const history = await prisma.whatsAppMessage.findMany({
+    where: { agentId: agent.id, phone: from, sessionType: 'customer' },
+    orderBy: { timestamp: 'asc' },
+    take: 20,
+  }).catch(() => [])
+
+  const knowledgeContext = await buildKnowledgeContext(agent.id, agent.config)
+  let reply = await callLLM([
+    { role: 'system', content: buildSystemPrompt(agent, 'customer', knowledgeContext) },
+    ...history.slice(-10).map((message) => ({
+      role: message.role === 'user' ? 'user' : 'assistant',
+      content: message.content,
+    })),
+    { role: 'user', content: text },
+  ], `Thanks for reaching out to ${agent.name}. How can I help?`)
+
+  const escalated = /ESCALATE/i.test(reply)
+  if (escalated) reply = reply.replace(/ESCALATE/gi, '').trim()
+
+  const mode = agent.approvalMode || 'auto'
+  if (mode === 'confirm' && agent.ownerPhone) {
+    await prisma.messageDraft.create({
+      data: {
+        id: crypto.randomUUID(),
+        agentId: agent.id,
+        conversationId: conversation.id,
+        draftText: reply,
+        status: 'pending',
+      },
+    }).catch(() => null)
+
+    await sendWhatsAppMessage(agent.ownerPhone, `📝 Draft for ${contact.name || from}:\n\n${reply}\n\nReply in the dashboard to approve or edit.`)
+  } else {
+    await recordMessage(agent.id, from, 'assistant', reply, 'customer', null, escalated ? 'escalation' : null)
+    if (wasVoiceNote) {
+      try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply) }
+    } else {
+      await sendWhatsAppMessage(from, reply)
+    }
+  }
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: {
+      lastMessageAt: new Date(),
+      lastMessagePreview: mode === 'confirm' ? `[Draft] ${reply.slice(0, 180)}` : reply.slice(0, 180),
+      escalationFlag: escalated ? 'human_required' : null,
+      status: escalated ? 'escalated' : 'active',
+    },
+  }).catch(() => null)
+
+  if (escalated) {
+    await prisma.agentActivity.create({
+      data: {
+        agentId: agent.id,
+        conversationId: conversation.id,
+        type: 'escalation',
+        summary: `Customer ${contact.name || from} needs human help`,
+        metadata: { phone: from, message: text },
+      },
+    }).catch(() => null)
+
+    if (agent.ownerPhone) {
+      await sendWhatsAppMessage(agent.ownerPhone, `🚨 ${contact.name || from} needs human help.\n\nCustomer said: ${text}`)
+    }
+  } else if (mode === 'notify' && agent.ownerPhone) {
+    await sendWhatsAppMessage(agent.ownerPhone, `💬 ${contact.name || from}: ${text.slice(0, 100)}\n→ ${reply.slice(0, 100)}`)
+  }
+}
+
+async function processWebhook(body: any) {
+  const change = body?.entry?.[0]?.changes?.[0]?.value
+  const message = change?.messages?.[0]
+  if (!message) return
+
+  const from = String(message.from || '').trim()
+  const metaMessageId = String(message.id || '') || null
+
+  // Show native typing indicator
+  if (metaMessageId) {
+    await sendTypingIndicator(metaMessageId)
+  }
+  const contactName = change?.contacts?.[0]?.profile?.name as string | undefined
+
+  if (!from) return
+
+  // Handle text messages directly
+  let text = String(message.text?.body || '').trim()
+  let wasVoiceNote = false
+
+  // Handle interactive button replies (native WhatsApp buttons)
+  if (!text && message.type === 'interactive') {
+    const interactive = message.interactive
+    if (interactive?.type === 'button_reply') {
+      text = interactive.button_reply?.title || interactive.button_reply?.id || ''
+      // Map button IDs to commands
+      const btnId = interactive.button_reply?.id || ''
+      if (btnId === 'cmd_status') text = 'status'
+      else if (btnId === 'cmd_pause') text = 'pause'
+      else if (btnId === 'cmd_resume') text = 'resume'
+    } else if (interactive?.type === 'list_reply') {
+      text = interactive.list_reply?.title || interactive.list_reply?.id || ''
+    }
+  }
+
+  // Handle voice notes / audio messages
+  if (!text && message.type === 'audio' && message.audio?.id) {
+    console.log(`[WA] Voice note from ${from}, media ID: ${message.audio.id}`)
+    const transcribed = await transcribeVoiceNote(message.audio.id)
+    if (transcribed) {
+      text = transcribed
+      wasVoiceNote = true
+      console.log(`[WA] Transcribed voice note: "${text.slice(0, 100)}"`)
+    } else {
+      // Transcription failed or unavailable
+      await sendWhatsAppMessage(from, "I got your voice message! \ud83c\udf99\ufe0f Unfortunately I couldn't process it right now \u2014 please type your message instead.")
+      return
+    }
+  }
+
+  // Handle image messages
+  if (!text && message.type === 'image') {
+    const caption = message.image?.caption || ''
+    text = caption ? `[Image] ${caption}` : '[Image shared]'
+  }
+
+  // Handle document messages
+  if (!text && message.type === 'document') {
+    const filename = message.document?.filename || 'document'
+    const caption = message.document?.caption || ''
+    text = caption ? `[Document: ${filename}] ${caption}` : `[Document shared: ${filename}]`
+  }
+
+  // Handle location messages
+  if (!text && message.type === 'location') {
+    const lat = message.location?.latitude
+    const lng = message.location?.longitude
+    const locName = message.location?.name || ''
+    text = locName ? `[Location: ${locName}]` : `[Location: ${lat}, ${lng}]`
+  }
+
+  // Handle sticker messages
+  if (!text && message.type === 'sticker') {
+    text = '[Sticker]'
+  }
+
+  if (!text) return
+
+  const existing = metaMessageId
+    ? await prisma.whatsAppMessage.findFirst({ where: { metaMessageId } }).catch(() => null)
+    : null
+  if (existing) return
+
+  console.log(`[WA] ${from}: ${text}`)
+
+  const activationMatch = text.match(/BFF-[A-Z0-9]{10}/i)
+  if (activationMatch) {
+    const code = activationMatch[0].toUpperCase()
+    const agent = await prisma.agent.findFirst({ where: { activationCode: code } })
 
     if (!agent) {
-      // Unknown sender — prompt them to activate
-      await sendWhatsAppMessage(
-        from,
-        "Hey! I don't recognize your number yet. Please use the activation link from the BFF app to connect. 🤖"
-      );
-      return NextResponse.json({ ok: true });
+      await sendWhatsAppMessage(from, 'That activation code was not found. Generate a fresh one at bff.epic.dm and try again.')
+      return
     }
 
-    await handleChat(from, messageText, agent, isVoiceNote);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("[WA Webhook] Error:", err);
-    return NextResponse.json({ ok: true }); // Always return 200 to WA
+    if (agent.activationCodeCreatedAt) {
+      const expiresAt = new Date(agent.activationCodeCreatedAt.getTime() + 24 * 60 * 60 * 1000)
+      if (expiresAt.getTime() < Date.now()) {
+        await sendWhatsAppMessage(from, 'This code has expired. Generate a new one at bff.epic.dm.')
+        return
+      }
+    }
+
+    if (agent.ownerPhone && agent.ownerPhone !== from) {
+      await sendWhatsAppMessage(from, 'This activation code has already been used on another phone. Generate a new one from the dashboard.')
+      return
+    }
+
+    const activatedAgent = await prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        ownerPhone: from,
+        activatedAt: agent.activatedAt || new Date(),
+        deployedAt: agent.deployedAt || new Date(),
+        status: 'active',
+        activationCode: null,
+        onboardingStatus: agent.onboardingStatus === 'complete' ? 'complete' : 'in_progress',
+        onboardingStep: agent.onboardingStatus === 'complete' ? agent.onboardingStep : 1,
+      },
+    })
+
+    await ensureConversation(activatedAgent, from, 'owner', null)
+    const opener = getOnboardingOpener(activatedAgent.template || 'support', activatedAgent.name)
+    await recordMessage(activatedAgent.id, from, 'assistant', opener, 'owner')
+    await sendWhatsAppMessage(from, opener)
+    return
   }
+
+  const ownerAgent = await prisma.agent.findFirst({
+    where: { ownerPhone: from },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  if (ownerAgent) {
+    if (ownerAgent.onboardingStatus === 'in_progress') {
+      await handleOnboarding(from, text, ownerAgent, metaMessageId, wasVoiceNote)
+      return
+    }
+
+    const command = text.trim().split(/\s+/)[0].toLowerCase()
+    const handled = await handleOwnerCommand(ownerAgent, command)
+    if (handled) return
+
+    await handleOwnerChat(ownerAgent, from, text, metaMessageId, wasVoiceNote)
+    return
+  }
+
+  let routedAgent: any = null
+  const chatMatch = text.match(/CHAT-([A-Z0-9]{12})/i)
+  if (chatMatch) {
+    const shareCode = chatMatch[1].toUpperCase()
+    routedAgent = await prisma.agent.findFirst({
+      where: { shareCode, status: { in: ['active', 'paused'] } },
+    })
+
+    if (!routedAgent) {
+      await sendWhatsAppMessage(from, `I couldn't find that business. Please check the link and try again.`)
+      return
+    }
+
+    const contact = await findOrCreateContact(routedAgent, from, contactName)
+    await ensureConversation(routedAgent, from, 'customer', contact.id)
+
+    if (text.replace(/\s+/g, '').toUpperCase() === `CHAT-${shareCode}`) {
+      const greeting = greetingForAgent(routedAgent)
+      await recordMessage(routedAgent.id, from, 'assistant', greeting, 'customer')
+      await sendWhatsAppMessage(from, greeting)
+      return
+    }
+  }
+
+  if (!routedAgent) {
+    const recentConversation = await prisma.conversation.findFirst({
+      where: {
+        phone: from,
+        sessionType: 'customer',
+        agent: { status: { in: ['active', 'paused'] } },
+      },
+      orderBy: { lastMessageAt: 'desc' },
+      include: { agent: true },
+    })
+
+    routedAgent = recentConversation?.agent || null
+  }
+
+  if (!routedAgent) {
+    await sendWhatsAppMessage(from, `Hi! I'm Jenny. Visit https://bff.epic.dm to create your own WhatsApp AI agent.`)
+    return
+  }
+
+  await handleCustomer(routedAgent, from, text, contactName, metaMessageId, wasVoiceNote)
 }
 
-// ─── Chat handler ─────────────────────────────────────────────
-async function handleChat(
-  from: string,
-  userMessage: string,
-  agent: {
-    id: string;
-    name: string;
-    template: string | null;
-    purpose: string | null;
-    tone: string | null;
-    config: unknown;
-  },
-  isVoiceNote = false
-) {
-  // Store inbound message
-  await prisma.whatsAppMessage.create({
-    data: {
-      agentId: agent.id,
-      phone: from,
-      role: "user",
-      content: userMessage,
-    },
-  });
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams
+  const mode = params.get('hub.mode')
+  const token = params.get('hub.verify_token')
+  const challenge = params.get('hub.challenge')
 
-  // Fetch conversation history (last 10)
-  const historyRecords = await prisma.whatsAppMessage.findMany({
-    where: { agentId: agent.id, phone: from },
-    orderBy: { timestamp: "desc" },
-    take: 11, // +1 to exclude the message we just inserted
-    skip: 1,
-  });
-
-  const history = historyRecords
-    .reverse()
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-
-  // Build live context (calendar, etc.)
-  let extraContext = "";
-  try {
-    // Look up the agent's owner for Google Calendar
-    const agentRecord = await prisma.agent.findUnique({
-      where: { id: agent.id },
-      include: { user: true },
-    });
-    if (agentRecord?.user?.clerkId) {
-      const hasGoogle = await getGoogleToken(agentRecord.user.clerkId);
-      if (hasGoogle) {
-        const events = await getUpcomingEvents(agentRecord.user.clerkId, 5, 3);
-        if (events.length > 0) {
-          extraContext += `📅 User's upcoming calendar events:\n${formatEventsForAgent(events)}\n\nYou can reference these naturally. E.g. "I see you have a meeting at 2pm" or "Don't forget your dentist appointment tomorrow."`;
-        }
-      }
-
-      // Instagram context
-      const hasFacebook = await getFacebookToken(agentRecord.user.clerkId);
-      if (hasFacebook) {
-        const igProfile = await getInstagramProfile(agentRecord.user.clerkId);
-        const igDMs = igProfile ? await getInstagramDMs(agentRecord.user.clerkId, 3) : [];
-        const igCtx = formatInstagramForAgent(igProfile, igDMs);
-        if (igCtx) {
-          extraContext += (extraContext ? "\n\n" : "") + igCtx;
-        }
-      }
-    }
-  } catch (e) {
-    // Calendar context is optional — don't break chat if it fails
-    console.error("[Calendar context] Error:", e);
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    return new NextResponse(challenge, { status: 200 })
   }
 
-  // Call DeepSeek
-  const reply = await getAgentResponse(
-    agent as Parameters<typeof getAgentResponse>[0],
-    history,
-    userMessage,
-    extraContext || undefined
-  );
+  return new NextResponse('Forbidden', { status: 403 })
+}
 
-  // Send reply — voice note if user sent voice, text otherwise
-  if (isVoiceNote) {
-    try {
-      await sendWhatsAppVoiceNote(from, reply);
-    } catch (e) {
-      console.error("[Voice reply] Failed, falling back to text:", e);
-      await sendWhatsAppMessage(from, reply);
-    }
-  } else {
-    await sendWhatsAppMessage(from, reply);
-  }
-
-  // Store outbound message
-  await prisma.whatsAppMessage.create({
-    data: {
-      agentId: agent.id,
-      phone: from,
-      role: "assistant",
-      content: reply,
-    },
-  });
+export async function POST(req: NextRequest) {
+  const body = await req.json()
+  processWebhook(body).catch((error) => console.error('[WA webhook]', error))
+  return NextResponse.json({ ok: true })
 }
