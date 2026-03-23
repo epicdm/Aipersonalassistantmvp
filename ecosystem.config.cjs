@@ -42,7 +42,6 @@ module.exports = {
       "MAGNUS_URL": "https://voice00.epic.dm/mbilling",
       "MAGNUS_API_KEY": "8c0f89a45a4e485ab75babad914d33d0",
       "MAGNUS_API_SECRET": "dc59cbbf25ab420ea9e6bff05479dc68",
-      "MAGNUS_SIP_SERVER": "voice00.epic.dm",
       "INTERNAL_SECRET": "bff-internal-2026",
       "VOICE_AGENT_PORT": "3008",
       "ESL_HOST": "818.epic.dm",

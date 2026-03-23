@@ -14,7 +14,7 @@ module.exports = {
       META_PHONE_ID: '1003873729481088',
       META_WA_VERIFY_TOKEN: 'epic-wa-2026',
       DEEPSEEK_API_KEY: 'sk-443f0af69dc14ee095fce92d16928850',
-      CLERK_SECRET_KEY: '',
+      CLERK_SECRET_KEY: '${CLERK_SECRET_KEY}',
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_live_Y2xlcmsuZXBpYy5kbSQ',
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: '/sign-in',
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: '/sign-up',
