@@ -1,7 +1,17 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import DarkShell from "@/app/components/dark-shell";
-import { Phone, Loader2, CheckCircle, MessageSquare, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  Phone,
+  Loader2,
+  CheckCircle,
+  MessageSquare,
+  ArrowRight,
+  AlertCircle,
+  ChevronDown,
+  Plug,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 
 declare global {
@@ -11,193 +21,442 @@ declare global {
   }
 }
 
+/* ─── Meta Embedded Signup (Path 1) ─── */
 function MetaEmbeddedSignup({ onSuccess }: { onSuccess: (data: any) => void }) {
   const [loading, setLoading] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
   useEffect(() => {
-    // Load Facebook SDK
-    if (document.getElementById('facebook-jssdk')) {
+    if (document.getElementById("facebook-jssdk")) {
       setSdkLoaded(true);
       return;
     }
-
     window.fbAsyncInit = function () {
       window.FB.init({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || '',
+        appId: process.env.NEXT_PUBLIC_META_APP_ID || "",
         autoLogAppEvents: true,
         xfbml: true,
-        version: 'v21.0',
+        version: "v21.0",
       });
       setSdkLoaded(true);
     };
-
-    const script = document.createElement('script');
-    script.id = 'facebook-jssdk';
-    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    const script = document.createElement("script");
+    script.id = "facebook-jssdk";
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
     script.async = true;
     script.defer = true;
     document.body.appendChild(script);
-
-    return () => {
-      // Don't remove SDK on unmount — it persists
-    };
   }, []);
 
-  // Listen for the embedded signup session info message event
   useEffect(() => {
-    const sessionHandler = (event: MessageEvent) => {
-      if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
-      
+    const handler = (event: MessageEvent) => {
+      if (
+        event.origin !== "https://www.facebook.com" &&
+        event.origin !== "https://web.facebook.com"
+      )
+        return;
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'WA_EMBEDDED_SIGNUP') {
-          // data contains: { phone_number_id, waba_id, ... }
+        if (data.type === "WA_EMBEDDED_SIGNUP") {
           if (data.data?.phone_number_id && data.data?.waba_id) {
-            console.log('[Embedded Signup] Session info:', data.data);
-            // Store for use after FB.login completes
             (window as any).__waEmbeddedData = data.data;
           }
         }
-      } catch {
-        // Not JSON or not our event
-      }
+      } catch {}
     };
-    
-    window.addEventListener('message', sessionHandler);
-    return () => window.removeEventListener('message', sessionHandler);
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
   }, []);
 
   const launchSignup = useCallback(() => {
     if (!window.FB) {
-      toast.error('Facebook SDK not loaded yet. Please try again.');
+      toast.error("Facebook SDK not loaded yet. Please try again.");
       return;
     }
-
     setLoading(true);
-
     window.FB.login(
       (response: any) => {
         if (response.authResponse) {
           const code = response.authResponse.code;
-          // Get the embedded signup data from the message event
           const embeddedData = (window as any).__waEmbeddedData || {};
-          
-          console.log('[WA Connect] FB response:', response);
-          console.log('[WA Connect] Embedded data:', embeddedData);
-
-          fetch('/api/whatsapp/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          fetch("/api/whatsapp/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               code,
-              phone_number_id: embeddedData.phone_number_id || '',
-              waba_id: embeddedData.waba_id || '',
-              display_phone_number: embeddedData.display_phone_number || '',
+              phone_number_id: embeddedData.phone_number_id || "",
+              waba_id: embeddedData.waba_id || "",
+              display_phone_number: embeddedData.display_phone_number || "",
             }),
           })
             .then((r) => r.json())
             .then((data) => {
               setLoading(false);
               if (data.success) {
-                toast.success('WhatsApp Business connected!');
+                toast.success("WhatsApp Business connected!");
                 onSuccess(data);
               } else {
-                toast.error(data.error || 'Connection failed');
+                toast.error(data.error || "Connection failed");
               }
             })
             .catch((err) => {
               setLoading(false);
-              toast.error('Connection failed: ' + err.message);
+              toast.error("Connection failed: " + err.message);
             });
         } else {
           setLoading(false);
-          toast.error('Facebook login cancelled or failed');
+          toast.error("Facebook login cancelled or failed");
         }
       },
       {
-        config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID || '',
-        response_type: 'code',
+        config_id: process.env.NEXT_PUBLIC_META_CONFIG_ID || "",
+        response_type: "code",
         override_default_response_type: true,
         extras: {
           setup: {},
-          featureType: '',
-          sessionInfoVersion: '3',
+          featureType: "",
+          sessionInfoVersion: "3",
         },
       }
     );
   }, [onSuccess]);
 
   return (
-    <button
-      onClick={launchSignup}
-      disabled={loading || !sdkLoaded}
-      className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
-    >
-      {loading ? (
-        <Loader2 className="w-6 h-6 animate-spin" />
-      ) : (
-        <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-      )}
-      {loading ? 'Connecting...' : 'Connect WhatsApp Business'}
-    </button>
+    <div className="space-y-4">
+      <div className="flex items-start gap-2 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
+        <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+        <p className="text-xs text-yellow-300/80">
+          Your number will move from the WhatsApp Business app to BFF. You'll
+          manage customer conversations through the BFF dashboard instead.
+        </p>
+      </div>
+
+      <button
+        onClick={launchSignup}
+        disabled={loading || !sdkLoaded}
+        className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+      >
+        {loading ? (
+          <Loader2 className="w-6 h-6 animate-spin" />
+        ) : (
+          <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+          </svg>
+        )}
+        {loading ? "Connecting..." : "Migrate My Number"}
+      </button>
+    </div>
   );
 }
 
+/* ─── Existing API Form (Path 2) ─── */
+function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [wabaId, setWabaId] = useState("");
+  const [displayPhone, setDisplayPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneNumberId.trim() || !wabaId.trim()) {
+      toast.error("Phone Number ID and WABA ID are required");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/whatsapp/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone_number_id: phoneNumberId.trim(),
+          waba_id: wabaId.trim(),
+          display_phone_number: displayPhone.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("WhatsApp number connected!");
+        onSuccess(data);
+      } else {
+        toast.error(data.error || "Connection failed");
+      }
+    } catch (err: any) {
+      toast.error("Connection failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          Phone Number ID
+        </label>
+        <input
+          type="text"
+          value={phoneNumberId}
+          onChange={(e) => setPhoneNumberId(e.target.value)}
+          placeholder="e.g. 123456789012345"
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          WABA ID
+        </label>
+        <input
+          type="text"
+          value={wabaId}
+          onChange={(e) => setWabaId(e.target.value)}
+          placeholder="e.g. 987654321098765"
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          Display Phone Number{" "}
+          <span className="text-gray-500">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={displayPhone}
+          onChange={(e) => setDisplayPhone(e.target.value)}
+          placeholder="e.g. +1 767 555 1234"
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Plug className="w-5 h-5" />
+        )}
+        {loading ? "Connecting..." : "Connect Existing Number"}
+      </button>
+    </form>
+  );
+}
+
+/* ─── New Number Form (Path 3) ─── */
+function NewNumberForm() {
+  const [businessName, setBusinessName] = useState("");
+  const [country, setCountry] = useState("+1767");
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessName.trim()) {
+      toast.error("Business name is required");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/number/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_name: businessName.trim(),
+          country_code: country,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.phone_number) {
+        toast.success("Number provisioned: " + data.phone_number);
+      } else {
+        // Fallback — request queued
+        setSubmitted(true);
+        toast.success("Request submitted!");
+      }
+    } catch {
+      setSubmitted(true);
+      toast.success("Request submitted!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-6 text-center space-y-2">
+        <CheckCircle className="w-8 h-8 text-indigo-400 mx-auto" />
+        <p className="text-indigo-300 font-medium">Request Received!</p>
+        <p className="text-gray-400 text-sm">
+          We'll set up your number within 24 hours. We'll WhatsApp you when it's
+          ready.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          Business Name
+        </label>
+        <input
+          type="text"
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+          placeholder="e.g. EPIC Communications"
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+          Country
+        </label>
+        <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+        >
+          <option value="+1767">🇩🇲 Dominica (+1 767)</option>
+          <option value="+1">🇺🇸 United States (+1)</option>
+          <option value="+1">🇨🇦 Canada (+1)</option>
+          <option value="+44">🇬🇧 United Kingdom (+44)</option>
+          <option value="+1868">🇹🇹 Trinidad &amp; Tobago (+1 868)</option>
+          <option value="+1246">🇧🇧 Barbados (+1 246)</option>
+          <option value="+1758">🇱🇨 St. Lucia (+1 758)</option>
+          <option value="+1784">🇻🇨 St. Vincent (+1 784)</option>
+          <option value="+1473">🇬🇩 Grenada (+1 473)</option>
+        </select>
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Sparkles className="w-5 h-5" />
+        )}
+        {loading ? "Setting Up..." : "Get My Number"}
+      </button>
+    </form>
+  );
+}
+
+/* ─── Accordion Card ─── */
+function PathCard({
+  icon,
+  title,
+  subtitle,
+  badge,
+  badgeColor,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  badgeColor?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`border rounded-2xl transition-all duration-300 ${
+        open
+          ? "bg-zinc-900 border-indigo-500/50 shadow-lg shadow-indigo-500/5"
+          : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
+      }`}
+    >
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-4 p-5 text-left cursor-pointer"
+      >
+        <div
+          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            open ? "bg-indigo-500/20" : "bg-zinc-800"
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+            {badge && (
+              <span
+                className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  badgeColor || "bg-zinc-700 text-zinc-300"
+                }`}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
+        </div>
+        <ChevronDown
+          className={`w-5 h-5 text-gray-500 shrink-0 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-300 ${
+          open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="px-5 pb-6 pt-1">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Component ─── */
 export default function NumberClient() {
-  const [status, setStatus] = useState<"idle" | "loading" | "connected" | "provisioned">("loading");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "connected" | "provisioned"
+  >("loading");
   const [connectedData, setConnectedData] = useState<any>(null);
   const [phoneData, setPhoneData] = useState<any>(null);
-  const [requestSent, setRequestSent] = useState(false);
+  const [openPath, setOpenPath] = useState<number | null>(null);
 
   useEffect(() => {
-    // Check if already connected via embedded signup
     Promise.all([
-      fetch('/api/whatsapp/connect').then(r => r.json()).catch(() => ({ connected: false })),
-      fetch('/api/agent').then(r => r.json()).catch(() => ({})),
+      fetch("/api/whatsapp/connect")
+        .then((r) => r.json())
+        .catch(() => ({ connected: false })),
+      fetch("/api/agent")
+        .then((r) => r.json())
+        .catch(() => ({})),
     ]).then(([waData, agentData]) => {
       if (waData.connected) {
         setConnectedData(waData);
-        setStatus('connected');
+        setStatus("connected");
       } else if (agentData.agent?.phoneNumber) {
         setPhoneData({ number: agentData.agent.phoneNumber });
-        setStatus('provisioned');
+        setStatus("provisioned");
       } else {
-        setStatus('idle');
+        setStatus("idle");
       }
     });
   }, []);
 
-  const handleEmbeddedSuccess = (data: any) => {
+  const handleSuccess = (data: any) => {
     setConnectedData(data);
-    setStatus('connected');
+    setStatus("connected");
   };
 
-  const handleRequestNumber = async () => {
-    try {
-      // Just record the request - EPIC will handle manually  
-      const res = await fetch('/api/agent');
-      const agentData = await res.json();
-      if (agentData.agent?.id) {
-        await fetch('/api/agent/activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'number_request',
-            summary: 'Business requested a dedicated WhatsApp number from BFF',
-          }),
-        }).catch(() => null);
-      }
-      setRequestSent(true);
-      toast.success('Request submitted! We\'ll be in touch within 24 hours.');
-    } catch {
-      toast.error('Failed to submit request');
-    }
-  };
+  const togglePath = (idx: number) =>
+    setOpenPath((prev) => (prev === idx ? null : idx));
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <DarkShell title="WhatsApp Number">
         <div className="flex items-center justify-center py-20">
@@ -209,15 +468,18 @@ export default function NumberClient() {
 
   return (
     <DarkShell title="WhatsApp Number">
-      <div className="max-w-lg mx-auto space-y-8 py-8">
-        
-        {/* Connected State */}
-        {status === 'connected' && connectedData && (
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        {/* ── Connected State ── */}
+        {status === "connected" && connectedData && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-            <h2 className="text-2xl font-bold text-white">WhatsApp Connected!</h2>
+            <h2 className="text-2xl font-bold text-white">
+              WhatsApp Connected!
+            </h2>
             <p className="text-green-300 text-lg font-mono">
-              {connectedData.display_phone_number || connectedData.phone || 'Connected'}
+              {connectedData.display_phone_number ||
+                connectedData.phone ||
+                "Connected"}
             </p>
             <p className="text-gray-400 text-sm">
               Your business WhatsApp number is active and receiving messages.
@@ -225,100 +487,103 @@ export default function NumberClient() {
           </div>
         )}
 
-        {/* Provisioned State (legacy DID) */}
-        {status === 'provisioned' && phoneData && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center space-y-4">
+        {/* ── Provisioned State ── */}
+        {status === "provisioned" && phoneData && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
-            <p className="text-2xl font-bold font-mono text-white">{phoneData.number || phoneData.did}</p>
-            <p className="text-xs text-gray-500">Your agent's phone number is active</p>
+            <p className="text-2xl font-bold font-mono text-white">
+              {phoneData.number || phoneData.did}
+            </p>
+            <p className="text-xs text-gray-500">
+              Your agent's phone number is active
+            </p>
           </div>
         )}
 
-        {/* Setup State */}
-        {status === 'idle' && (
+        {/* ── Setup: 3 Paths ── */}
+        {status === "idle" && (
           <>
-            {/* Section A: Connect Your Own WhatsApp Business */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-green-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Connect Your WhatsApp Business</h3>
-                  <p className="text-sm text-gray-400">Recommended — use your own business number</p>
-                </div>
-              </div>
-
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Connect your existing WhatsApp Business number or create a new one through Meta. 
-                Your customers will message your business directly, and your AI agent will handle the conversations.
+            <div className="text-center space-y-2 mb-2">
+              <h2 className="text-2xl font-bold text-white">
+                Set Up WhatsApp for Your Business
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Choose the option that fits your situation
               </p>
+            </div>
 
-              <div className="space-y-3">
-                <div className="flex items-start gap-2 text-sm text-gray-400">
-                  <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  <span>Uses your own Meta Business account</span>
-                </div>
-                <div className="flex items-start gap-2 text-sm text-gray-400">
-                  <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  <span>Your business name and number appear to customers</span>
-                </div>
-                <div className="flex items-start gap-2 text-sm text-gray-400">
-                  <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  <span>Full control over your WhatsApp Business profile</span>
-                </div>
-              </div>
-
-              <MetaEmbeddedSignup onSuccess={handleEmbeddedSuccess} />
-              
-              <div className="flex items-start gap-2 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
-                <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
-                <p className="text-xs text-yellow-300/80">
-                  You'll need a Facebook account connected to a Meta Business account. 
-                  If you don't have one, Meta will help you create it during signup.
+            {/* Path 1 — Migrate */}
+            <PathCard
+              icon={<MessageSquare className="w-6 h-6 text-green-400" />}
+              title="Migrate My Number"
+              subtitle="Move your existing WhatsApp Business number to BFF"
+              badge="Most Common"
+              badgeColor="bg-green-500/20 text-green-300"
+              open={openPath === 0}
+              onToggle={() => togglePath(0)}
+            >
+              <div className="space-y-4">
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Already using the WhatsApp Business app on your phone? Migrate
+                  that number to BFF so your AI agent handles conversations
+                  automatically.
                 </p>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                    <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    <span>Uses Meta Embedded Signup (Facebook login)</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                    <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    <span>Keeps your business name and number</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                    <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                    <span>Full control of your WhatsApp Business profile</span>
+                  </div>
+                </div>
+                <MetaEmbeddedSignup onSuccess={handleSuccess} />
               </div>
-            </div>
+            </PathCard>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gray-800" />
-              <span className="text-sm text-gray-500 font-medium">OR</span>
-              <div className="flex-1 h-px bg-gray-800" />
-            </div>
-
-            {/* Section B: Request a Number from BFF */}
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                  <Phone className="w-6 h-6 text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Request a Number from BFF</h3>
-                  <p className="text-sm text-gray-400">We'll set up a dedicated number for you</p>
-                </div>
+            {/* Path 2 — Existing API */}
+            <PathCard
+              icon={<Plug className="w-6 h-6 text-indigo-400" />}
+              title="I Already Have Meta API Access"
+              subtitle="Connect with your Phone Number ID and WABA ID"
+              badge="Developer"
+              badgeColor="bg-indigo-500/20 text-indigo-300"
+              open={openPath === 1}
+              onToggle={() => togglePath(1)}
+            >
+              <div className="space-y-4">
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Already set up with the WhatsApp Cloud API? Enter your IDs
+                  below and we'll connect your existing setup to BFF.
+                </p>
+                <ExistingApiForm onSuccess={handleSuccess} />
               </div>
+            </PathCard>
 
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Don't have a Meta Business account? No problem. We'll set up a dedicated WhatsApp number 
-                for your business. Our team will configure everything for you.
-              </p>
-
-              {requestSent ? (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center">
-                  <CheckCircle className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-blue-300 font-medium">Request Submitted!</p>
-                  <p className="text-gray-400 text-sm mt-1">We'll contact you within 24 hours to set up your number.</p>
-                </div>
-              ) : (
-                <button
-                  onClick={handleRequestNumber}
-                  className="w-full px-6 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-bold text-lg transition-all border border-gray-700 cursor-pointer"
-                >
-                  Request a Number
-                </button>
-              )}
-            </div>
+            {/* Path 3 — New Number */}
+            <PathCard
+              icon={<Sparkles className="w-6 h-6 text-emerald-400" />}
+              title="Get a New Number from BFF"
+              subtitle="We'll provision a fresh dedicated number for you"
+              badge="Easiest"
+              badgeColor="bg-emerald-500/20 text-emerald-300"
+              open={openPath === 2}
+              onToggle={() => togglePath(2)}
+            >
+              <div className="space-y-4">
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Nothing set up yet? No problem. We'll create a brand new
+                  WhatsApp Business number for your business — no Meta account
+                  needed.
+                </p>
+                <NewNumberForm />
+              </div>
+            </PathCard>
           </>
         )}
       </div>

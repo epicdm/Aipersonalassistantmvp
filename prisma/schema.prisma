@@ -66,6 +66,18 @@ model Agent {
   shareCode               String?           @unique
   activationCodeCreatedAt DateTime?
   ownerPhone              String?
+  purpose                 String?
+  tone                    String?
+  tools                   String            @default("[]")
+  guardrails              Json?
+  soul                    String?
+  whatsappStatus          String            @default("not_connected")
+  whatsappNumber          String?
+  phoneNumber             String?
+  phoneStatus             String            @default("pending")
+  isActive                Boolean           @default(true)
+  inboundRouting          String            @default("whatsapp")
+  whatsappPhone           String?
   user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities              AgentActivity[]
   agentContacts           AgentContact[]
