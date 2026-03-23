@@ -62,7 +62,7 @@ function getAgentModel(tier: "free" | "starter" | "pro" = "starter") {
       };
     case "pro":
       return {
-        primary: "anthropic/claude-sonnet-4-5",
+        primary: "anthropic/claude-sonnet-4-6",
         fallbacks: [
           "kimi/kimi-k2.5",
           "deepseek/deepseek-chat",
@@ -79,7 +79,7 @@ function getAgentModel(tier: "free" | "starter" | "pro" = "starter") {
  */
 async function loadMainKeys(): Promise<Record<string, string>> {
   try {
-    const raw = await readFile("/root/.openclaw/openclaw.json", "utf-8");
+    const raw = await readFile("/home/epicadmin/.openclaw/openclaw.json", "utf-8");
     const cfg = JSON.parse(raw);
     return {
       deepseek: cfg.models?.providers?.deepseek?.apiKey || "",
@@ -186,7 +186,7 @@ async function generateOpenClawConfig(opts: {
           api: "anthropic-messages",
           models: [
             {
-              id: "claude-sonnet-4-5",
+              id: "claude-sonnet-4-6",
               name: "Claude Sonnet 4.5",
               api: "anthropic-messages",
               reasoning: false,
@@ -401,7 +401,7 @@ export async function launchAgent(
       await mkdir("/var/lib/aiva", { recursive: true });
       // Read keys from main OpenClaw config
       const mainConfig = JSON.parse(
-        await readFile("/root/.openclaw/openclaw.json", "utf-8")
+        await readFile("/home/epicadmin/.openclaw/openclaw.json", "utf-8")
       );
       const envLines = [
         `DEEPSEEK_API_KEY=${mainConfig.models?.providers?.deepseek?.apiKey || ""}`,
