@@ -79,9 +79,24 @@ function isDueWithin24h(d: string) {
   return due > now && due.getTime() - now.getTime() < 24 * 60 * 60 * 1000;
 }
 
-function getMockChartData() {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  return days.map((day) => ({ day, messages: Math.floor(Math.random() * 40) + 5 }));
+function getChartDataFromMessages(messages: WhatsAppMessage[]) {
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const now = new Date();
+  const counts: Record<string, number> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    counts[dayNames[d.getDay()]] = 0;
+  }
+  for (const m of messages) {
+    const d = new Date(m.timestamp);
+    const diff = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+    if (diff <= 7) {
+      const day = dayNames[d.getDay()];
+      if (day in counts) counts[day]++;
+    }
+  }
+  return Object.entries(counts).map(([day, msgs]) => ({ day, messages: msgs }));
 }
 
 // ─── Sidebar Nav ───────────────────────────────────────────────
@@ -237,7 +252,7 @@ function OverviewTab({
   agent: any; reminders: Reminder[]; bills: Bill[]; todos: Todo[];
   messages: WhatsAppMessage[]; connections: Connections; onTabChange: (t: Tab) => void;
 }) {
-  const chartData = getMockChartData();
+  const chartData = getChartDataFromMessages(messages);
   const todayMsgs = messages.filter(m => {
     const d = new Date(m.timestamp);
     const now = new Date();

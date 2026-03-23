@@ -29,6 +29,71 @@ function getDefaultName(slug: string): string {
   return DEFAULT_NAMES[slug] || "";
 }
 
+// ─── Step 0: Template Picker ─────────────────────────────────
+
+function StepTemplatePicker({
+  onSelect,
+}: {
+  onSelect: (slug: string) => void;
+}) {
+  return (
+    <div className="space-y-8 text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-3"
+      >
+        <h1 className="text-4xl font-extrabold tracking-tight">
+          What kind of{" "}
+          <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+            agent
+          </span>{" "}
+          do you need?
+        </h1>
+        <p className="text-gray-400 text-lg max-w-md mx-auto">
+          Pick a template to get started. You can customize everything later.
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto"
+      >
+        {TEMPLATES.map((tpl, i) => (
+          <motion.button
+            key={tpl.slug}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.05 }}
+            onClick={() => onSelect(tpl.slug)}
+            className={`group relative bg-gray-900/80 border border-gray-800 rounded-2xl p-5 text-left
+              hover:border-gray-600 hover:bg-gray-900 transition-all duration-200
+              hover:scale-[1.02] hover:shadow-xl cursor-pointer`}
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className={`w-12 h-12 bg-gradient-to-br ${tpl.color} rounded-xl flex items-center justify-center text-2xl shadow-lg shrink-0`}
+              >
+                {tpl.emoji}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-gray-100 group-hover:text-white transition-colors">
+                  {tpl.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed line-clamp-2">
+                  {tpl.tagline}
+                </p>
+              </div>
+            </div>
+          </motion.button>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Step 1: Meet Your Agent ──────────────────────────────────
 
 function StepMeetAgent({
@@ -36,12 +101,14 @@ function StepMeetAgent({
   agentName,
   onNameChange,
   onContinue,
+  onBack,
   creating,
 }: {
   templateSlug: string;
   agentName: string;
   onNameChange: (name: string) => void;
   onContinue: () => void;
+  onBack: () => void;
   creating: boolean;
 }) {
   const tpl = TEMPLATES.find((t) => t.slug === templateSlug) || TEMPLATES[0];
@@ -133,6 +200,7 @@ function StepMeetAgent({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
+        className="space-y-3"
       >
         <button
           onClick={onContinue}
@@ -152,9 +220,15 @@ function StepMeetAgent({
             </>
           )}
         </button>
-        <p className="text-xs text-gray-600 mt-3">
+        <p className="text-xs text-gray-600">
           Your agent will get to know you through conversation — no forms needed!
         </p>
+        <button
+          onClick={onBack}
+          className="text-gray-600 hover:text-gray-400 text-xs underline underline-offset-4 transition-colors cursor-pointer"
+        >
+          ← choose a different template
+        </button>
       </motion.div>
     </div>
   );
@@ -238,29 +312,35 @@ function StepActivate({
 
 // ─── Main Creation Flow ───────────────────────────────────────
 
-type FlowStep = "meet" | "activate";
+type FlowStep = "template" | "meet" | "activate";
 
 export default function CreationFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<FlowStep>("meet");
+  const [step, setStep] = useState<FlowStep>("template");
   const [templateSlug, setTemplateSlug] = useState("assistant");
   const [agentName, setAgentName] = useState("Max");
   const [creating, setCreating] = useState(false);
   const [activationCode, setActivationCode] = useState<string | null>(null);
 
-  // Read template from sessionStorage
+  // Read template from sessionStorage — skip to "meet" if present
   useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("bff_template");
       if (saved) {
         setTemplateSlug(saved);
         setAgentName(getDefaultName(saved) || "Max");
-        // Keep it in storage until agent is created, then clear
+        setStep("meet");
       }
     }
   }, []);
 
   const tpl = TEMPLATES.find((t) => t.slug === templateSlug) || TEMPLATES[0];
+
+  const handleTemplateSelect = (slug: string) => {
+    setTemplateSlug(slug);
+    setAgentName(getDefaultName(slug) || "Max");
+    setStep("meet");
+  };
 
   const createAgent = async () => {
     if (!agentName.trim()) return;
@@ -316,7 +396,10 @@ export default function CreationFlow() {
     }
   };
 
-  const progress = step === "meet" ? 50 : 100;
+  const progress =
+    step === "template" ? 33 : step === "meet" ? 66 : 100;
+  const stepNum =
+    step === "template" ? 1 : step === "meet" ? 2 : 3;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center relative overflow-hidden">
@@ -343,7 +426,7 @@ export default function CreationFlow() {
       {/* Step indicator */}
       <div className="fixed top-4 right-6 z-50 flex items-center gap-2">
         <span className="text-xs text-gray-600 font-medium">
-          Step {step === "meet" ? "1" : "2"} of 2
+          Step {stepNum} of 3
         </span>
         <Sparkles className="w-3.5 h-3.5 text-gray-600" />
       </div>
@@ -358,12 +441,17 @@ export default function CreationFlow() {
             exit={{ opacity: 0, y: -24 }}
             transition={{ duration: 0.35 }}
           >
+            {step === "template" && (
+              <StepTemplatePicker onSelect={handleTemplateSelect} />
+            )}
+
             {step === "meet" && (
               <StepMeetAgent
                 templateSlug={templateSlug}
                 agentName={agentName}
                 onNameChange={setAgentName}
                 onContinue={createAgent}
+                onBack={() => setStep("template")}
                 creating={creating}
               />
             )}
