@@ -178,6 +178,7 @@ async function recordMessage(agentId: string, phone: string, role: 'user' | 'ass
 }
 
 async function maybeWarnUpgrade(agent: any, todayCount: number) {
+  const effectivePhoneId = (agent.config as any)?.phoneNumberId || undefined
   if (!agent.ownerPhone || todayCount < DAILY_UPGRADE_WARN_AT || todayCount >= DAILY_FREE_LIMIT) return
 
   const dayKey = new Date().toISOString().slice(0, 10)
@@ -203,7 +204,7 @@ async function maybeWarnUpgrade(agent: any, todayCount: number) {
   await sendWhatsAppMessage(
     agent.ownerPhone,
     `⚠️ You've used ${todayCount}/${DAILY_FREE_LIMIT} customer messages today on the free plan. Upgrade at bff.epic.dm/upgrade before you hit the limit.`
-  , phoneId)
+  , effectivePhoneId)
 }
 
 async function findOrCreateContact(agent: any, phone: string, fallbackName?: string) {
@@ -245,6 +246,8 @@ async function findOrCreateContact(agent: any, phone: string, fallbackName?: str
 }
 
 async function handleOnboarding(from: string, text: string, agent: any, metaMessageId?: string | null, wasVoiceNote = false, phoneId?: string) {
+  // Use agent's own phone ID if they connected via Embedded Signup
+  const effectivePhoneId = (agent.config as any)?.phoneNumberId || phoneId
   await ensureConversation(agent, from, 'owner', null)
   await recordMessage(agent.id, from, 'user', text, 'owner', metaMessageId)
 
@@ -289,7 +292,7 @@ async function handleOnboarding(from: string, text: string, agent: any, metaMess
     })
 
     await recordMessage(agent.id, from, 'assistant', summary, 'owner')
-    await sendWhatsAppMessage(from, summary, phoneId)
+    await sendWhatsAppMessage(from, summary, effectivePhoneId)
     return
   }
 
@@ -309,10 +312,12 @@ async function handleOnboarding(from: string, text: string, agent: any, metaMess
   })
 
   await recordMessage(agent.id, from, 'assistant', reply, 'owner')
-  await sendWhatsAppMessage(from, reply, phoneId)
+  await sendWhatsAppMessage(from, reply, effectivePhoneId)
 }
 
 async function handleOwnerCommand(agent: any, command: string) {
+  // Use agent's own phone ID if they connected via Embedded Signup
+  const effectivePhoneId = (agent.config as any)?.phoneNumberId || undefined
   const today = startOfToday()
 
   if (command === 'help') {
@@ -332,19 +337,19 @@ async function handleOwnerCommand(agent: any, command: string) {
 
   if (command === 'pause') {
     await prisma.agent.update({ where: { id: agent.id }, data: { status: 'paused' } })
-    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is paused. Customers will get your away message until you send resume.`, phoneId)
+    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is paused. Customers will get your away message until you send resume.`, effectivePhoneId)
     return true
   }
 
   if (command === 'resume') {
     await prisma.agent.update({ where: { id: agent.id }, data: { status: 'active' } })
-    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is back online 🟢`, phoneId)
+    await sendWhatsAppMessage(agent.ownerPhone!, `${agent.name} is back online 🟢`, effectivePhoneId)
     return true
   }
 
   if (command === 'stop') {
     await prisma.agent.update({ where: { id: agent.id }, data: { ownerPhone: null, status: 'draft' } })
-    await sendWhatsAppMessage(agent.ownerPhone!, `Disconnected ${agent.name}. Generate a new activation code in the dashboard when you're ready to reconnect.`, phoneId)
+    await sendWhatsAppMessage(agent.ownerPhone!, `Disconnected ${agent.name}. Generate a new activation code in the dashboard when you're ready to reconnect.`, effectivePhoneId)
     return true
   }
 
@@ -367,7 +372,7 @@ async function handleOwnerCommand(agent: any, command: string) {
         `• ${todayMessages} customer messages today\n` +
         `• ${hotLeads} hot leads\n` +
         `• ${escalations} escalations`
-    , phoneId)
+    , effectivePhoneId)
     return true
   }
 
@@ -375,6 +380,8 @@ async function handleOwnerCommand(agent: any, command: string) {
 }
 
 async function handleOwnerChat(agent: any, from: string, text: string, metaMessageId?: string | null, wasVoiceNote = false, phoneId?: string) {
+  // Use agent's own phone ID if they connected via Embedded Signup
+  const effectivePhoneId = (agent.config as any)?.phoneNumberId || phoneId
   await ensureConversation(agent, from, 'owner', null)
   await recordMessage(agent.id, from, 'user', text, 'owner', metaMessageId)
 
@@ -396,13 +403,15 @@ async function handleOwnerChat(agent: any, from: string, text: string, metaMessa
 
   await recordMessage(agent.id, from, 'assistant', reply, 'owner')
   if (wasVoiceNote) {
-    try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply, phoneId) }
+    try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply, effectivePhoneId) }
   } else {
-    await sendWhatsAppMessage(from, reply, phoneId)
+    await sendWhatsAppMessage(from, reply, effectivePhoneId)
   }
 }
 
 async function handleCustomer(agent: any, from: string, text: string, contactName?: string, metaMessageId?: string | null, wasVoiceNote = false, phoneId?: string) {
+  // Use agent's own phone ID if they connected via Embedded Signup
+  const effectivePhoneId = (agent.config as any)?.phoneNumberId || phoneId
   const contact = await findOrCreateContact(agent, from, contactName)
 
   if (contact.doNotContact) {
@@ -422,9 +431,9 @@ async function handleCustomer(agent: any, from: string, text: string, contactNam
       data: { doNotContact: true, doNotContactAt: new Date() },
     })
 
-    await sendWhatsAppMessage(from, `Understood — you won't receive more messages from ${agent.name}. Reply START anytime to opt back in.`, phoneId)
+    await sendWhatsAppMessage(from, `Understood — you won't receive more messages from ${agent.name}. Reply START anytime to opt back in.`, effectivePhoneId)
     if (agent.ownerPhone) {
-      await sendWhatsAppMessage(agent.ownerPhone, `🔕 ${contact.name || from} opted out of ${agent.name}.`, phoneId)
+      await sendWhatsAppMessage(agent.ownerPhone, `🔕 ${contact.name || from} opted out of ${agent.name}.`, effectivePhoneId)
     }
     return
   }
@@ -463,7 +472,7 @@ async function handleCustomer(agent: any, from: string, text: string, contactNam
   }
 
   if (agent.status === 'paused') {
-    await sendWhatsAppMessage(from, getAwayMessage(agent, phoneId))
+    await sendWhatsAppMessage(from, getAwayMessage(agent, effectivePhoneId))
     return
   }
 
@@ -498,13 +507,13 @@ async function handleCustomer(agent: any, from: string, text: string, contactNam
       },
     }).catch(() => null)
 
-    await sendWhatsAppMessage(agent.ownerPhone, `📝 Draft for ${contact.name || from}:\n\n${reply}\n\nReply in the dashboard to approve or edit.`, phoneId)
+    await sendWhatsAppMessage(agent.ownerPhone, `📝 Draft for ${contact.name || from}:\n\n${reply}\n\nReply in the dashboard to approve or edit.`, effectivePhoneId)
   } else {
     await recordMessage(agent.id, from, 'assistant', reply, 'customer', null, escalated ? 'escalation' : null)
     if (wasVoiceNote) {
-      try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply, phoneId) }
+      try { await sendWhatsAppVoiceNote(from, reply) } catch { await sendWhatsAppMessage(from, reply, effectivePhoneId) }
     } else {
-      await sendWhatsAppMessage(from, reply, phoneId)
+      await sendWhatsAppMessage(from, reply, effectivePhoneId)
     }
   }
 
@@ -530,10 +539,10 @@ async function handleCustomer(agent: any, from: string, text: string, contactNam
     }).catch(() => null)
 
     if (agent.ownerPhone) {
-      await sendWhatsAppMessage(agent.ownerPhone, `🚨 ${contact.name || from} needs human help.\n\nCustomer said: ${text}`, phoneId)
+      await sendWhatsAppMessage(agent.ownerPhone, `🚨 ${contact.name || from} needs human help.\n\nCustomer said: ${text}`, effectivePhoneId)
     }
   } else if (mode === 'notify' && agent.ownerPhone) {
-    await sendWhatsAppMessage(agent.ownerPhone, `💬 ${contact.name || from}: ${text.slice(0, 100, phoneId)}\n→ ${reply.slice(0, 100)}`)
+    await sendWhatsAppMessage(agent.ownerPhone, `💬 ${contact.name || from}: ${text.slice(0, 100, effectivePhoneId)}\n→ ${reply.slice(0, 100)}`)
   }
 }
 
@@ -585,7 +594,7 @@ async function processWebhook(body: any) {
       console.log(`[WA] Transcribed voice note: "${text.slice(0, 100)}"`)
     } else {
       // Transcription failed or unavailable
-      await sendWhatsAppMessage(from, "I got your voice message! \ud83c\udf99\ufe0f Unfortunately I couldn't process it right now \u2014 please type your message instead.", phoneId)
+      await sendWhatsAppMessage(from, "I got your voice message! \ud83c\udf99\ufe0f Unfortunately I couldn't process it right now \u2014 please type your message instead.", incomingPhoneId)
       return
     }
   }
@@ -631,20 +640,20 @@ async function processWebhook(body: any) {
     const agent = await prisma.agent.findFirst({ where: { activationCode: code } })
 
     if (!agent) {
-      await sendWhatsAppMessage(from, 'That activation code was not found. Generate a fresh one at bff.epic.dm and try again.', phoneId)
+      await sendWhatsAppMessage(from, 'That activation code was not found. Generate a fresh one at bff.epic.dm and try again.', incomingPhoneId)
       return
     }
 
     if (agent.activationCodeCreatedAt) {
       const expiresAt = new Date(agent.activationCodeCreatedAt.getTime() + 24 * 60 * 60 * 1000)
       if (expiresAt.getTime() < Date.now()) {
-        await sendWhatsAppMessage(from, 'This code has expired. Generate a new one at bff.epic.dm.', phoneId)
+        await sendWhatsAppMessage(from, 'This code has expired. Generate a new one at bff.epic.dm.', incomingPhoneId)
         return
       }
     }
 
     if (agent.ownerPhone && agent.ownerPhone !== from) {
-      await sendWhatsAppMessage(from, 'This activation code has already been used on another phone. Generate a new one from the dashboard.', phoneId)
+      await sendWhatsAppMessage(from, 'This activation code has already been used on another phone. Generate a new one from the dashboard.', incomingPhoneId)
       return
     }
 
@@ -664,7 +673,7 @@ async function processWebhook(body: any) {
     await ensureConversation(activatedAgent, from, 'owner', null)
     const opener = getOnboardingOpener(activatedAgent.template || 'support', activatedAgent.name)
     await recordMessage(activatedAgent.id, from, 'assistant', opener, 'owner')
-    await sendWhatsAppMessage(from, opener, phoneId)
+    await sendWhatsAppMessage(from, opener, incomingPhoneId)
     return
   }
 
@@ -696,7 +705,7 @@ async function processWebhook(body: any) {
     })
 
     if (!routedAgent) {
-      await sendWhatsAppMessage(from, `I couldn't find that business. Please check the link and try again.`, phoneId)
+      await sendWhatsAppMessage(from, `I couldn't find that business. Please check the link and try again.`, incomingPhoneId)
       return
     }
 
@@ -706,7 +715,7 @@ async function processWebhook(body: any) {
     if (text.replace(/\s+/g, '').toUpperCase() === `CHAT-${shareCode}`) {
       const greeting = greetingForAgent(routedAgent)
       await recordMessage(routedAgent.id, from, 'assistant', greeting, 'customer')
-      await sendWhatsAppMessage(from, greeting, phoneId)
+      await sendWhatsAppMessage(from, greeting, incomingPhoneId)
       return
     }
   }
@@ -726,7 +735,7 @@ async function processWebhook(body: any) {
   }
 
   if (!routedAgent) {
-    await sendWhatsAppMessage(from, `Hi! I'm Jenny. Visit https://bff.epic.dm to create your own WhatsApp AI agent.`, phoneId)
+    await sendWhatsAppMessage(from, `Hi! I'm Jenny. Visit https://bff.epic.dm to create your own WhatsApp AI agent.`, incomingPhoneId)
     return
   }
 
