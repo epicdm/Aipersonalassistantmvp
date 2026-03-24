@@ -55,9 +55,9 @@ const NAV = [
 ];
 
 const PLAN_COLORS: Record<string, string> = {
-  free: "bg-zinc-700 text-zinc-300",
-  pro: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
-  business: "bg-violet-500/20 text-violet-300 border border-violet-500/30",
+  free: "bg-white/10 text-[#A1A1AA]",
+  pro: "bg-[#E2725B]/20 text-[#E2725B] border border-[#E2725B]/30",
+  business: "bg-[#D4A373]/20 text-[#D4A373] border border-[#D4A373]/30",
 };
 
 export default function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -75,17 +75,18 @@ export default function AppSidebar({ collapsed, onToggle }: { collapsed: boolean
 
   return (
     <aside
-      className={`${collapsed ? "w-16" : "w-60"} bg-zinc-950 border-r border-zinc-800/60 flex flex-col h-screen transition-all duration-300 ease-in-out shrink-0`}
+      className={`${collapsed ? "w-16" : "w-60"} flex flex-col h-screen transition-all duration-300 ease-in-out shrink-0`}
+      style={{ backgroundColor: '#050505', borderRight: '1px solid rgba(255,255,255,0.05)' }}
     >
       {/* Logo */}
-      <div className={`h-16 flex items-center ${collapsed ? "justify-center px-0" : "px-5"} border-b border-zinc-800/60 shrink-0`}>
+      <div className={`h-16 flex items-center ${collapsed ? "justify-center px-0" : "px-5"} shrink-0`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#E2725B' }}>
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           {!collapsed && (
-            <span className="font-bold text-sm text-zinc-100 tracking-tight">
-              EPIC <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">AI</span>
+            <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.2rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA' }}>
+              BFF
             </span>
           )}
         </Link>
@@ -96,7 +97,7 @@ export default function AppSidebar({ collapsed, onToggle }: { collapsed: boolean
         {NAV.map((section, si) => (
           <div key={si} className={si > 0 ? "mt-4" : ""}>
             {!collapsed && section.label && (
-              <p className="px-3 py-1.5 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>
                 {section.label}
               </p>
             )}
@@ -108,11 +109,13 @@ export default function AppSidebar({ collapsed, onToggle }: { collapsed: boolean
                   key={item.href}
                   href={item.href}
                   title={collapsed ? item.label : undefined}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${
-                    active
-                      ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/20"
-                      : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
-                  } ${collapsed ? "justify-center" : ""}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${collapsed ? "justify-center" : ""}`}
+                  style={{
+                    backgroundColor: active ? 'rgba(226,114,91,0.12)' : 'transparent',
+                    color: active ? '#E2725B' : '#A1A1AA',
+                  }}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#FAFAFA'; } }}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#A1A1AA'; } }}
                 >
                   <Icon className="w-[17px] h-[17px] shrink-0" />
                   {!collapsed && <span>{item.label}</span>}
@@ -126,20 +129,23 @@ export default function AppSidebar({ collapsed, onToggle }: { collapsed: boolean
       {/* Collapse toggle */}
       <button
         onClick={onToggle}
-        className="mx-2 mb-2 flex items-center justify-center h-8 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/60 transition-colors cursor-pointer"
+        className="mx-2 mb-2 flex items-center justify-center h-8 rounded-lg transition-colors cursor-pointer"
+        style={{ color: 'rgba(255,255,255,0.2)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#A1A1AA'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
 
       {/* User section */}
-      <div className={`border-t border-zinc-800/60 p-3 ${collapsed ? "flex justify-center" : ""}`}>
+      <div className={`p-3 ${collapsed ? "flex justify-center" : ""}`} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         {collapsed ? (
           <UserButton afterSignOutUrl="/" />
         ) : (
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-zinc-200 truncate">
+              <p className="text-xs font-semibold truncate" style={{ color: "#FAFAFA" }}>
                 {user?.firstName || user?.emailAddresses[0]?.emailAddress?.split("@")[0] || "User"}
               </p>
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase ${PLAN_COLORS[plan] || PLAN_COLORS.free}`}>

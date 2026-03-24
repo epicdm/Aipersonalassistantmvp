@@ -12,6 +12,8 @@
   "dependencies": {
     "@base-ui/react": "^1.2.0",
     "@clerk/nextjs": "^6",
+    "@fontsource/eb-garamond": "^5.2.7",
+    "@fontsource/figtree": "^5.2.10",
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
     "@prisma/adapter-pg": "^7.3.0",
@@ -35,7 +37,6 @@
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-
     "recharts": "^3.7.0",
     "shadcn": "^4.0.2",
     "sharp": "^0.34.5",

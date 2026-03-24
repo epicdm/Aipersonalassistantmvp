@@ -1,18 +1,73 @@
 "use client";
 
-import React from "react";
-import { motion } from "motion/react";
-import {
-  ArrowRight, Bot, Shield, Zap, MessageSquare, CheckCircle2,
-  Sparkles, Phone, Brain, Globe, ChevronRight,
-} from "lucide-react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowRight, CheckCircle2, Zap, Shield, MessageSquare, Phone } from "lucide-react";
 import { TEMPLATES } from "@/app/lib/templates";
 
 interface LandingProps {
   onStart: () => void;
 }
 
+const PERSONAL_TEMPLATES = [
+  { slug: "assistant", name: "Personal Assistant", emoji: "📅", desc: "Tasks, reminders & life org" },
+  { slug: "study-buddy", name: "Study Buddy", emoji: "📚", desc: "Homework help & exam prep" },
+  { slug: "life_coach", name: "Life Coach", emoji: "🎯", desc: "Goals & motivation" },
+  { slug: "fitness_coach", name: "Fitness Coach", emoji: "💪", desc: "Workouts & nutrition" },
+  { slug: "language_tutor", name: "Language Tutor", emoji: "🌍", desc: "Learn any language" },
+  { slug: "wellness_buddy", name: "Wellness Buddy", emoji: "🧘", desc: "Mindfulness & support" },
+];
+
+const BUSINESS_TEMPLATES = TEMPLATES.filter(t =>
+  ["receptionist", "concierge", "collector", "sales", "support"].includes(t.slug)
+);
+
+const PRICING = [
+  {
+    name: "Free",
+    price: "$0",
+    period: "forever",
+    desc: "Try it out. No card needed.",
+    features: ["1 AI agent", "100 messages/mo", "WhatsApp connect", "Basic templates"],
+    cta: "Start free",
+    primary: false,
+  },
+  {
+    name: "Starter",
+    price: "$29",
+    period: "/month",
+    desc: "For growing businesses.",
+    features: ["3 AI agents", "5,000 messages/mo", "All templates", "Voice calls", "Priority support"],
+    cta: "Get started",
+    primary: true,
+  },
+  {
+    name: "Pro",
+    price: "$99",
+    period: "/month",
+    desc: "For teams that move fast.",
+    features: ["Unlimited agents", "Unlimited messages", "Custom knowledge base", "API access", "Dedicated support"],
+    cta: "Go pro",
+    primary: false,
+  },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
 export function Landing({ onStart }: LandingProps) {
+  const [templateTab, setTemplateTab] = useState<"business" | "personal">("business");
+
   const handleTemplateClick = (slug: string) => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("bff_template", slug);
@@ -20,387 +75,302 @@ export function Landing({ onStart }: LandingProps) {
     onStart();
   };
 
-  return (
-    <div className="min-h-screen bg-gray-950 text-white relative overflow-hidden">
-      {/* Ambient background */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[700px] bg-gradient-to-b from-indigo-500/8 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[120px] pointer-events-none" />
+  const visibleTemplates = templateTab === "business" ? BUSINESS_TEMPLATES : PERSONAL_TEMPLATES;
 
-      {/* Nav */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+  return (
+    <div className="min-h-screen text-[#FAFAFA] relative overflow-hidden" style={{ backgroundColor: '#050505', fontFamily: 'Figtree, system-ui, sans-serif' }}>
+      {/* Noise overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          opacity: 0.035,
+          mixBlendMode: 'overlay',
+          zIndex: 0,
+        }}
+      />
+
+      {/* Warm ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(226,114,91,0.06) 0%, transparent 70%)', zIndex: 0 }} />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(212,163,115,0.04) 0%, transparent 70%)', zIndex: 0 }} />
+
+      {/* ── Nav ── */}
+      <nav className="relative z-10 flex items-center justify-between px-6 md:px-10 py-5 max-w-7xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-extrabold text-xl tracking-tight">BFF</span>
-          <span className="text-gray-600 text-xs ml-1 hidden sm:block">AI Personal Assistant</span>
+          <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.03em', color: '#FAFAFA' }}>
+            BFF
+          </span>
+          <span className="text-[#A1A1AA] text-xs ml-1 hidden sm:block" style={{ fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+            AI Assistant
+          </span>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm text-gray-400">
-          <a href="#templates" className="hover:text-white transition-colors">Templates</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+        <div className="hidden md:flex items-center gap-8 text-sm text-[#A1A1AA]">
+          <a href="#templates" className="hover:text-[#FAFAFA] transition-colors">Templates</a>
+          <a href="#pricing" className="hover:text-[#FAFAFA] transition-colors">Pricing</a>
         </div>
         <button
           onClick={onStart}
-          className="bg-white/10 backdrop-blur-sm text-white px-5 py-2 rounded-xl font-semibold text-sm hover:bg-white/20 transition-all cursor-pointer border border-white/10"
+          className="px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
+          style={{ backgroundColor: '#E2725B', color: '#FAFAFA' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F48B76')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#E2725B')}
         >
           Sign In
         </button>
       </nav>
 
-      {/* Hero */}
-      <section className="relative z-10 px-6 pt-20 pb-16 max-w-4xl mx-auto text-center">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-wider text-indigo-300 uppercase bg-indigo-500/10 rounded-full border border-indigo-500/20">
-            Powered by BFF
-          </span>
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-[1.05] tracking-tight">
-            Your AI,<br />
-            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
-              Your Rules.
+      {/* ── Hero ── */}
+      <section className="relative z-10 px-6 pt-24 pb-20 max-w-5xl mx-auto text-center">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+          <div className="inline-block mb-8">
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E2725B', border: '1px solid rgba(226,114,91,0.3)', borderRadius: '100px', padding: '6px 16px' }}>
+              WhatsApp AI for business
             </span>
+          </div>
+
+          <h1 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: 'clamp(3.5rem, 10vw, 7rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: '0.95', marginBottom: '1.5rem', color: '#FAFAFA' }}>
+            Your business,<br />
+            <span style={{ color: '#E2725B' }}>always on.</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            An AI assistant that works for <em>you</em> — whether you run a business, study for exams, or just need help staying organized. Set it up in 60 seconds.
+
+          <p className="text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed" style={{ color: '#A1A1AA' }}>
+            An AI agent on WhatsApp that handles your customers 24/7 — answers questions, books appointments, follows up on leads. Set up in under 5 minutes.
           </p>
         </motion.div>
 
-        {/* 3-step visual */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="flex items-center justify-center gap-2 md:gap-4 mb-12 flex-wrap"
+          className="flex items-center justify-center gap-4 flex-wrap"
         >
-          {[
-            { step: "1", label: "Pick your AI" },
-            { step: "2", label: "Sign up" },
-            { step: "3", label: "Start chatting" },
-          ].map((item, i) => (
-            <React.Fragment key={item.step}>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-sm font-bold shrink-0">
-                  {item.step}
-                </div>
-                <span className="text-sm font-semibold text-gray-300">{item.label}</span>
-              </div>
-              {i < 2 && <ArrowRight className="w-4 h-4 text-gray-600 shrink-0" />}
-            </React.Fragment>
-          ))}
+          <button
+            onClick={onStart}
+            className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
+            style={{ backgroundColor: '#E2725B', color: '#FAFAFA' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F48B76'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E2725B'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            Start for free <ArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onStart}
+            className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
+            style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#FAFAFA', backgroundColor: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            See a demo
+          </button>
         </motion.div>
 
-        {/* Trust signals */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex items-center justify-center gap-6 text-sm text-gray-600 flex-wrap"
+          transition={{ delay: 0.5 }}
+          className="flex items-center justify-center gap-6 mt-10 text-sm flex-wrap"
+          style={{ color: '#A1A1AA' }}
         >
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            No credit card required
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-yellow-500" />
-            Live in 60 seconds
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Shield className="w-4 h-4 text-blue-500" />
-            You stay in control
-          </span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" style={{ color: '#8B9A6B' }} /> No credit card required</span>
+          <span className="flex items-center gap-1.5"><Zap className="w-4 h-4" style={{ color: '#D4A373' }} /> Live in 5 minutes</span>
+          <span className="flex items-center gap-1.5"><Shield className="w-4 h-4" style={{ color: '#6B8A9A' }} /> You stay in control</span>
         </motion.div>
       </section>
 
-      {/* Social Proof */}
-      <section className="relative z-10 py-12 border-y border-gray-800/50">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">
-            Join 500+ businesses already using BFF
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {[
-              { emoji: "🏪", label: "Retail" },
-              { emoji: "🏥", label: "Healthcare" },
-              { emoji: "🏠", label: "Real Estate" },
-              { emoji: "🍕", label: "Food & Bev" },
-              { emoji: "💼", label: "Consulting" },
-            ].map((industry) => (
-              <span
-                key={industry.label}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900/60 border border-gray-800 rounded-full text-sm text-gray-400 font-medium"
-              >
-                {industry.emoji} {industry.label}
-              </span>
-            ))}
+      {/* ── How it works ── */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA', marginBottom: '0.75rem' }}>
+              How it works
+            </h2>
+            <p style={{ color: '#A1A1AA' }}>From signup to live in under 5 minutes.</p>
           </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="relative z-10 py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-4">How it works</h2>
-            <p className="text-gray-500">From zero to AI-powered in under a minute.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: "🤖", step: "1", title: "Pick a template", desc: "Choose from 7 AI personalities built for your business. Each one is pre-trained and ready to go." },
-              { icon: "📱", step: "2", title: "Connect WhatsApp", desc: "Link your WhatsApp in 30 seconds. No technical setup, no downloads — just scan and go." },
-              { icon: "🚀", step: "3", title: "Go live", desc: "Your AI starts handling messages instantly. It learns your style and gets smarter every day." },
+              { n: "01", icon: <MessageSquare className="w-5 h-5" />, title: "Pick a template", desc: "Choose from business or personal AI templates. Each one is pre-trained and ready to go." },
+              { n: "02", icon: <Phone className="w-5 h-5" />, title: "Connect WhatsApp", desc: "Migrate your number, use your existing API, or get a fresh number from BFF." },
+              { n: "03", icon: <Zap className="w-5 h-5" />, title: "Go live", desc: "Your AI starts handling messages instantly. It knows your business and gets smarter every day." },
             ].map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative text-center"
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                className="p-6 rounded-2xl"
+                style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}
               >
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-10 left-[60%] w-[80%] border-t border-dashed border-gray-800" />
-                )}
-                <div className="w-20 h-20 bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 relative z-10">
-                  {item.icon}
+                <div className="flex items-center gap-3 mb-4">
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E2725B' }}>{item.n}</span>
+                  <div style={{ color: '#E2725B' }}>{item.icon}</div>
                 </div>
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Step {item.step}</div>
-                <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.3rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.5rem' }}>{item.title}</h3>
+                <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.6 }}>{item.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Templates — MAIN CTA */}
-      <section id="templates" className="relative z-10 py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Pick your AI. Get started in seconds.</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">
-              Choose a template and your agent is ready instantly — it'll get to know you through conversation.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TEMPLATES.map((tpl, i) => (
-              <motion.div
-                key={tpl.slug}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.07 }}
-                className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-gray-900/80 transition-all group cursor-pointer relative overflow-hidden"
-                onClick={() => handleTemplateClick(tpl.slug)}
-              >
-                <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tpl.color} opacity-60`} />
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tpl.color} flex items-center justify-center text-2xl mb-4`}>
-                  {tpl.emoji}
-                </div>
-                <h3 className="font-bold text-lg mb-1">{tpl.name}</h3>
-                <p className="text-sm text-indigo-300/70 mb-2">{tpl.tagline}</p>
-                <p className="text-sm text-gray-500 leading-relaxed">{tpl.description}</p>
-                <div className="mt-4 flex items-center gap-1.5 text-indigo-400 group-hover:text-indigo-300 transition-colors text-sm font-semibold">
-                  Get Started <ChevronRight className="w-4 h-4" />
-                </div>
-              </motion.div>
-            ))}
+      {/* ── Templates ── */}
+      <section id="templates" className="relative z-10 py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA', marginBottom: '0.75rem' }}>
+              Pick your AI
+            </h2>
+            <p style={{ color: '#A1A1AA', marginBottom: '2rem' }}>Templates built for how you actually work.</p>
 
-            {/* Custom / Build from scratch card */}
+            {/* Tabs */}
+            <div className="inline-flex rounded-full p-1" style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}>
+              {(["business", "personal"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setTemplateTab(tab)}
+                  className="px-6 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer capitalize"
+                  style={{
+                    backgroundColor: templateTab === tab ? '#E2725B' : 'transparent',
+                    color: templateTab === tab ? '#FAFAFA' : '#A1A1AA',
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: TEMPLATES.length * 0.07 }}
-              className="border-2 border-dashed border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 hover:border-indigo-500/40 transition-all cursor-pointer"
-              onClick={() => handleTemplateClick("custom")}
+              key={templateTab}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-2 md:grid-cols-3 gap-4"
             >
-              <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-2xl">
-                ✨
-              </div>
-              <div>
-                <p className="font-bold">Build from Scratch</p>
-                <p className="text-sm text-gray-500 mt-1">Full control — your agent, your way</p>
-              </div>
-              <div className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-white transition-colors">
-                Get Started <ChevronRight className="w-4 h-4" />
-              </div>
+              {visibleTemplates.map((t) => (
+                <motion.button
+                  key={t.slug}
+                  variants={itemVariants}
+                  onClick={() => handleTemplateClick(t.slug)}
+                  className="text-left p-5 rounded-2xl cursor-pointer transition-all"
+                  style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}
+                  whileHover={{ y: -4, borderColor: 'rgba(226,114,91,0.3)' }}
+                >
+                  <div className="text-3xl mb-3">{t.emoji}</div>
+                  <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.1rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.25rem' }}>
+                    {t.name}
+                  </h3>
+                  <p style={{ color: '#A1A1AA', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    {"desc" in t ? (t as any).desc : (t as any).tagline}
+                  </p>
+                </motion.button>
+              ))}
             </motion.div>
-          </div>
-
-          {/* Sign-up method benefits */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-12 max-w-xl mx-auto bg-gray-900/40 border border-gray-800 rounded-2xl p-6"
-          >
-            <p className="text-sm font-semibold text-gray-400 mb-4 text-center uppercase tracking-wider">How you sign up matters</p>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center justify-center shrink-0 text-base">
-                  🔵
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Sign up with Google</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Agent gets your calendar, email &amp; contacts automatically</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-blue-600/20 border border-blue-600/30 rounded-lg flex items-center justify-center shrink-0 text-base">
-                  🔵
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Sign up with Facebook</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Agent gets your Instagram &amp; business pages</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-gray-700/40 border border-gray-700 rounded-lg flex items-center justify-center shrink-0 text-base">
-                  ✉️
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Sign up with email</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Start basic, connect services later</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          </AnimatePresence>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="relative z-10 py-20 bg-gray-900/30">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-4">Everything your agent needs</h2>
-            <p className="text-gray-500">One AI, all your channels. Set it up once, it runs forever.</p>
+      {/* ── Pricing ── */}
+      <section id="pricing" className="relative z-10 py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA', marginBottom: '0.75rem' }}>
+              Simple pricing
+            </h2>
+            <p style={{ color: '#A1A1AA' }}>Start free. Upgrade when you need more.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { icon: MessageSquare, title: "Lives on WhatsApp", desc: "Message your AI like you'd message a friend. It replies instantly, 24/7 — no app to download.", color: "text-green-400 bg-green-500/10 border-green-500/20" },
-              { icon: Phone, title: "Takes Phone Calls", desc: "Give it a real number. It answers calls, takes messages, and texts you a summary.", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-              { icon: Shield, title: "You Set the Rules", desc: "Control what it can do. Review everything, or let it run on autopilot — your call.", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-              { icon: Brain, title: "Google & Instagram Ready", desc: "Sign up with Google or Facebook and your agent instantly connects to your calendar, email, contacts, and social pages.", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
-              { icon: Zap, title: "Ready in 60 Seconds", desc: "Pick a template, sign up, done. Your agent meets you on WhatsApp and gets to know you through conversation.", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" },
-              { icon: Globe, title: "Always On", desc: "WhatsApp, email, phone — your AI works while you sleep, study, or enjoy your weekend.", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" },
-            ].map((f, i) => (
+          <div className="grid md:grid-cols-3 gap-6">
+            {PRICING.map((plan, i) => (
               <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 15 }}
+                key={plan.name}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.07 }}
-                className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl hover:border-gray-700 transition-all"
+                transition={{ delay: i * 0.1, duration: 0.4 }}
+                className="p-6 rounded-2xl flex flex-col"
+                style={{
+                  backgroundColor: plan.primary ? 'rgba(226,114,91,0.08)' : '#111111',
+                  border: plan.primary ? '1px solid rgba(226,114,91,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                }}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${f.color} mb-4 border`}>
-                  <f.icon className="w-5 h-5" />
+                {plan.primary && (
+                  <div className="mb-4">
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E2725B', border: '1px solid rgba(226,114,91,0.3)', borderRadius: '100px', padding: '3px 10px' }}>
+                      Most popular
+                    </span>
+                  </div>
+                )}
+                <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.4rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.5rem' }}>{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, color: '#FAFAFA' }}>{plan.price}</span>
+                  <span style={{ color: '#A1A1AA', fontSize: '0.85rem' }}>{plan.period}</span>
                 </div>
-                <h3 className="font-bold mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <p style={{ color: '#A1A1AA', fontSize: '0.85rem', marginBottom: '1.5rem' }}>{plan.desc}</p>
+                <ul className="space-y-2 mb-6 flex-1">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm" style={{ color: '#A1A1AA' }}>
+                      <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#E2725B' }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={onStart}
+                  className="w-full py-3 rounded-full font-semibold text-sm transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: plan.primary ? '#E2725B' : 'transparent',
+                    color: plan.primary ? '#FAFAFA' : '#E2725B',
+                    border: plan.primary ? 'none' : '1px solid rgba(226,114,91,0.4)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = plan.primary ? '#F48B76' : 'rgba(226,114,91,0.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = plan.primary ? '#E2725B' : 'transparent'; }}
+                >
+                  {plan.cta}
+                </button>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="relative z-10 py-20 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-4">Simple Pricing</h2>
-            <p className="text-gray-500">Start free. Upgrade when you need more power.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Free */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 flex flex-col">
-              <h3 className="text-lg font-bold mb-1">Free</h3>
-              <div className="text-4xl font-extrabold mb-2">$0 <span className="text-base font-normal text-gray-600">/mo</span></div>
-              <p className="text-sm text-gray-500 mb-6">Try it, no strings attached</p>
-              <ul className="space-y-2.5 mb-8 flex-grow">
-                {["1 AI agent", "50 messages/day", "WhatsApp only", "Basic setup"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-gray-600 shrink-0" />{item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={onStart} className="w-full py-3 rounded-xl font-bold border border-gray-700 text-gray-300 hover:bg-gray-800 transition cursor-pointer">
-                Get Started
-              </button>
-            </div>
-
-            {/* Pro */}
-            <div className="bg-gradient-to-br from-indigo-900/60 to-violet-900/60 border border-indigo-500/40 rounded-2xl p-7 flex flex-col relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                Most Popular
-              </div>
-              <h3 className="text-lg font-bold mb-1">Pro</h3>
-              <div className="text-4xl font-extrabold mb-2">$29 <span className="text-base font-normal text-indigo-300/60">/mo</span></div>
-              <p className="text-sm text-gray-400 mb-6">For people who mean business</p>
-              <ul className="space-y-2.5 mb-8 flex-grow">
-                {["3 AI agents", "Unlimited messages", "All channels (WhatsApp + Phone + Email)", "Phone number included", "Knowledge base", "Priority support"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-gray-300">
-                    <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />{item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={onStart} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 transition cursor-pointer shadow-lg shadow-indigo-500/20">
-                Start Free Trial
-              </button>
-            </div>
-
-            {/* Business */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-7 flex flex-col">
-              <h3 className="text-lg font-bold mb-1">Business</h3>
-              <div className="text-4xl font-extrabold mb-2">$99 <span className="text-base font-normal text-gray-600">/mo</span></div>
-              <p className="text-sm text-gray-500 mb-6">Run your whole operation on AI</p>
-              <ul className="space-y-2.5 mb-8 flex-grow">
-                {["Unlimited agents", "All channels", "Custom integrations", "Dedicated support", "SLA guarantee", "White-label ready"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-gray-400">
-                    <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0" />{item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={onStart} className="w-full py-3 rounded-xl font-bold border border-gray-700 text-gray-300 hover:bg-gray-800 transition cursor-pointer">
-                Contact Sales
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative z-10 py-20 text-center px-6">
+      {/* ── CTA ── */}
+      <section className="relative z-10 py-32 px-6 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
         >
-          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl mx-auto flex items-center justify-center mb-6">
-            <Sparkles className="w-7 h-7 text-white" />
-          </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Your AI is waiting</h2>
-          <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            60 seconds to set up. Free to start. No credit card needed.
+          <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: 'clamp(2.5rem, 7vw, 5rem)', fontWeight: 600, letterSpacing: '-0.03em', color: '#FAFAFA', marginBottom: '1.5rem', lineHeight: 1 }}>
+            Ready to go live?
+          </h2>
+          <p style={{ color: '#A1A1AA', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
+            Join businesses already running on BFF.
           </p>
           <button
             onClick={onStart}
-            className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:to-violet-700 transition-all cursor-pointer shadow-2xl shadow-indigo-500/20 flex items-center gap-3 mx-auto"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
+            style={{ backgroundColor: '#E2725B', color: '#FAFAFA' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F48B76'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E2725B'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            Create Your Agent
-            <ArrowRight className="w-5 h-5" />
+            Get started — it's free <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-gray-800/50 text-center text-gray-600 text-xs space-y-2">
-        <p>© 2026 BFF AI — Powered by EPIC Communications</p>
-        <p className="flex items-center justify-center gap-4">
-          <a href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
-          <span>·</span>
-          <a href="/terms" className="hover:text-gray-400 transition-colors">Terms of Service</a>
-          <span>·</span>
-          <a href="mailto:info@epic.dm" className="hover:text-gray-400 transition-colors">Contact</a>
-        </p>
+      {/* ── Footer ── */}
+      <footer className="relative z-10 py-10 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA' }}>BFF</span>
+          <p style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>© 2026 EPIC Communications. All rights reserved.</p>
+          <div className="flex gap-6 text-sm" style={{ color: '#A1A1AA' }}>
+            <a href="/privacy" className="hover:text-[#FAFAFA] transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-[#FAFAFA] transition-colors">Terms</a>
+          </div>
+        </div>
       </footer>
     </div>
   );

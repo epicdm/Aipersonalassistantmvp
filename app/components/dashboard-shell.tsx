@@ -9,7 +9,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="flex h-screen text-[#FAFAFA] overflow-hidden" style={{ backgroundColor: '#050505' }}>
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
@@ -34,11 +34,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-800/60 shrink-0">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: '#A1A1AA' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            <Menu className="w-5 h-5 text-zinc-400" />
+            <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-sm text-zinc-300">EPIC AI</span>
+          <span className="font-semibold text-sm" style={{ fontFamily: "'EB Garamond', Georgia, serif", color: '#FAFAFA' }}>BFF</span>
         </div>
 
         <main className="flex-1 overflow-y-auto">

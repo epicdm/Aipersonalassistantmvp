@@ -29,26 +29,26 @@ export default function DarkShell({
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-[#050505] text-white">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800/50">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/5/50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard")}
-            className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all cursor-pointer"
+            className="p-2 text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.05)] rounded-xl transition-all cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h1 className="font-bold text-sm">{title}</h1>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => router.push("/dashboard")} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all cursor-pointer" title="Chat">
+          <button onClick={() => router.push("/dashboard")} className="p-2 text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.05)] rounded-xl transition-all cursor-pointer" title="Chat">
             <MessageCircle className="w-4 h-4" />
           </button>
-          <button onClick={() => router.push("/contacts")} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all cursor-pointer" title="Contacts">
+          <button onClick={() => router.push("/contacts")} className="p-2 text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.05)] rounded-xl transition-all cursor-pointer" title="Contacts">
             <Users className="w-4 h-4" />
           </button>
-          <button onClick={() => router.push("/settings")} className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all cursor-pointer" title="Settings">
+          <button onClick={() => router.push("/settings")} className="p-2 text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.05)] rounded-xl transition-all cursor-pointer" title="Settings">
             <Settings className="w-4 h-4" />
           </button>
         </div>
