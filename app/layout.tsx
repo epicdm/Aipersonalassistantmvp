@@ -3,7 +3,6 @@ import { Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "@/app/components/theme-provider";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -63,17 +62,15 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" className="dark" suppressHydrationWarning>
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Figtree:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
         </head>
-        <body className={`${geistMono.variable} antialiased`} style={{ fontFamily: 'Figtree, system-ui, sans-serif', backgroundColor: '#050505' }}>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+        <body className={`${geistMono.variable} antialiased dark`} style={{ fontFamily: 'Figtree, system-ui, sans-serif', backgroundColor: '#050505' }}>
             {children}
-            <Toaster richColors />
-          </ThemeProvider>
+            <Toaster richColors theme="dark" />
         </body>
       </html>
     </ClerkProvider>
