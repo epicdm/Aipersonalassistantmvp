@@ -44,35 +44,35 @@ export default function SettingsClient() {
     finally { setSaving(false); }
   };
 
-  if (!loaded) return <DarkShell title="Personality"><div className="text-center py-20 text-gray-600">Loading...</div></DarkShell>;
+  if (!loaded) return <DarkShell title="Personality"><div className="text-center py-20 text-[#A1A1AA]">Loading...</div></DarkShell>;
 
   return (
     <DarkShell title="Personality">
       <div className="space-y-10">
         {/* Identity */}
         <section>
-          <div className="flex items-center gap-2 mb-4"><Bot className="w-5 h-5 text-indigo-400" /><h2 className="text-lg font-bold">Identity</h2></div>
+          <div className="flex items-center gap-2 mb-4"><Bot className="w-5 h-5 text-[#E2725B]" /><h2 className="text-lg font-bold">Identity</h2></div>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-bold text-gray-400">Name</label>
-              <input type="text" value={config.name || ""} onChange={(e) => setConfig({ ...config, name: e.target.value })} className="w-full mt-1 px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+              <label className="text-sm font-bold text-[#A1A1AA]">Name</label>
+              <input type="text" value={config.name || ""} onChange={(e) => setConfig({ ...config, name: e.target.value })} className="w-full mt-1 px-4 py-3 bg-[#111111] border border-white/[0.07] rounded-xl focus:ring-2 focus:ring-[#E2725B] outline-none text-sm" />
             </div>
             <div>
-              <label className="text-sm font-bold text-gray-400">Purpose</label>
-              <textarea value={config.purpose || ""} onChange={(e) => setConfig({ ...config, purpose: e.target.value })} rows={2} className="w-full mt-1 px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm resize-none" />
+              <label className="text-sm font-bold text-[#A1A1AA]">Purpose</label>
+              <textarea value={config.purpose || ""} onChange={(e) => setConfig({ ...config, purpose: e.target.value })} rows={2} className="w-full mt-1 px-4 py-3 bg-[#111111] border border-white/[0.07] rounded-xl focus:ring-2 focus:ring-[#E2725B] outline-none text-sm resize-none" />
             </div>
           </div>
         </section>
 
         {/* Personality */}
         <section>
-          <div className="flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-violet-400" /><h2 className="text-lg font-bold">Personality</h2></div>
+          <div className="flex items-center gap-2 mb-4"><Zap className="w-5 h-5 text-[#D4A373]" /><h2 className="text-lg font-bold">Personality</h2></div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {TONES.map((t) => (
               <button
                 key={t.value}
                 onClick={() => setConfig({ ...config, tone: t.value })}
-                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${config.tone === t.value ? "border-indigo-500 bg-indigo-500/10" : "border-gray-800 bg-gray-900 hover:border-gray-700"}`}
+                className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${config.tone === t.value ? "border-indigo-500 bg-[#E2725B]/100/10" : "border-white/[0.07] bg-[#111111] hover:border-white/10"}`}
               >
                 <span className="text-xl">{t.emoji}</span>
                 <p className="text-xs font-bold mt-1">{t.label}</p>
@@ -89,21 +89,21 @@ export default function SettingsClient() {
               <button
                 key={m.value}
                 onClick={() => setConfig({ ...config, approvalMode: m.value })}
-                className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-4 ${config.approvalMode === m.value ? "border-indigo-500 bg-indigo-500/10" : "border-gray-800 bg-gray-900 hover:border-gray-700"}`}
+                className={`w-full text-left p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-4 ${config.approvalMode === m.value ? "border-indigo-500 bg-[#E2725B]/100/10" : "border-white/[0.07] bg-[#111111] hover:border-white/10"}`}
               >
                 <span className="text-xl">{m.emoji}</span>
                 <div className="flex-1">
                   <p className="font-bold text-sm">{m.label}</p>
-                  <p className="text-xs text-gray-500">{m.desc}</p>
+                  <p className="text-xs text-[#A1A1AA]">{m.desc}</p>
                 </div>
-                {config.approvalMode === m.value && <Check className="w-4 h-4 text-indigo-400" />}
+                {config.approvalMode === m.value && <Check className="w-4 h-4 text-[#E2725B]" />}
               </button>
             ))}
           </div>
         </section>
 
         {/* Save */}
-        <button onClick={save} disabled={saving} className="px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2">
+        <button onClick={save} disabled={saving} className="px-8 py-3 rounded-xl bg-[#E2725B] text-white font-bold hover:bg-[#F48B76] transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2">
           <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>

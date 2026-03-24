@@ -31,7 +31,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-800/60 shrink-0">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] shrink-0">
           <button
             onClick={() => setMobileOpen(true)}
             className="p-2 rounded-lg transition-colors"

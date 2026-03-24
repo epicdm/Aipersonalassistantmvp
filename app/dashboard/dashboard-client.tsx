@@ -8,8 +8,8 @@ export default function DashboardClient() {
     <SidebarLayout>
       <div className="max-w-[1400px] mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Performance Overview</h1>
-          <p className="text-gray-500">Real-time analytics and system health</p>
+          <h1 className="text-3xl font-bold text-[#FAFAFA]">Performance Overview</h1>
+          <p className="text-[#A1A1AA]">Real-time analytics and system health</p>
         </div>
         <Overview onNavigate={() => {}} />
       </div>

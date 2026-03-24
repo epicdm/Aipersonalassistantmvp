@@ -340,7 +340,7 @@ function OverviewTab({
 
             {/* Voice Calling */}
             <ServiceRow
-              icon={<Phone className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+              icon={<Phone className="w-4 h-4 text-[#E2725B] dark:text-[#E2725B]" />}
               label="Voice Calling"
               detail={agent.didNumber || agent.phoneNumber
                 ? `DID: ${agent.didNumber || agent.phoneNumber}`
@@ -1799,7 +1799,7 @@ function VoiceStatusSection({ agent, userPlan }: { agent: any; userPlan?: string
   if (plan === "free") {
     return (
       <a href="/upgrade" className="block">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-[#E2725B]/10 text-[#E2725B] border border-[#E2725B]/20 hover:bg-[#E2725B]/15 transition-colors cursor-pointer">
           <Phone className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="truncate">Upgrade for voice calling</span>
         </div>
@@ -1809,7 +1809,7 @@ function VoiceStatusSection({ agent, userPlan }: { agent: any; userPlan?: string
 
   if (hasDID) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-[#E2725B]/10 text-[#E2725B] border border-[#E2725B]/20">
         <Phone className="w-3.5 h-3.5 flex-shrink-0" />
         <span className="truncate font-mono">{didNumber}</span>
       </div>

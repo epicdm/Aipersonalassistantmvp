@@ -12,8 +12,8 @@ export default function ChatClient({ agent }: { agent: any }) {
     <SidebarLayout>
       <div className="max-w-[1400px] mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Chat Preview</h1>
-          <p className="text-gray-500">Test your agent in a sandbox conversation</p>
+          <h1 className="text-3xl font-bold text-[#FAFAFA]">Chat Preview</h1>
+          <p className="text-[#A1A1AA]">Test your agent in a sandbox conversation</p>
         </div>
         <ChatPreview
           agentName={name}

@@ -117,11 +117,11 @@ export function Integrations() {
       {/* Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <div className="relative flex-grow max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1AA]" />
           <input 
             type="text"
             placeholder="Search tools, apps, workflows..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-[#E2725B] outline-none transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -133,7 +133,7 @@ export function Integrations() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap cursor-pointer ${
-                filter === f ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                filter === f ? "bg-[#E2725B] text-white shadow-md shadow-indigo-100" : "bg-gray-50 text-[#A1A1AA] hover:bg-white/[0.06]"
               }`}
             >
               {f}
@@ -169,17 +169,17 @@ export function Integrations() {
             <div className="flex flex-col h-full">
               <div className="mb-6">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300 ${
-                  item.status === 'connected' ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-400'
+                  item.status === 'connected' ? 'bg-[#E2725B]/10 text-[#E2725B]' : 'bg-gray-50 text-[#A1A1AA]'
                 }`}>
                   <item.icon className="w-7 h-7" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[#FAFAFA] mb-1 flex items-center gap-2">
                   {item.name}
                   {item.isBeta && (
                     <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-black tracking-tighter uppercase">Beta</span>
                   )}
                 </h3>
-                <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-[#A1A1AA] line-clamp-2 leading-relaxed">
                   {item.description}
                 </p>
               </div>
@@ -189,12 +189,12 @@ export function Integrations() {
                   <>
                     <button 
                       onClick={() => setShowConfig(item)}
-                      className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                      className="flex items-center gap-2 text-sm font-bold text-[#E2725B] hover:text-[#F48B76] cursor-pointer"
                     >
                       <Settings2 className="w-4 h-4" />
                       Configure
                     </button>
-                    <button className="p-2 text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
+                    <button className="p-2 text-[#A1A1AA] hover:text-red-500 transition-colors cursor-pointer">
                       <Lock className="w-4 h-4" />
                     </button>
                   </>
@@ -202,7 +202,7 @@ export function Integrations() {
                   <button 
                     onClick={() => handleConnect(item.id)}
                     disabled={connecting === item.id}
-                    className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 transition-all disabled:opacity-50 cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 bg-[#111111] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-[#1A1A1A] transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {connecting === item.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -239,12 +239,12 @@ export function Integrations() {
             >
               <div className="p-8">
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                  <div className="w-16 h-16 bg-[#E2725B]/10 rounded-2xl flex items-center justify-center text-[#E2725B]">
                     <showConfig.icon className="w-8 h-8" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">{showConfig.name} Settings</h2>
-                    <p className="text-sm text-gray-500">Manage how AIVA interacts with your {showConfig.name} data.</p>
+                    <p className="text-sm text-[#A1A1AA]">Manage how AIVA interacts with your {showConfig.name} data.</p>
                   </div>
                 </div>
 
@@ -254,17 +254,17 @@ export function Integrations() {
                       <ShieldCheck className="w-5 h-5 text-green-500" />
                       <div className="text-sm font-semibold">Active Syncing</div>
                     </div>
-                    <div className="w-10 h-5 bg-indigo-600 rounded-full relative">
+                    <div className="w-10 h-5 bg-[#E2725B] rounded-full relative">
                       <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full" />
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Permissions</label>
+                    <label className="text-xs font-bold text-[#A1A1AA] uppercase tracking-widest px-1">Permissions</label>
                     {["Read Data", "Write Access", "Background Updates"].map((perm, i) => (
                       <div key={i} className="flex items-center gap-3 px-1">
-                        <div className="w-5 h-5 rounded border border-gray-200 bg-indigo-50 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-indigo-600" />
+                        <div className="w-5 h-5 rounded border border-white/10 bg-[#E2725B]/10 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-[#E2725B]" />
                         </div>
                         <span className="text-sm font-medium text-gray-700">{perm}</span>
                       </div>
@@ -274,7 +274,7 @@ export function Integrations() {
                   <div className="pt-4 border-t border-gray-100 flex gap-3">
                     <button 
                       onClick={() => setShowConfig(null)}
-                      className="flex-grow bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all cursor-pointer"
+                      className="flex-grow bg-[#E2725B] text-white py-3 rounded-xl font-bold hover:bg-[#D4A373] transition-all cursor-pointer"
                     >
                       Save Settings
                     </button>
@@ -296,17 +296,17 @@ export function Integrations() {
       </AnimatePresence>
 
       {/* Support Section */}
-      <div className="bg-gray-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 mt-12">
+      <div className="bg-[#111111] rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 mt-12">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
-            <Globe className="w-8 h-8 text-indigo-400" />
+            <Globe className="w-8 h-8 text-[#E2725B]" />
           </div>
           <div>
             <h3 className="text-xl font-bold mb-1">Missing an integration?</h3>
-            <p className="text-gray-400 text-sm">We're constantly adding new tools. Let us know what you need.</p>
+            <p className="text-[#A1A1AA] text-sm">We're constantly adding new tools. Let us know what you need.</p>
           </div>
         </div>
-        <button className="px-8 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-indigo-50 transition-all whitespace-nowrap cursor-pointer">
+        <button className="px-8 py-3 bg-white text-[#FAFAFA] rounded-xl font-bold hover:bg-[#E2725B]/10 transition-all whitespace-nowrap cursor-pointer">
           Request a Tool
         </button>
       </div>

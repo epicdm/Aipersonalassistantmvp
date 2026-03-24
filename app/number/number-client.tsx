@@ -190,7 +190,7 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className="block text-sm font-medium text-[#FAFAFA]/80 mb-1.5">
           Phone Number ID
         </label>
         <input
@@ -198,12 +198,12 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
           value={phoneNumberId}
           onChange={(e) => setPhoneNumberId(e.target.value)}
           placeholder="e.g. 123456789012345"
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className="block text-sm font-medium text-[#FAFAFA]/80 mb-1.5">
           WABA ID
         </label>
         <input
@@ -211,27 +211,27 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
           value={wabaId}
           onChange={(e) => setWabaId(e.target.value)}
           placeholder="e.g. 987654321098765"
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className="block text-sm font-medium text-[#FAFAFA]/80 mb-1.5">
           Display Phone Number{" "}
-          <span className="text-gray-500">(optional)</span>
+          <span className="text-[#A1A1AA]">(optional)</span>
         </label>
         <input
           type="text"
           value={displayPhone}
           onChange={(e) => setDisplayPhone(e.target.value)}
           placeholder="e.g. +1 767 555 1234"
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
         />
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-[#E2725B] hover:bg-[#E2725B] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
       >
         {loading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -285,10 +285,10 @@ function NewNumberForm() {
 
   if (submitted) {
     return (
-      <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-6 text-center space-y-2">
-        <CheckCircle className="w-8 h-8 text-indigo-400 mx-auto" />
-        <p className="text-indigo-300 font-medium">Request Received!</p>
-        <p className="text-gray-400 text-sm">
+      <div className="bg-[#E2725B]/10 border border-[#E2725B]/30 rounded-xl p-6 text-center space-y-2">
+        <CheckCircle className="w-8 h-8 text-[#E2725B] mx-auto" />
+        <p className="text-[#E2725B] font-medium">Request Received!</p>
+        <p className="text-[#A1A1AA] text-sm">
           We'll set up your number within 24 hours. We'll WhatsApp you when it's
           ready.
         </p>
@@ -299,7 +299,7 @@ function NewNumberForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className="block text-sm font-medium text-[#FAFAFA]/80 mb-1.5">
           Business Name
         </label>
         <input
@@ -307,18 +307,18 @@ function NewNumberForm() {
           value={businessName}
           onChange={(e) => setBusinessName(e.target.value)}
           placeholder="e.g. EPIC Communications"
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label className="block text-sm font-medium text-[#FAFAFA]/80 mb-1.5">
           Country
         </label>
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
         >
           <option value="+1767">🇩🇲 Dominica (+1 767)</option>
           <option value="+1">🇺🇸 United States (+1)</option>
@@ -371,8 +371,8 @@ function PathCard({
     <div
       className={`border rounded-2xl transition-all duration-300 ${
         open
-          ? "bg-zinc-900 border-indigo-500/50 shadow-lg shadow-indigo-500/5"
-          : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
+          ? "bg-[#111111] border-[#E2725B]/50 shadow-lg shadow-indigo-500/5"
+          : "bg-[#0d0d0d] border-white/[0.07] hover:border-white/10"
       }`}
     >
       <button
@@ -381,7 +381,7 @@ function PathCard({
       >
         <div
           className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-            open ? "bg-indigo-500/20" : "bg-zinc-800"
+            open ? "bg-[#E2725B]/15" : "bg-[#1A1A1A]"
           }`}
         >
           {icon}
@@ -392,17 +392,17 @@ function PathCard({
             {badge && (
               <span
                 className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  badgeColor || "bg-zinc-700 text-zinc-300"
+                  badgeColor || "bg-white/10 text-[#FAFAFA]/80"
                 }`}
               >
                 {badge}
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
+          <p className="text-sm text-[#A1A1AA] mt-0.5">{subtitle}</p>
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-gray-500 shrink-0 transition-transform duration-300 ${
+          className={`w-5 h-5 text-[#A1A1AA] shrink-0 transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -460,7 +460,7 @@ export default function NumberClient() {
     return (
       <DarkShell title="WhatsApp Number">
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#A1A1AA]" />
         </div>
       </DarkShell>
     );
@@ -481,7 +481,7 @@ export default function NumberClient() {
                 connectedData.phone ||
                 "Connected"}
             </p>
-            <p className="text-gray-400 text-sm">
+            <p className="text-[#A1A1AA] text-sm">
               Your business WhatsApp number is active and receiving messages.
             </p>
           </div>
@@ -489,12 +489,12 @@ export default function NumberClient() {
 
         {/* ── Provisioned State ── */}
         {status === "provisioned" && phoneData && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center space-y-4">
+          <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
             <p className="text-2xl font-bold font-mono text-white">
               {phoneData.number || phoneData.did}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#A1A1AA]">
               Your agent's phone number is active
             </p>
           </div>
@@ -507,7 +507,7 @@ export default function NumberClient() {
               <h2 className="text-2xl font-bold text-white">
                 Set Up WhatsApp for Your Business
               </h2>
-              <p className="text-gray-400 text-sm">
+              <p className="text-[#A1A1AA] text-sm">
                 Choose the option that fits your situation
               </p>
             </div>
@@ -523,21 +523,21 @@ export default function NumberClient() {
               onToggle={() => togglePath(0)}
             >
               <div className="space-y-4">
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-[#A1A1AA] text-sm leading-relaxed">
                   Already using the WhatsApp Business app on your phone? Migrate
                   that number to BFF so your AI agent handles conversations
                   automatically.
                 </p>
                 <div className="space-y-2">
-                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                  <div className="flex items-start gap-2 text-sm text-[#A1A1AA]">
                     <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
                     <span>Uses Meta Embedded Signup (Facebook login)</span>
                   </div>
-                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                  <div className="flex items-start gap-2 text-sm text-[#A1A1AA]">
                     <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
                     <span>Keeps your business name and number</span>
                   </div>
-                  <div className="flex items-start gap-2 text-sm text-gray-400">
+                  <div className="flex items-start gap-2 text-sm text-[#A1A1AA]">
                     <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
                     <span>Full control of your WhatsApp Business profile</span>
                   </div>
@@ -548,16 +548,16 @@ export default function NumberClient() {
 
             {/* Path 2 — Existing API */}
             <PathCard
-              icon={<Plug className="w-6 h-6 text-indigo-400" />}
+              icon={<Plug className="w-6 h-6 text-[#E2725B]" />}
               title="I Already Have Meta API Access"
               subtitle="Connect with your Phone Number ID and WABA ID"
               badge="Developer"
-              badgeColor="bg-indigo-500/20 text-indigo-300"
+              badgeColor="bg-[#E2725B]/15 text-[#E2725B]"
               open={openPath === 1}
               onToggle={() => togglePath(1)}
             >
               <div className="space-y-4">
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-[#A1A1AA] text-sm leading-relaxed">
                   Already set up with the WhatsApp Cloud API? Enter your IDs
                   below and we'll connect your existing setup to BFF.
                 </p>
@@ -576,7 +576,7 @@ export default function NumberClient() {
               onToggle={() => togglePath(2)}
             >
               <div className="space-y-4">
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-[#A1A1AA] text-sm leading-relaxed">
                   Nothing set up yet? No problem. We'll create a brand new
                   WhatsApp Business number for your business — no Meta account
                   needed.

@@ -34,7 +34,7 @@ const plans = [
     price: "$29",
     period: "/month",
     description: "Voice calling + more agents",
-    icon: <Zap className="w-5 h-5 text-indigo-500" />,
+    icon: <Zap className="w-5 h-5 text-[#E2725B]" />,
     badge: "Most Popular",
     features: [
       "3 AI agents",
@@ -125,7 +125,7 @@ export default function UpgradePage() {
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#E2725B] to-[#D4A373] flex items-center justify-center">
               <Bot className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold">EPIC AI</span>
@@ -136,7 +136,7 @@ export default function UpgradePage() {
           </p>
 
           {/* Voice calling callout */}
-          <div className="mt-6 inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 rounded-full px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400">
+          <div className="mt-6 inline-flex items-center gap-2 bg-[#E2725B]/100/10 border border-indigo-500/30 rounded-full px-4 py-2 text-sm text-[#E2725B] dark:text-[#E2725B]">
             <Phone className="w-4 h-4" />
             Pro unlocks voice calling — dial out & receive calls in your browser
           </div>
@@ -167,7 +167,7 @@ export default function UpgradePage() {
               >
                 {plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-indigo-600 text-white text-xs px-3 py-1">
+                    <Badge className="bg-[#E2725B] text-white text-xs px-3 py-1">
                       <Star className="w-3 h-3 mr-1 inline" />
                       {plan.badge}
                     </Badge>
@@ -212,7 +212,7 @@ export default function UpgradePage() {
                     </Button>
                   ) : (
                     <Button
-                      className={`w-full ${plan.highlight ? "bg-indigo-600 hover:bg-indigo-500 text-white" : ""}`}
+                      className={`w-full ${plan.highlight ? "bg-[#E2725B] hover:bg-[#E2725B]/100 text-white" : ""}`}
                       variant={plan.highlight ? "default" : "outline"}
                       onClick={() => handleUpgrade(plan.id)}
                       disabled={!!loading}
@@ -244,7 +244,7 @@ export default function UpgradePage() {
           </p>
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1 text-sm text-indigo-500 hover:text-indigo-600 mt-2"
+            className="inline-flex items-center gap-1 text-sm text-[#E2725B] hover:text-[#E2725B] mt-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to dashboard

@@ -14,16 +14,16 @@ export default function AgentGrid({ agents, plan }: { agents: any[]; plan: strin
   const canAdd = agents.length < maxAgents;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
+    <div className="min-h-screen bg-[#050505] text-white p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Your Agents</h1>
-            <p className="text-gray-500 mt-1">{agents.length} agent{agents.length !== 1 ? "s" : ""} · {plan} plan</p>
+            <p className="text-[#A1A1AA] mt-1">{agents.length} agent{agents.length !== 1 ? "s" : ""} · {plan} plan</p>
           </div>
           <SignOutButton>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 transition cursor-pointer">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-[#A1A1AA] hover:text-red-400 hover:bg-white/[0.04] transition cursor-pointer">
               <LogOut className="w-4 h-4" />
               Sign Out
             </button>
@@ -34,7 +34,7 @@ export default function AgentGrid({ agents, plan }: { agents: any[]; plan: strin
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {agents.map((agent, i) => {
             const tpl = TEMPLATES.find((t) => t.slug === agent.template);
-            const color = tpl?.color || "from-indigo-500 to-violet-600";
+            const color = tpl?.color || "from-[#E2725B] to-[#D4A373]";
             const emoji = tpl?.emoji || "✨";
 
             return (
@@ -44,7 +44,7 @@ export default function AgentGrid({ agents, plan }: { agents: any[]; plan: strin
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
                 onClick={() => router.push(`/dashboard/${agent.id}`)}
-                className="text-left p-6 rounded-2xl border border-gray-800 bg-gray-900/50 hover:border-gray-600 hover:bg-gray-800/50 transition cursor-pointer group"
+                className="text-left p-6 rounded-2xl border border-white/[0.07] bg-[#0d0d0d] hover:border-gray-600 hover:bg-white/[0.04] transition cursor-pointer group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-xl`}>
@@ -53,7 +53,7 @@ export default function AgentGrid({ agents, plan }: { agents: any[]; plan: strin
                   <div className={`w-2.5 h-2.5 rounded-full ${agent.status === "active" ? "bg-green-500" : "bg-gray-600"}`} />
                 </div>
                 <h3 className="font-bold text-lg">{agent.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{tpl?.tagline || "Custom Agent"}</p>
+                <p className="text-sm text-[#A1A1AA] mt-1">{tpl?.tagline || "Custom Agent"}</p>
                 <div className="flex items-center gap-2 mt-4">
                   {agent.whatsappStatus === "connected" && (
                     <span className="flex items-center gap-1 text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded-full">
@@ -78,14 +78,14 @@ export default function AgentGrid({ agents, plan }: { agents: any[]; plan: strin
             onClick={() => canAdd ? router.push("/create") : null}
             className={`p-6 rounded-2xl border border-dashed transition cursor-pointer flex flex-col items-center justify-center min-h-[180px] ${
               canAdd
-                ? "border-gray-700 hover:border-gray-500 hover:bg-gray-800/30"
-                : "border-gray-800 opacity-50 cursor-not-allowed"
+                ? "border-white/10 hover:border-gray-500 hover:bg-[#1A1A1A]/30"
+                : "border-white/[0.07] opacity-50 cursor-not-allowed"
             }`}
           >
-            <Plus className="w-8 h-8 text-gray-600 mb-2" />
-            <p className="text-gray-500 font-medium">Add Agent</p>
+            <Plus className="w-8 h-8 text-[#A1A1AA] mb-2" />
+            <p className="text-[#A1A1AA] font-medium">Add Agent</p>
             {!canAdd && (
-              <p className="text-xs text-gray-600 mt-1">Upgrade to add more</p>
+              <p className="text-xs text-[#A1A1AA] mt-1">Upgrade to add more</p>
             )}
           </motion.button>
         </div>

@@ -15,16 +15,16 @@ function ActivityItem({ icon: Icon, iconColor, title, subtitle, time, status }: 
   icon: any; iconColor: string; title: string; subtitle: string; time: string; status?: "success" | "pending" | "alert";
 }) {
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-gray-800/50 last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b border-white/[0.05] last:border-0">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconColor}`}>
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white truncate">{title}</p>
-        <p className="text-[11px] text-gray-500 truncate">{subtitle}</p>
+        <p className="text-[11px] text-[#A1A1AA] truncate">{subtitle}</p>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-[10px] text-gray-600">{time}</p>
+        <p className="text-[10px] text-[#A1A1AA]">{time}</p>
         {status === "success" && <CheckCircle className="w-3.5 h-3.5 text-green-400 ml-auto mt-0.5" />}
         {status === "pending" && <Clock className="w-3.5 h-3.5 text-amber-400 ml-auto mt-0.5" />}
         {status === "alert" && <AlertTriangle className="w-3.5 h-3.5 text-red-400 ml-auto mt-0.5" />}
@@ -38,13 +38,13 @@ function StatCard({ icon: Icon, label, value, trend, color }: {
   icon: any; label: string; value: string; trend?: string; color: string;
 }) {
   return (
-    <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-3.5">
+    <div className="bg-[#111111]/80 border border-white/[0.07] rounded-xl p-3.5">
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className={`w-3.5 h-3.5 ${color}`} />
-        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider">{label}</span>
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      {trend && <p className="text-[10px] text-gray-600 mt-0.5">{trend}</p>}
+      {trend && <p className="text-[10px] text-[#A1A1AA] mt-0.5">{trend}</p>}
     </div>
   );
 }
@@ -54,11 +54,11 @@ function QuickAction({ icon: Icon, label, color, onClick }: {
   icon: any; label: string; color: string; onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1.5 p-3 bg-gray-900/60 border border-gray-800 rounded-xl hover:border-gray-700 hover:bg-gray-800/60 transition-all cursor-pointer group">
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5 p-3 bg-[#0d0d0d] border border-white/[0.07] rounded-xl hover:border-white/10 hover:bg-[#1A1A1A]/60 transition-all cursor-pointer group">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
         <Icon className="w-5 h-5" />
       </div>
-      <span className="text-[10px] text-gray-400 font-bold group-hover:text-white transition-colors">{label}</span>
+      <span className="text-[10px] text-[#A1A1AA] font-bold group-hover:text-white transition-colors">{label}</span>
     </button>
   );
 }
@@ -89,7 +89,7 @@ export default function OfficeView({ agentName, onChat }: { agentName: string; o
     <div className="max-w-xl mx-auto space-y-5">
       {/* Greeting */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pt-2">
-        <p className="text-gray-500 text-xs">{greeting} · {timeStr}</p>
+        <p className="text-[#A1A1AA] text-xs">{greeting} · {timeStr}</p>
         <h2 className="text-xl font-bold mt-0.5">Here&apos;s your business</h2>
       </motion.div>
 
@@ -102,7 +102,7 @@ export default function OfficeView({ agentName, onChat }: { agentName: string; o
 
       {/* Quick actions */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider mb-2">Quick Actions</p>
+        <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider mb-2">Quick Actions</p>
         <div className="grid grid-cols-4 gap-2">
           <QuickAction icon={PhoneCall} label="Call" color="bg-blue-500/10 text-blue-400" onClick={() => onChat("Call someone for me")} />
           <QuickAction icon={MessageCircle} label="Message" color="bg-green-500/10 text-green-400" onClick={() => onChat("Send a message")} />
@@ -114,10 +114,10 @@ export default function OfficeView({ agentName, onChat }: { agentName: string; o
       {/* Recent activity */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Recent Activity</p>
-          <p className="text-[10px] text-gray-600">{agentName} handled these for you</p>
+          <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider">Recent Activity</p>
+          <p className="text-[10px] text-[#A1A1AA]">{agentName} handled these for you</p>
         </div>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl px-4">
+        <div className="bg-[#0d0d0d] border border-white/[0.07] rounded-xl px-4">
           {recentActivity.map((item, i) => (
             <ActivityItem key={i} {...item} />
           ))}
@@ -126,13 +126,13 @@ export default function OfficeView({ agentName, onChat }: { agentName: string; o
 
       {/* Agent status bar */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-gray-900/40 border border-gray-800 rounded-xl p-3 flex items-center gap-3">
+        className="bg-[#111111]/40 border border-white/[0.07] rounded-xl p-3 flex items-center gap-3">
         <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
           <Bot className="w-4 h-4 text-green-400" />
         </div>
         <div className="flex-1">
           <p className="text-xs font-bold text-white">{agentName} is working</p>
-          <p className="text-[10px] text-gray-500">Answering calls · Replying on WhatsApp · Monitoring inbox</p>
+          <p className="text-[10px] text-[#A1A1AA]">Answering calls · Replying on WhatsApp · Monitoring inbox</p>
         </div>
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
       </motion.div>

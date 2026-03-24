@@ -21,10 +21,10 @@ function CallInProgress({ onHangup }: { onHangup: () => void }) {
         <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
           <Phone className="w-8 h-8 text-green-400" />
         </div>
-        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse border-2 border-zinc-900" />
+        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse border-2 border-white/[0.08]" />
       </div>
       <div className="text-center">
-        <p className="text-sm font-semibold text-zinc-100">
+        <p className="text-sm font-semibold text-[#FAFAFA]">
           {state === "speaking" ? "Jenny is speaking..." : state === "listening" ? "Jenny is listening..." : "Connected"}
         </p>
         <p className="text-xs text-green-400 mt-1">● Live call</p>
@@ -147,12 +147,12 @@ export default function CallsPage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-zinc-100">Calls</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Make calls and manage your AI receptionist</p>
+        <h1 className="text-xl font-bold text-[#FAFAFA]">Calls</h1>
+        <p className="text-sm text-[#A1A1AA] mt-0.5">Make calls and manage your AI receptionist</p>
       </div>
 
       {/* Push notifications */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+      <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-4">
         <PushStatusBadge />
       </div>
 
@@ -164,7 +164,7 @@ export default function CallsPage() {
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               Incoming Call
             </p>
-            <p className="text-sm text-zinc-400 mt-1">From: {incomingCaller}</p>
+            <p className="text-sm text-[#A1A1AA] mt-1">From: {incomingCaller}</p>
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={handleAnswerIncoming}>
@@ -179,10 +179,10 @@ export default function CallsPage() {
 
       {/* Active call */}
       {callState === "connected" && lkToken && (
-        <div className="bg-zinc-900 border border-green-500/20 rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
-            <p className="text-sm font-semibold text-zinc-200">Active Call</p>
-            {roomName && <p className="text-xs text-zinc-500 font-mono">{roomName}</p>}
+        <div className="bg-[#111111] border border-green-500/20 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-white/[0.07] flex items-center justify-between">
+            <p className="text-sm font-semibold text-[#FAFAFA]">Active Call</p>
+            {roomName && <p className="text-xs text-[#A1A1AA] font-mono">{roomName}</p>}
           </div>
           <LiveKitRoom token={lkToken} serverUrl={lkUrl} connect={true} audio={true} video={false} onDisconnected={handleHangup}>
             <RoomAudioRenderer />
@@ -195,14 +195,14 @@ export default function CallsPage() {
       {(callState === "idle" || callState === "calling") && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Dialer */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+          <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-500/10 rounded-xl flex items-center justify-center">
-                <Phone className="w-4 h-4 text-indigo-400" />
+              <div className="w-9 h-9 bg-[#E2725B]/10 rounded-xl flex items-center justify-center">
+                <Phone className="w-4 h-4 text-[#E2725B]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-100">Make a Call</p>
-                <p className="text-xs text-zinc-500">Dial any number directly</p>
+                <p className="text-sm font-semibold text-[#FAFAFA]">Make a Call</p>
+                <p className="text-xs text-[#A1A1AA]">Dial any number directly</p>
               </div>
             </div>
             <Input
@@ -211,13 +211,13 @@ export default function CallsPage() {
               onChange={(e) => setDialNumber(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleDialOut()}
               disabled={callState === "calling"}
-              className="bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-600 focus-visible:ring-indigo-500/50"
+              className="bg-[#1A1A1A] border-white/10 text-[#FAFAFA] placeholder:text-white/30 focus-visible:ring-[#E2725B]/50"
             />
             {agents.length > 1 && (
               <select
                 value={selectedAgent}
                 onChange={(e) => setSelectedAgent(e.target.value)}
-                className="w-full text-xs border border-zinc-700 rounded-lg px-3 py-2 bg-zinc-800 text-zinc-300"
+                className="w-full text-xs border border-white/10 rounded-lg px-3 py-2 bg-[#1A1A1A] text-[#FAFAFA]/80"
               >
                 {agents.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -230,12 +230,12 @@ export default function CallsPage() {
               <p className="text-xs text-red-400">
                 {callError}
                 {callError.includes("Pro plan") && (
-                  <a href="/upgrade" className="ml-1 underline font-medium text-indigo-400">Upgrade →</a>
+                  <a href="/upgrade" className="ml-1 underline font-medium text-[#E2725B]">Upgrade →</a>
                 )}
               </p>
             )}
             <Button
-              className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white border-0"
+              className="w-full bg-gradient-to-r from-[#E2725B] to-[#D4A373] hover:from-[#F48B76] hover:to-[#D4A373] text-white border-0"
               onClick={handleDialOut}
               disabled={callState === "calling" || !dialNumber.trim()}
             >
@@ -244,26 +244,26 @@ export default function CallsPage() {
           </div>
 
           {/* AI receptionist */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+          <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-violet-500/10 rounded-xl flex items-center justify-center">
-                <Bot className="w-4 h-4 text-violet-400" />
+              <div className="w-9 h-9 bg-[#D4A373]/10 rounded-xl flex items-center justify-center">
+                <Bot className="w-4 h-4 text-[#D4A373]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-100">AI Receptionist</p>
-                <p className="text-xs text-zinc-500">Jenny answers calls automatically</p>
+                <p className="text-sm font-semibold text-[#FAFAFA]">AI Receptionist</p>
+                <p className="text-xs text-[#A1A1AA]">Jenny answers calls automatically</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-sm text-zinc-400">Active — ready to answer</span>
+              <span className="text-sm text-[#A1A1AA]">Active — ready to answer</span>
             </div>
-            <p className="text-xs text-zinc-600">
+            <p className="text-xs text-white/30">
               When someone calls your DID, Jenny picks up instantly and handles the conversation.
             </p>
             <Button
               variant="outline"
-              className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+              className="w-full border-white/10 text-[#FAFAFA]/80 hover:bg-[#1A1A1A] hover:text-[#FAFAFA]"
               onClick={async () => {
                 const res = await fetch("/api/livekit/token");
                 const data = await res.json();

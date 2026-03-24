@@ -52,10 +52,10 @@ function WhatsAppConnectionCard() {
 
   if (loading) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-5 bg-zinc-800 rounded w-48" />
-          <div className="h-4 bg-zinc-800 rounded w-72" />
+          <div className="h-5 bg-[#1A1A1A] rounded w-48" />
+          <div className="h-4 bg-[#1A1A1A] rounded w-72" />
         </div>
       </div>
     );
@@ -63,14 +63,14 @@ function WhatsAppConnectionCard() {
 
   if (!agent) {
     return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 bg-green-500/10 rounded-xl">
             <MessageCircle className="w-5 h-5 text-green-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-zinc-100">WhatsApp Connection</h3>
-            <p className="text-xs text-zinc-500">Create an agent first to connect WhatsApp</p>
+            <h3 className="text-sm font-bold text-[#FAFAFA]">WhatsApp Connection</h3>
+            <p className="text-xs text-[#A1A1AA]">Create an agent first to connect WhatsApp</p>
           </div>
         </div>
       </div>
@@ -81,15 +81,15 @@ function WhatsAppConnectionCard() {
   const waNumber = "+17672950333";
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+    <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl ${isConnected ? "bg-green-500/10" : "bg-yellow-500/10"}`}>
             <MessageCircle className={`w-5 h-5 ${isConnected ? "text-green-500" : "text-yellow-500"}`} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-zinc-100">WhatsApp Connection</h3>
-            <p className="text-xs text-zinc-500">
+            <h3 className="text-sm font-bold text-[#FAFAFA]">WhatsApp Connection</h3>
+            <p className="text-xs text-[#A1A1AA]">
               {isConnected ? "Your WhatsApp is connected to " + agent.name : "Connect your WhatsApp to activate " + agent.name}
             </p>
           </div>
@@ -104,15 +104,15 @@ function WhatsAppConnectionCard() {
 
       {isConnected ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 bg-zinc-800/50 rounded-xl p-3">
-            <Smartphone className="w-4 h-4 text-zinc-400" />
-            <span className="text-sm text-zinc-200 font-mono">
+          <div className="flex items-center gap-3 bg-white/[0.04] rounded-xl p-3">
+            <Smartphone className="w-4 h-4 text-[#A1A1AA]" />
+            <span className="text-sm text-[#FAFAFA] font-mono">
               +{agent.ownerPhone.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, "$1 ($2) $3-$4")}
             </span>
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-[#A1A1AA]">
             Messages sent to{" "}
-            <span className="text-zinc-400 font-medium">{waNumber}</span>{" "}
+            <span className="text-[#A1A1AA] font-medium">{waNumber}</span>{" "}
             from this number are handled by {agent.name}.
           </p>
         </div>
@@ -121,17 +121,17 @@ function WhatsAppConnectionCard() {
           {agent.activationCode ? (
             <>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-zinc-800/50 rounded-xl p-3 font-mono text-base text-center text-indigo-300 tracking-widest border border-zinc-700">
+                <div className="flex-1 bg-white/[0.04] rounded-xl p-3 font-mono text-base text-center text-[#E2725B] tracking-widest border border-white/10">
                   {agent.activationCode}
                 </div>
                 <button
                   onClick={() => copyCode(agent.activationCode)}
-                  className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-zinc-200"
+                  className="p-3 rounded-xl bg-[#1A1A1A] hover:bg-white/10 transition-colors text-[#A1A1AA] hover:text-[#FAFAFA]"
                 >
                   {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-[#A1A1AA]">
                 Text this code to{" "}
                 <a
                   href={`https://wa.me/17672950333?text=${encodeURIComponent(agent.activationCode)}`}
@@ -146,13 +146,13 @@ function WhatsAppConnectionCard() {
             </>
           ) : (
             <>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-[#A1A1AA]">
                 No activation code available. Generate one to connect your WhatsApp.
               </p>
               <button
                 onClick={regenerateCode}
                 disabled={regenerating}
-                className="flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 text-xs text-[#E2725B] hover:text-[#E2725B] transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? "animate-spin" : ""}`} />
                 {regenerating ? "Generating..." : "Generate Activation Code"}
@@ -172,8 +172,8 @@ export default function DashboardSettingsPage() {
     <DashboardShell>
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-zinc-100">Settings</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Manage your account and connections</p>
+        <h1 className="text-xl font-bold text-[#FAFAFA]">Settings</h1>
+        <p className="text-sm text-[#A1A1AA] mt-0.5">Manage your account and connections</p>
       </div>
 
       {/* WhatsApp Connection */}
@@ -183,25 +183,25 @@ export default function DashboardSettingsPage() {
       <CallRoutingCard />
 
       {/* Clerk User Profile */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="bg-[#111111] border border-white/[0.07] rounded-2xl overflow-hidden">
         <UserProfile
           appearance={{
             baseTheme: undefined,
             elements: {
               rootBox: "w-full",
-              card: "bg-zinc-900 shadow-none border-0 rounded-none",
-              navbar: "bg-zinc-900 border-r border-zinc-800",
-              navbarButton: "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800",
-              navbarButtonActive: "text-indigo-400 bg-indigo-500/10",
-              headerTitle: "text-zinc-100",
-              headerSubtitle: "text-zinc-500",
-              formFieldLabel: "text-zinc-300",
-              formFieldInput: "bg-zinc-800 border-zinc-700 text-zinc-200",
-              formButtonPrimary: "bg-indigo-600 hover:bg-indigo-700",
-              profileSectionTitle: "text-zinc-300",
-              profileSectionContent: "text-zinc-400",
-              dividerLine: "bg-zinc-800",
-              badge: "bg-indigo-500/20 text-indigo-300",
+              card: "bg-[#111111] shadow-none border-0 rounded-none",
+              navbar: "bg-[#111111] border-r border-white/[0.07]",
+              navbarButton: "text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1A1A1A]",
+              navbarButtonActive: "text-[#E2725B] bg-[#E2725B]/10",
+              headerTitle: "text-[#FAFAFA]",
+              headerSubtitle: "text-[#A1A1AA]",
+              formFieldLabel: "text-[#FAFAFA]/80",
+              formFieldInput: "bg-[#1A1A1A] border-white/10 text-[#FAFAFA]",
+              formButtonPrimary: "bg-[#E2725B] hover:bg-[#D4A373]",
+              profileSectionTitle: "text-[#FAFAFA]/80",
+              profileSectionContent: "text-[#A1A1AA]",
+              dividerLine: "bg-[#1A1A1A]",
+              badge: "bg-[#E2725B]/15 text-[#E2725B]",
             },
           }}
         />

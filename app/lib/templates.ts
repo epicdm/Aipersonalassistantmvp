@@ -28,7 +28,7 @@ export const TEMPLATES: AgentTemplate[] = [
     emoji: "✨",
     tagline: "Your own AI that just gets things done",
     description: "Manages your schedule, reminds you about bills, sends messages for you, keeps you organized. Like having a personal secretary in your pocket.",
-    color: "from-indigo-500 to-violet-500",
+    color: "from-[#E2725B] to-[#D4A373]",
     purpose: "Help the user manage daily life — reminders, scheduling, bill tracking, to-do lists, sending messages, and general life organization. Be proactive about upcoming deadlines and important dates.",
     tone: "friendly",
     tools: ["whatsapp", "calendar", "email"],

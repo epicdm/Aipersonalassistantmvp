@@ -54,7 +54,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: "Messages Processed", value: "2,482", change: "+14.2%", positive: true, icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Messages Processed", value: "2,482", change: "+14.2%", positive: true, icon: MessageSquare, color: "text-[#E2725B]", bg: "bg-[#E2725B]/10" },
           { label: "Avg Latency", value: "1.24s", change: "-0.12s", positive: true, icon: Clock, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Active Integrations", value: "6", change: "+2", positive: true, icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Goal Completion", value: "94.8%", change: "-2.1%", positive: false, icon: TrendingUp, color: "text-rose-600", bg: "bg-rose-50" },
@@ -69,7 +69,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
                 {stat.change}
               </div>
             </div>
-            <h3 className="text-gray-500 text-sm font-medium">{stat.label}</h3>
+            <h3 className="text-[#A1A1AA] text-sm font-medium">{stat.label}</h3>
             <p className="text-3xl font-bold mt-1 tracking-tight">{stat.value}</p>
           </div>
         ))}
@@ -80,12 +80,12 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
         <div className="lg:col-span-2 bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h3 className="font-bold text-xl text-gray-900">Performance Analytics</h3>
-              <p className="text-sm text-gray-500">Real-time engagement and system response tracking</p>
+              <h3 className="font-bold text-xl text-[#FAFAFA]">Performance Analytics</h3>
+              <p className="text-sm text-[#A1A1AA]">Real-time engagement and system response tracking</p>
             </div>
             <div className="flex bg-gray-50 p-1 rounded-xl">
               {['7d', '30d', '90d'].map(t => (
-                <button key={t} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${t === '7d' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                <button key={t} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${t === '7d' ? 'bg-white text-[#E2725B] shadow-sm' : 'text-[#A1A1AA] hover:text-[#A1A1AA]'}`}>
                   {t.toUpperCase()}
                 </button>
               ))}
@@ -136,7 +136,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-bold text-lg">Source Distribution</h3>
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button className="text-[#A1A1AA] hover:text-[#A1A1AA] transition-colors">
               <MoreHorizontal className="w-5 h-5" />
             </button>
           </div>
@@ -164,7 +164,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: source.color }} />
                   <span className="text-sm font-bold text-gray-700">{source.name}</span>
                 </div>
-                <span className="text-xs font-bold text-gray-500">{source.value}%</span>
+                <span className="text-xs font-bold text-[#A1A1AA]">{source.value}%</span>
               </div>
             ))}
           </div>
@@ -176,7 +176,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-bold text-xl">Operational Activity</h3>
-            <button className="text-sm font-bold text-indigo-600 hover:underline">View All</button>
+            <button className="text-sm font-bold text-[#E2725B] hover:underline">View All</button>
           </div>
           <div className="space-y-6">
             {[
@@ -188,17 +188,17 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
               <div key={i} className="flex gap-5 group relative">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-white group-hover:scale-110 transition-transform ${
                   activity.type === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                  activity.type === 'update' ? 'bg-indigo-50 text-indigo-600' :
+                  activity.type === 'update' ? 'bg-[#E2725B]/10 text-[#E2725B]' :
                   'bg-blue-50 text-blue-600'
                 }`}>
                   <activity.icon className="w-5 h-5" />
                 </div>
                 <div className="flex-grow pt-1 pb-4 border-b border-gray-50">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{activity.text}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{activity.time}</p>
+                    <p className="text-sm font-bold text-[#FAFAFA] group-hover:text-[#E2725B] transition-colors">{activity.text}</p>
+                    <p className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-tighter">{activity.time}</p>
                   </div>
-                  <p className="text-xs text-gray-500">{activity.detail}</p>
+                  <p className="text-xs text-[#A1A1AA]">{activity.detail}</p>
                 </div>
               </div>
             ))}
@@ -227,12 +227,12 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
                   <div className={`w-2 h-2 rounded-full ${service.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                   <div>
                     <p className="text-sm font-bold text-gray-800">{service.name}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{service.uptime} Uptime</p>
+                    <p className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-widest">{service.uptime} Uptime</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-gray-900">{service.latency}</p>
-                  <p className="text-[9px] text-gray-400 uppercase font-bold tracking-tighter">Response Time</p>
+                  <p className="text-xs font-bold text-[#FAFAFA]">{service.latency}</p>
+                  <p className="text-[9px] text-[#A1A1AA] uppercase font-bold tracking-tighter">Response Time</p>
                 </div>
               </div>
             ))}
@@ -241,7 +241,7 @@ export function Overview({ onNavigate }: { onNavigate: (tab: string) => void }) 
           <div className="mt-8 pt-8 border-t border-gray-50">
              <button 
               onClick={() => onNavigate("tools")}
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              className="w-full py-4 bg-[#E2725B] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#D4A373] transition-all shadow-lg shadow-indigo-100"
             >
               Configure Integrations
               <ChevronRight className="w-4 h-4" />

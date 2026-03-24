@@ -46,7 +46,7 @@ export function PushStatusBadge() {
     <div className="text-xs text-muted-foreground">Notifications blocked — enable in browser settings</div>
   )
   return (
-    <button onClick={subscribe} className="text-xs text-indigo-500 hover:text-indigo-600 underline underline-offset-2">
+    <button onClick={subscribe} className="text-xs text-[#E2725B] hover:text-[#E2725B] underline underline-offset-2">
       🔔 Enable push notifications for incoming calls
     </button>
   )

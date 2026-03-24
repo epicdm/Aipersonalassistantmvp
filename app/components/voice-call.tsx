@@ -119,9 +119,9 @@ export function VoiceCall({
   // ── Connected state (LiveKit room) ──────────────────────────
   if (status === 'connected' && lkToken) {
     return (
-      <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3">
-        <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse inline-block" />
+      <div className="rounded-lg border border-[#E2725B]/30 bg-[#E2725B]/5 p-3">
+        <p className="text-xs font-semibold text-[#E2725B] dark:text-[#E2725B] mb-2 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#E2725B] animate-pulse inline-block" />
           Live · {agentName}
         </p>
         <LiveKitRoom
@@ -141,7 +141,7 @@ export function VoiceCall({
   // ── Connecting ──────────────────────────────────────────────
   if (status === 'connecting') {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-[#E2725B]/10 text-[#E2725B] border border-[#E2725B]/20">
         <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
         <span>Connecting…</span>
       </div>
@@ -168,7 +168,7 @@ export function VoiceCall({
   return (
     <button
       onClick={startCall}
-      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-[#E2725B]/10 text-[#E2725B] dark:text-[#E2725B] border border-[#E2725B]/20 hover:bg-[#E2725B]/15 hover:border-[#E2725B]/40 transition-all"
     >
       <Mic className="w-3.5 h-3.5 flex-shrink-0" />
       <span>Talk to {agentName}</span>

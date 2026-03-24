@@ -60,8 +60,8 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         className={`${open ? "w-56" : "w-16"} bg-white border-r border-gray-100 hidden lg:flex flex-col transition-all duration-300 ease-in-out`}
       >
         <div className="h-16 px-5 flex items-center border-b border-gray-50">
-          <div className="flex items-center gap-2.5 font-black text-xl text-gray-900">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 shrink-0">
+          <div className="flex items-center gap-2.5 font-black text-xl text-[#FAFAFA]">
+            <div className="w-9 h-9 bg-gradient-to-br from-[#E2725B] to-[#D4A373] rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 shrink-0">
               <Bot className="w-5 h-5" />
             </div>
             {open && <span className="tracking-tight">AIVA</span>}
@@ -72,7 +72,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
           {navSections.map((section) => (
             <div key={section.label || "main"}>
               {open && section.label && (
-                <div className="px-3 py-2 mt-4 text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                <div className="px-3 py-2 mt-4 text-[9px] font-bold text-[#A1A1AA] uppercase tracking-[0.2em]">
                   {section.label}
                 </div>
               )}
@@ -85,8 +85,8 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
                     href={item.href}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
                       active
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                        ? "bg-[#E2725B] text-white shadow-md shadow-indigo-100"
+                        : "text-[#A1A1AA] hover:bg-gray-50 hover:text-gray-700"
                     }`}
                   >
                     <Icon className="w-[18px] h-[18px] shrink-0" />
@@ -101,7 +101,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         <div className="p-3 border-t border-gray-50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-[#A1A1AA] hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
           >
             <LogOut className="w-[18px] h-[18px] shrink-0" />
             {open && <span>Logout</span>}
@@ -114,12 +114,12 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-2 font-bold text-sm">
-            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white">
+            <div className="w-7 h-7 bg-gradient-to-br from-[#E2725B] to-[#D4A373] rounded-lg flex items-center justify-center text-white">
               <Bot className="w-4 h-4" />
             </div>
             <span>AIVA</span>
           </div>
-          <button onClick={() => setOpen(!open)} className="p-2 rounded-lg bg-gray-100 cursor-pointer">
+          <button onClick={() => setOpen(!open)} className="p-2 rounded-lg bg-white/[0.06] cursor-pointer">
             <Menu className="w-4 h-4" />
           </button>
         </div>

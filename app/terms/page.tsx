@@ -2,9 +2,9 @@ export const metadata = { title: "Terms of Service — BFF AI" };
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-300 px-6 py-16 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-[#FAFAFA]/80 px-6 py-16 max-w-3xl mx-auto">
       <h1 className="text-4xl font-extrabold text-white mb-2">Terms of Service</h1>
-      <p className="text-sm text-gray-500 mb-8">Last updated: March 8, 2026</p>
+      <p className="text-sm text-[#A1A1AA] mb-8">Last updated: March 8, 2026</p>
 
       <div className="space-y-6 leading-relaxed">
         <section>
@@ -77,11 +77,11 @@ export default function TermsOfService() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-2">13. Contact</h2>
-          <p>EPIC Communications Inc.<br/>Roseau, Dominica<br/>Email: <a href="mailto:info@epic.dm" className="text-indigo-400 hover:underline">info@epic.dm</a><br/>Phone: +1 (767) 285-8382</p>
+          <p>EPIC Communications Inc.<br/>Roseau, Dominica<br/>Email: <a href="mailto:info@epic.dm" className="text-[#E2725B] hover:underline">info@epic.dm</a><br/>Phone: +1 (767) 285-8382</p>
         </section>
       </div>
 
-      <div className="mt-12 pt-6 border-t border-gray-800 text-center text-gray-600 text-xs">
+      <div className="mt-12 pt-6 border-t border-white/[0.07] text-center text-[#A1A1AA] text-xs">
         <p>© 2026 BFF AI — Powered by EPIC Communications Inc.</p>
       </div>
     </div>
