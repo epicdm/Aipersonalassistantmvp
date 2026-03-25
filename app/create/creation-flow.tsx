@@ -49,12 +49,12 @@ function StepTemplatePicker({
       >
         <h1 className="text-4xl font-extrabold tracking-tight">
           What kind of{" "}
-          <span className="bg-gradient-to-r from-[#E2725B] to-[#D4A373] bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#00333c] to-[#004B57] bg-clip-text text-transparent">
             agent
           </span>{" "}
           do you need?
         </h1>
-        <p className="text-[#A1A1AA] text-lg max-w-md mx-auto">
+        <p className="text-[#40484a] text-lg max-w-md mx-auto">
           Pick a template to get started. You can customize everything later.
         </p>
       </motion.div>
@@ -72,8 +72,8 @@ function StepTemplatePicker({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 + i * 0.05 }}
             onClick={() => onSelect(tpl.slug)}
-            className={`group relative bg-[#111111]/80 border border-white/[0.07] rounded-2xl p-5 text-left
-              hover:border-gray-600 hover:bg-[#111111] transition-all duration-200
+            className={`group relative bg-white/80 border border-[#e1e3e3] rounded-2xl p-5 text-left
+              hover:border-[#004B57] hover:bg-white transition-all duration-200
               hover:scale-[1.02] hover:shadow-xl cursor-pointer`}
           >
             <div className="flex items-start gap-4">
@@ -86,7 +86,7 @@ function StepTemplatePicker({
                 <h3 className="text-sm font-bold text-gray-100 group-hover:text-white transition-colors">
                   {tpl.name}
                 </h3>
-                <p className="text-xs text-[#A1A1AA] mt-1 leading-relaxed line-clamp-2">
+                <p className="text-xs text-[#40484a] mt-1 leading-relaxed line-clamp-2">
                   {tpl.tagline}
                 </p>
               </div>
@@ -141,7 +141,7 @@ function StepMeetAgent({
         transition={{ delay: 0.3 }}
         className="space-y-2"
       >
-        <p className="text-sm text-[#A1A1AA] uppercase tracking-wider font-semibold">{tpl.name}</p>
+        <p className="text-sm text-[#40484a] uppercase tracking-wider font-semibold">{tpl.name}</p>
         <h1 className="text-4xl font-extrabold tracking-tight">
           Meet{" "}
           {editing ? (
@@ -156,29 +156,29 @@ function StepMeetAgent({
             />
           ) : (
             <span
-              className="bg-gradient-to-r from-[#E2725B] to-[#D4A373] bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition"
+              className="bg-gradient-to-r from-[#00333c] to-[#004B57] bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition"
               onClick={handleEditClick}
             >
               {agentName || "your agent"}
             </span>
           )}
         </h1>
-        <p className="text-[#A1A1AA] text-lg">{tpl.tagline}</p>
+        <p className="text-[#40484a] text-lg">{tpl.tagline}</p>
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-[#111111]/80 border border-white/[0.07] rounded-2xl p-5 max-w-sm mx-auto text-left"
+        className="bg-white/80 border border-[#e1e3e3] rounded-2xl p-5 max-w-sm mx-auto text-left"
       >
         <div className="flex items-start gap-3">
           <div className={`w-8 h-8 bg-gradient-to-br ${tpl.color} rounded-lg shrink-0 flex items-center justify-center text-base`}>
             {tpl.emoji}
           </div>
           <div>
-            <p className="text-xs text-[#A1A1AA] font-semibold mb-1">{agentName || "Your agent"}</p>
-            <p className="text-sm text-[#FAFAFA]/80 leading-relaxed">
+            <p className="text-xs text-[#40484a] font-semibold mb-1">{agentName || "Your agent"}</p>
+            <p className="text-sm text-[#00333c]/80 leading-relaxed">
               Hey! I&apos;m {agentName || "here"} 👋 I&apos;ll get to know you through conversation — no forms needed. Ready when you are!
             </p>
           </div>
@@ -193,7 +193,7 @@ function StepMeetAgent({
         >
           <button
             onClick={handleEditClick}
-            className="text-xs text-[#A1A1AA] hover:text-[#A1A1AA] transition cursor-pointer underline underline-offset-2 mb-4 block mx-auto"
+            className="text-xs text-[#40484a] hover:text-[#40484a] transition cursor-pointer underline underline-offset-2 mb-4 block mx-auto"
           >
             Change name
           </button>
@@ -224,12 +224,12 @@ function StepMeetAgent({
             </>
           )}
         </button>
-        <p className="text-xs text-[#A1A1AA]">
+        <p className="text-xs text-[#40484a]">
           Your agent will get to know you through conversation — no forms needed!
         </p>
         <button
           onClick={onBack}
-          className="text-[#A1A1AA] hover:text-[#A1A1AA] text-xs underline underline-offset-4 transition-colors cursor-pointer"
+          className="text-[#40484a] hover:text-[#40484a] text-xs underline underline-offset-4 transition-colors cursor-pointer"
         >
           ← choose a different template
         </button>
@@ -275,7 +275,7 @@ function StepActivate({
         <h2 className="text-4xl font-extrabold">
           {agentName} is ready! 🎉
         </h2>
-        <p className="text-[#A1A1AA] mt-2 text-lg">
+        <p className="text-[#40484a] mt-2 text-lg">
           {isPersonal ? "One tap to activate on WhatsApp" : "Connect your business WhatsApp number"}
         </p>
       </motion.div>
@@ -299,7 +299,7 @@ function StepActivate({
               </svg>
               Start chatting on WhatsApp
             </a>
-            <p className="text-sm text-[#A1A1AA] mt-2">
+            <p className="text-sm text-[#40484a] mt-2">
               Tap the button, hit send, and your agent will introduce itself ✨
               <br />
               🎤 You can type or send voice notes — your agent understands both!
@@ -322,12 +322,12 @@ function StepActivate({
               </svg>
               Connect WhatsApp Business Number
             </a>
-            <p className="text-sm text-[#A1A1AA] mt-2">
+            <p className="text-sm text-[#40484a] mt-2">
               Connect your Meta Business account and select your WhatsApp number. Takes 2 minutes.
             </p>
             {activationCode && (
-              <p className="text-xs text-[#A1A1AA] text-center mt-2">
-                Your activation code: <span className="font-mono text-[#A1A1AA]">{activationCode}</span>
+              <p className="text-xs text-[#40484a] text-center mt-2">
+                Your activation code: <span className="font-mono text-[#40484a]">{activationCode}</span>
               </p>
             )}
           </>
@@ -337,7 +337,7 @@ function StepActivate({
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
         <button
           onClick={onContinue}
-          className="text-[#A1A1AA] hover:text-[#FAFAFA]/80 text-sm underline underline-offset-4 transition-colors cursor-pointer"
+          className="text-[#40484a] hover:text-[#00333c]/80 text-sm underline underline-offset-4 transition-colors cursor-pointer"
         >
           or continue to dashboard →
         </button>
@@ -438,14 +438,14 @@ export default function CreationFlow() {
     step === "template" ? 1 : step === "meet" ? 2 : 3;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{fontFamily:"'Inter',sans-serif",backgroundColor:"#f8f9fa",color:"#191c1d"}}>
       {/* Ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#E2725B]/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#00333c]/8 rounded-full blur-[150px] pointer-events-none" />
 
       {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-[#1A1A1A]/60 z-50">
+      <div className="fixed top-0 left-0 right-0 h-1 bg-[#f2f4f4]/60 z-50">
         <motion.div
-          className="h-full bg-gradient-to-r from-[#E2725B] to-[#D4A373]"
+          className="h-full bg-gradient-to-r from-[#00333c] to-[#004B57]"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         />
@@ -453,18 +453,18 @@ export default function CreationFlow() {
 
       {/* BFF brand */}
       <div className="fixed top-4 left-6 flex items-center gap-2 z-50">
-        <div className="w-8 h-8 bg-gradient-to-br from-[#E2725B] to-[#D4A373] rounded-xl flex items-center justify-center">
+        <div className="w-8 h-8 bg-gradient-to-br from-[#00333c] to-[#004B57] rounded-xl flex items-center justify-center">
           <Bot className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-sm text-[#A1A1AA]">BFF</span>
+        <span className="font-bold text-sm text-[#40484a]">BFF</span>
       </div>
 
       {/* Step indicator */}
       <div className="fixed top-4 right-6 z-50 flex items-center gap-2">
-        <span className="text-xs text-[#A1A1AA] font-medium">
+        <span className="text-xs text-[#40484a] font-medium">
           Step {stepNum} of 3
         </span>
-        <Sparkles className="w-3.5 h-3.5 text-[#A1A1AA]" />
+        <Sparkles className="w-3.5 h-3.5 text-[#40484a]" />
       </div>
 
       {/* Content */}

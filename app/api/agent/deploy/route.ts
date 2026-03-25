@@ -4,20 +4,35 @@ import { prisma } from "@/app/lib/prisma";
 import { generateSoulMd } from "@/app/lib/soul-generator";
 import { launchAgent, getAgentStatus, stopAgent } from "@/app/lib/runtime/agent-launcher";
 
-export async function POST() {
+export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const agent = await prisma.agent.findFirst({ where: { userId: user.id } });
+  let agentId: string | undefined;
+  try { const body = await req.json(); agentId = body.agentId; } catch {}
+
+  const agent = agentId
+    ? await prisma.agent.findFirst({ where: { id: agentId, userId: user.id } })
+    : await prisma.agent.findFirst({ where: { userId: user.id } });
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
-  const config = (agent.config as any) || {};
+  // Merge: agent top-level fields take priority over config object
+  const config = {
+    name: agent.name,
+    purpose: agent.purpose || "",
+    tone: agent.tone || "friendly",
+    template: agent.template || "assistant",
+    tools: agent.tools ? JSON.parse(agent.tools as string) : [],
+    approvalMode: agent.approvalMode || "confirm",
+    ...((agent.config as any) || {}),
+  };
 
+  // Ensure name is set (use agent name as fallback)
   if (!config.name?.trim()) {
-    return NextResponse.json({ error: "Agent name is required" }, { status: 400 });
+    config.name = agent.name || "My Agent";
   }
-  if (!config.purpose?.trim() && !agent.purpose?.trim()) {
-    return NextResponse.json({ error: "Agent purpose is required" }, { status: 400 });
+  if (!config.purpose?.trim()) {
+    config.purpose = `I am ${config.name}, an AI assistant.`;
   }
 
   const soul = generateSoulMd(config, user.name || user.email);

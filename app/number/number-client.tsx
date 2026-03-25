@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import DarkShell from "@/app/components/dark-shell";
+
 import {
   Phone,
   Loader2,
@@ -134,7 +134,7 @@ function MetaEmbeddedSignup({ onSuccess }: { onSuccess: (data: any) => void }) {
       <button
         onClick={launchSignup}
         disabled={loading || !sdkLoaded}
-        className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+        className="flex items-center justify-center gap-3 w-full px-6 py-4 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-[#00333c] rounded-2xl font-bold text-lg transition-all cursor-pointer"
       >
         {loading ? (
           <Loader2 className="w-6 h-6 animate-spin" />
@@ -198,7 +198,7 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
           value={phoneNumberId}
           onChange={(e) => setPhoneNumberId(e.target.value)}
           placeholder="e.g. 123456789012345"
-          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-[#00333c] placeholder-gray-500 focus:outline-none focus:border-[#004B57] focus:ring-1 focus:ring-[#004B57] transition-colors"
           required
         />
       </div>
@@ -211,7 +211,7 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
           value={wabaId}
           onChange={(e) => setWabaId(e.target.value)}
           placeholder="e.g. 987654321098765"
-          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-[#00333c] placeholder-gray-500 focus:outline-none focus:border-[#004B57] focus:ring-1 focus:ring-[#004B57] transition-colors"
           required
         />
       </div>
@@ -225,13 +225,13 @@ function ExistingApiForm({ onSuccess }: { onSuccess: (data: any) => void }) {
           value={displayPhone}
           onChange={(e) => setDisplayPhone(e.target.value)}
           placeholder="e.g. +1 767 555 1234"
-          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-[#00333c] placeholder-gray-500 focus:outline-none focus:border-[#004B57] focus:ring-1 focus:ring-[#004B57] transition-colors"
         />
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-[#E2725B] hover:bg-[#E2725B] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-[#00333c] hover:bg-[#00333c] disabled:opacity-50 disabled:cursor-not-allowed text-[#00333c] rounded-2xl font-bold text-lg transition-all cursor-pointer"
       >
         {loading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -285,9 +285,9 @@ function NewNumberForm() {
 
   if (submitted) {
     return (
-      <div className="bg-[#E2725B]/10 border border-[#E2725B]/30 rounded-xl p-6 text-center space-y-2">
-        <CheckCircle className="w-8 h-8 text-[#E2725B] mx-auto" />
-        <p className="text-[#E2725B] font-medium">Request Received!</p>
+      <div className="bg-[#00333c]/10 border border-[#E2725B]/30 rounded-xl p-6 text-center space-y-2">
+        <CheckCircle className="w-8 h-8 text-[#004B57] mx-auto" />
+        <p className="text-[#004B57] font-medium">Request Received!</p>
         <p className="text-[#A1A1AA] text-sm">
           We'll set up your number within 24 hours. We'll WhatsApp you when it's
           ready.
@@ -307,7 +307,7 @@ function NewNumberForm() {
           value={businessName}
           onChange={(e) => setBusinessName(e.target.value)}
           placeholder="e.g. EPIC Communications"
-          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-[#00333c] placeholder-gray-500 focus:outline-none focus:border-[#004B57] focus:ring-1 focus:ring-[#004B57] transition-colors"
           required
         />
       </div>
@@ -318,7 +318,7 @@ function NewNumberForm() {
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#E2725B] focus:ring-1 focus:ring-[#E2725B] transition-colors"
+          className="w-full px-4 py-3 bg-[#1A1A1A] border border-white/10 rounded-xl text-[#00333c] focus:outline-none focus:border-[#004B57] focus:ring-1 focus:ring-[#004B57] transition-colors"
         >
           <option value="+1767">🇩🇲 Dominica (+1 767)</option>
           <option value="+1">🇺🇸 United States (+1)</option>
@@ -334,7 +334,7 @@ function NewNumberForm() {
       <button
         type="submit"
         disabled={loading}
-        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg transition-all cursor-pointer"
+        className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-[#00333c] rounded-2xl font-bold text-lg transition-all cursor-pointer"
       >
         {loading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -381,14 +381,14 @@ function PathCard({
       >
         <div
           className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-            open ? "bg-[#E2725B]/15" : "bg-[#1A1A1A]"
+            open ? "bg-[#00333c]/15" : "bg-[#1A1A1A]"
           }`}
         >
           {icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-white">{title}</h3>
+            <h3 className="text-lg font-bold text-[#00333c]">{title}</h3>
             {badge && (
               <span
                 className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
@@ -458,22 +458,30 @@ export default function NumberClient() {
 
   if (status === "loading") {
     return (
-      <DarkShell title="WhatsApp Number">
+      <div style={{fontFamily:"'Inter',sans-serif",backgroundColor:"#f8f9fa",minHeight:"100vh"}}>
+      <header style={{background:"#f8f9fa",padding:"16px 24px",borderBottom:"1px solid #e1e3e3",position:"sticky",top:0,zIndex:40}}>
+        <h1 style={{fontFamily:"'Manrope',sans-serif",fontWeight:700,fontSize:"1.125rem",color:"#00333c",margin:0}}>WhatsApp Number</h1>
+      </header>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"24px 24px 80px"}}>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-[#A1A1AA]" />
         </div>
-      </DarkShell>
+      </div></div>
     );
   }
 
   return (
-    <DarkShell title="WhatsApp Number">
+    <div style={{fontFamily:"'Inter',sans-serif",backgroundColor:"#f8f9fa",minHeight:"100vh"}}>
+      <header style={{background:"#f8f9fa",padding:"16px 24px",borderBottom:"1px solid #e1e3e3",position:"sticky",top:0,zIndex:40}}>
+        <h1 style={{fontFamily:"'Manrope',sans-serif",fontWeight:700,fontSize:"1.125rem",color:"#00333c",margin:0}}>WhatsApp Number</h1>
+      </header>
+      <div style={{maxWidth:520,margin:"0 auto",padding:"24px 24px 80px"}}>
       <div className="max-w-lg mx-auto space-y-6 py-8">
         {/* ── Connected State ── */}
         {status === "connected" && connectedData && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-[#00333c]">
               WhatsApp Connected!
             </h2>
             <p className="text-green-300 text-lg font-mono">
@@ -491,7 +499,7 @@ export default function NumberClient() {
         {status === "provisioned" && phoneData && (
           <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-8 text-center space-y-4">
             <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
-            <p className="text-2xl font-bold font-mono text-white">
+            <p className="text-2xl font-bold font-mono text-[#00333c]">
               {phoneData.number || phoneData.did}
             </p>
             <p className="text-xs text-[#A1A1AA]">
@@ -504,7 +512,7 @@ export default function NumberClient() {
         {status === "idle" && (
           <>
             <div className="text-center space-y-2 mb-2">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-[#00333c]">
                 Set Up WhatsApp for Your Business
               </h2>
               <p className="text-[#A1A1AA] text-sm">
@@ -548,11 +556,11 @@ export default function NumberClient() {
 
             {/* Path 2 — Existing API */}
             <PathCard
-              icon={<Plug className="w-6 h-6 text-[#E2725B]" />}
+              icon={<Plug className="w-6 h-6 text-[#004B57]" />}
               title="I Already Have Meta API Access"
               subtitle="Connect with your Phone Number ID and WABA ID"
               badge="Developer"
-              badgeColor="bg-[#E2725B]/15 text-[#E2725B]"
+              badgeColor="bg-[#00333c]/15 text-[#004B57]"
               open={openPath === 1}
               onToggle={() => togglePath(1)}
             >
@@ -587,6 +595,6 @@ export default function NumberClient() {
           </>
         )}
       </div>
-    </DarkShell>
+    </div></div>
   );
 }
