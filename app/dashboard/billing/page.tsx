@@ -3,181 +3,188 @@
 import DashboardShell from "@/app/components/dashboard-shell";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+interface Bill {
+  id: string;
+  type: string;
+  amount: number;
+  description: string;
+  createdAt: string;
+  status: string;
+}
+
+interface PlanData {
+  plan: string;
+  pendingPlan: string | null;
+}
+
+const PLAN_FEATURES: Record<string, { label: string; messages: string; agents: string; price: string; color: string }> = {
+  free:     { label: "Free",     messages: "100/mo",      agents: "1",         price: "$0/mo",   color: "#70787b" },
+  pro:      { label: "Pro",      messages: "5,000/mo",    agents: "3",         price: "$29/mo",  color: "#004B57" },
+  business: { label: "Business", messages: "Unlimited",   agents: "Unlimited", price: "$99/mo",  color: "#006d2f" },
+};
 
 export default function BillingPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
+  const [plan, setPlan] = useState<PlanData>({ plan: "free", pendingPlan: null });
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) router.replace("/sign-in");
   }, [isLoaded, isSignedIn, router]);
 
+  useEffect(() => {
+    if (!isSignedIn) return;
+    Promise.all([
+      fetch("/api/billing/plan").then(r => r.json()).catch(() => ({ plan: "free" })),
+      fetch("/api/bills").then(r => r.json()).catch(() => ({ bills: [] })),
+    ]).then(([planData, billData]) => {
+      setPlan(planData);
+      setBills(Array.isArray(billData?.bills) ? billData.bills : []);
+    }).finally(() => setLoading(false));
+  }, [isSignedIn]);
+
+  const handleUpgrade = async (targetPlan: string) => {
+    setUpgrading(targetPlan);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: targetPlan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (res.ok) {
+        toast.success(`Upgraded to ${targetPlan}`);
+        setPlan(p => ({ ...p, plan: targetPlan }));
+      } else {
+        toast.error(data.error || "Upgrade failed");
+      }
+    } catch { toast.error("Upgrade failed"); }
+    finally { setUpgrading(null); }
+  };
+
   if (!isLoaded || !isSignedIn) return null;
+
+  const currentPlan = PLAN_FEATURES[plan.plan] || PLAN_FEATURES.free;
 
   return (
     <DashboardShell>
-      <div
-        className="min-h-screen"
-        style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", color: "#191c1d" }}
-        dangerouslySetInnerHTML={{ __html: `<!-- TopAppBar -->
-<header class="bg-slate-50 dark:bg-slate-950 flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50 transition-colors">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
-<img alt="Business Owner Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a business executive in a tailored suit against a clean, modern office backdrop with soft lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJ1-A2D4skU26mcoIzzc92SCie3bNRmLRDqnD-sn5IHfdWjtTAY7vb67reyf4ZbExjBf0GjL68HSf5hnKkwaWaaHIE6hEeh9NfAMc92qJ1QonXw0m9Hj2MH8EBWqp1zWjZHTHPb0502nlM3pkm9NNkAjnfJEpO1JiJmxDOxefa5tYvM9t0KwlD0jESWf49LxPXV03gvvUkUJ9E9XEML3jSUKEPINSuik193dLQf8h4AFRTYM_HUzNxHr9tXoV-5o4Z4RIbjnF1bpY"/>
-</div>
-<span class="font-manrope font-bold text-cyan-950 dark:text-white text-xl tracking-tight">The Digital Concierge</span>
-</div>
-<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-<span class="material-symbols-outlined text-cyan-900 dark:text-cyan-400" data-icon="notifications">notifications</span>
-</button>
-</header>
-<main class="mt-20 px-6 pt-8 space-y-8">
-<!-- Balance Card (Prominent Bento Style) -->
-<section class="relative overflow-hidden bg-gradient-primary rounded-xl p-8 shadow-[0_20px_40px_rgba(0,51,60,0.12)]">
-<div class="relative z-10 flex flex-col gap-1">
-<span class="font-label text-on-primary-container uppercase tracking-widest text-xs font-bold opacity-80">Available Balance</span>
-<div class="flex items-baseline gap-2">
-<span class="font-headline text-on-primary text-4xl font-extrabold tracking-tighter">$4,285.50</span>
-<span class="text-secondary-fixed font-semibold text-sm">+2.4% this week</span>
-</div>
-<div class="mt-8 flex gap-3">
-<button class="flex-1 bg-secondary-container text-on-secondary-container font-headline font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95">
-<span class="material-symbols-outlined text-lg" data-icon="add_card">add_card</span>
-                        Add Funds
+      <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+
+        {/* Header */}
+        <header style={{ background: "#f8f9fa", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e1e3e3", position: "sticky", top: 0, zIndex: 40 }}>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.125rem", color: "#00333c", margin: 0 }}>Billing</h1>
+          <Link href="/dashboard" style={{ color: "#40484a", fontSize: "0.875rem", textDecoration: "none" }}>Home</Link>
+        </header>
+
+        <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 24px 100px" }}>
+
+          {/* Current plan */}
+          <section style={{ marginBottom: 28 }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Current Plan</h2>
+            <div style={{ background: plan.plan === "free" ? "#fff" : "linear-gradient(135deg,#00333c,#004B57)", borderRadius: 16, padding: 24, border: plan.plan === "free" ? "1px solid #e1e3e3" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.5rem", color: plan.plan === "free" ? "#00333c" : "#fff", margin: "0 0 4px" }}>
+                    {currentPlan.label}
+                  </h3>
+                  <p style={{ color: plan.plan === "free" ? "#70787b" : "rgba(255,255,255,0.7)", fontSize: "1rem", margin: 0 }}>{currentPlan.price}</p>
+                </div>
+                <span style={{ background: plan.plan === "free" ? "#f2f4f4" : "rgba(93,253,138,0.25)", color: plan.plan === "free" ? "#70787b" : "#5dfd8a", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", padding: "4px 12px", borderRadius: 9999 }}>
+                  Active
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 20 }}>
+                {[
+                  { icon: "chat_bubble", label: "Messages", value: currentPlan.messages },
+                  { icon: "smart_toy", label: "Agents", value: currentPlan.agents },
+                ].map(item => (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: plan.plan === "free" ? "#004B57" : "#5dfd8a" }}>{item.icon}</span>
+                    <div>
+                      <p style={{ color: plan.plan === "free" ? "#70787b" : "rgba(255,255,255,0.6)", fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>{item.label}</p>
+                      <p style={{ fontWeight: 700, color: plan.plan === "free" ? "#00333c" : "#fff", fontSize: "0.875rem", margin: 0 }}>{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Upgrade */}
+          {plan.plan !== "business" && (
+            <section style={{ marginBottom: 28 }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Upgrade</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {Object.entries(PLAN_FEATURES).filter(([key]) => key !== plan.plan && key !== "free").map(([key, info]) => (
+                  <div key={key} style={{ background: "#fff", borderRadius: 14, padding: "18px 20px", border: "1px solid #e1e3e3", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, color: "#00333c", margin: "0 0 4px", fontSize: "0.95rem" }}>{info.label} — {info.price}</p>
+                      <p style={{ color: "#70787b", fontSize: "0.8rem", margin: 0 }}>{info.messages} messages · {info.agents} agents</p>
+                    </div>
+                    <button onClick={() => handleUpgrade(key)} disabled={upgrading === key}
+                      style={{ background: "#00333c", color: "#fff", border: "none", borderRadius: 9999, padding: "10px 20px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", opacity: upgrading === key ? 0.7 : 1, flexShrink: 0 }}>
+                      {upgrading === key ? "..." : "Upgrade"}
                     </button>
-<button class="flex-1 bg-white/10 backdrop-blur-md text-on-primary font-headline font-bold py-3 px-4 rounded-lg border border-white/10 flex items-center justify-center gap-2 hover:bg-white/20 transition-all active:scale-95">
-<span class="material-symbols-outlined text-lg" data-icon="send">send</span>
-                        Send Top-up
-                    </button>
-</div>
-</div>
-<!-- Decorative Glass Sphere -->
-<div class="absolute -right-12 -top-12 w-48 h-48 bg-secondary-fixed/10 rounded-full blur-3xl"></div>
-<div class="absolute -left-12 -bottom-12 w-48 h-48 bg-primary-container/40 rounded-full blur-3xl"></div>
-</section>
-<!-- Quick Integration Stats -->
-<div class="grid grid-cols-2 gap-4">
-<div class="bg-surface-container-low p-5 rounded-xl space-y-2">
-<div class="flex items-center gap-2 text-on-surface-variant">
-<span class="material-symbols-outlined text-sm" data-icon="settings_ethernet">settings_ethernet</span>
-<span class="text-xs font-semibold uppercase tracking-wider">Reloadly Status</span>
-</div>
-<div class="flex items-center gap-2">
-<div class="w-2 h-2 rounded-full bg-secondary ai-pulse"></div>
-<span class="font-headline font-bold text-primary">Connected</span>
-</div>
-</div>
-<div class="bg-surface-container-low p-5 rounded-xl space-y-2">
-<div class="flex items-center gap-2 text-on-surface-variant">
-<span class="material-symbols-outlined text-sm" data-icon="group">group</span>
-<span class="text-xs font-semibold uppercase tracking-wider">Active Credits</span>
-</div>
-<div class="font-headline font-bold text-primary">12 Countries</div>
-</div>
-</div>
-<!-- Recent Transactions Section -->
-<section class="space-y-6">
-<div class="flex justify-between items-end">
-<h2 class="font-headline text-2xl font-extrabold text-primary tracking-tight">Recent Activity</h2>
-<button class="text-secondary font-bold text-sm hover:underline">View History</button>
-</div>
-<div class="space-y-4">
-<!-- Transaction Item 1 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center">
-<span class="material-symbols-outlined text-secondary" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
-</div>
-<div>
-<p class="font-headline font-bold text-on-surface">Top-up Wallet</p>
-<p class="text-xs text-on-surface-variant">via Stripe • Oct 24, 14:20</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-headline font-extrabold text-secondary">+$500.00</p>
-<span class="text-[10px] px-2 py-0.5 bg-secondary-container/30 text-secondary rounded-full font-bold uppercase tracking-tighter">Success</span>
-</div>
-</div>
-<!-- Transaction Item 2 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
-<span class="material-symbols-outlined text-primary" data-icon="smartphone">smartphone</span>
-</div>
-<div>
-<p class="font-headline font-bold text-on-surface">Airtime Sent</p>
-<p class="text-xs text-on-surface-variant">+234 810 000... • Oct 23, 09:15</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-headline font-extrabold text-primary">-$15.50</p>
-<span class="text-[10px] px-2 py-0.5 bg-surface-container text-on-surface-variant rounded-full font-bold uppercase tracking-tighter">Completed</span>
-</div>
-</div>
-<!-- Transaction Item 3 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
-<span class="material-symbols-outlined text-primary" data-icon="router">router</span>
-</div>
-<div>
-<p class="font-headline font-bold text-on-surface">Data Bundle</p>
-<p class="text-xs text-on-surface-variant">+44 7911 00... • Oct 22, 18:42</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-headline font-extrabold text-primary">-$25.00</p>
-<span class="text-[10px] px-2 py-0.5 bg-surface-container text-on-surface-variant rounded-full font-bold uppercase tracking-tighter">Completed</span>
-</div>
-</div>
-<!-- Transaction Item 4 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm opacity-80">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-lg bg-red-50 flex items-center justify-center">
-<span class="material-symbols-outlined text-error" data-icon="error_outline">error_outline</span>
-</div>
-<div>
-<p class="font-headline font-bold text-on-surface">Top-up Wallet</p>
-<p class="text-xs text-on-surface-variant">Declined • Oct 21, 11:30</p>
-</div>
-</div>
-<div class="text-right">
-<p class="font-headline font-extrabold text-on-surface-variant">$200.00</p>
-<span class="text-[10px] px-2 py-0.5 bg-error-container text-on-error-container rounded-full font-bold uppercase tracking-tighter">Failed</span>
-</div>
-</div>
-</div>
-</section>
-<!-- Informational Card -->
-<section class="bg-primary-container/20 rounded-xl p-6 border-l-4 border-secondary flex gap-4">
-<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
-<div>
-<p class="font-headline font-bold text-primary text-sm">Reloadly Verification</p>
-<p class="text-sm text-on-surface-variant leading-relaxed">Your account is active. Transaction limits are currently set to $5,000 per day. <a class="text-secondary font-bold" href="/dashboard/billing">Increase Limit</a></p>
-</div>
-</section>
-</main>
-<!-- BottomNavBar -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-3xl">
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/conversations">
-<span class="material-symbols-outlined mb-1" data-icon="forum">forum</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Chats</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-2xl px-5 py-2 scale-110 transition-transform duration-300 ease-out" href="/dashboard/billing">
-<span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Wallet</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/billing">
-<span class="material-symbols-outlined mb-1" data-icon="add_card">add_card</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Top-up</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/broadcasts">
-<span class="material-symbols-outlined mb-1" data-icon="receipt_long">receipt_long</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">History</span>
-</a>
-</nav>` }}
-      />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Transaction history */}
+          <section>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Recent Activity</h2>
+            <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e1e3e3", overflow: "hidden" }}>
+              {loading ? (
+                <div style={{ padding: 24 }}>
+                  {[1,2,3].map(i => <div key={i} style={{ height: 48, borderRadius: 8, background: "#e1e3e3", marginBottom: 8, animation: "bff-pulse 2s infinite" }} />)}
+                </div>
+              ) : bills.length === 0 ? (
+                <div style={{ padding: 40, textAlign: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 36, color: "#bfc8ca", display: "block", marginBottom: 10 }}>receipt_long</span>
+                  <p style={{ color: "#70787b", fontSize: "0.875rem", margin: 0 }}>No transactions yet</p>
+                </div>
+              ) : (
+                bills.slice(0, 10).map((bill, i) => (
+                  <div key={bill.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px", borderBottom: i < bills.length - 1 ? "1px solid #f2f4f4" : "none" }}>
+                    <div>
+                      <p style={{ fontWeight: 600, color: "#00333c", margin: "0 0 2px", fontSize: "0.875rem" }}>{bill.description}</p>
+                      <p style={{ color: "#70787b", fontSize: "0.75rem", margin: 0 }}>{new Date(bill.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <span style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, color: bill.amount < 0 ? "#ba1a1a" : "#00333c", fontSize: "0.95rem" }}>
+                      {bill.amount < 0 ? "-" : "+"}${Math.abs(bill.amount / 100).toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </main>
+
+        {/* Bottom nav */}
+        <nav style={{ position: "fixed", bottom: 0, left: 0, width: "100%", zIndex: 50, display: "flex", justifyContent: "space-around", alignItems: "center", padding: "12px 16px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(191,200,202,0.15)" }}>
+          {[
+            { href: "/dashboard", icon: "home", label: "Home" },
+            { href: "/dashboard/conversations", icon: "chat_bubble", label: "Chats" },
+            { href: "/dashboard/agents", icon: "smart_toy", label: "Agents" },
+            { href: "/dashboard/settings", icon: "settings_suggest", label: "Settings" },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 20px", borderRadius: 16, textDecoration: "none", color: "#40484a" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </DashboardShell>
   );
 }
