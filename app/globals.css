@@ -1,176 +1,51 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-/* ── V4 Design System: Obsidian + Terracotta ── */
-/* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Figtree:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-figtree), Figtree, system-ui, sans-serif;
-  --font-serif: var(--font-garamond), 'EB Garamond', Georgia, serif;
-  --font-mono: var(--font-geist-mono), 'JetBrains Mono', monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  color: #191c1d;
+  margin: 0;
 }
 
-:root {
-  /* V4 Obsidian + Terracotta — forced dark */
-  --background: #050505;
-  --foreground: #FAFAFA;
-  --card: #111111;
-  --card-foreground: #FAFAFA;
-  --popover: #111111;
-  --popover-foreground: #FAFAFA;
-  --primary: #E2725B;
-  --primary-foreground: #FAFAFA;
-  --secondary: #1A1A1A;
-  --secondary-foreground: #A1A1AA;
-  --muted: #1A1A1A;
-  --muted-foreground: #A1A1AA;
-  --accent: #D4A373;
-  --accent-foreground: #050505;
-  --destructive: #ef4444;
-  --border: rgba(255, 255, 255, 0.07);
-  --input: rgba(255, 255, 255, 0.07);
-  --ring: #E2725B;
-  --chart-1: #E2725B;
-  --chart-2: #D4A373;
-  --chart-3: #8B9A6B;
-  --chart-4: #6B8A9A;
-  --chart-5: #A1A1AA;
-  --radius: 0.625rem;
-  --sidebar: #050505;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #E2725B;
-  --sidebar-primary-foreground: #FAFAFA;
-  --sidebar-accent: rgba(226, 114, 91, 0.1);
-  --sidebar-accent-foreground: #E2725B;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
-  --sidebar-ring: #E2725B;
+/* Stitch design tokens */
+.font-headline { font-family: 'Manrope', sans-serif !important; }
+.font-manrope  { font-family: 'Manrope', sans-serif !important; }
+.font-inter    { font-family: 'Inter', sans-serif !important; }
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 24px;
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
-.dark {
-  --background: #050505;
-  --foreground: #FAFAFA;
-  --card: #111111;
-  --card-foreground: #FAFAFA;
-  --popover: #111111;
-  --popover-foreground: #FAFAFA;
-  --primary: #E2725B;
-  --primary-foreground: #FAFAFA;
-  --secondary: #1A1A1A;
-  --secondary-foreground: #A1A1AA;
-  --muted: #1A1A1A;
-  --muted-foreground: #A1A1AA;
-  --accent: #D4A373;
-  --accent-foreground: #050505;
-  --destructive: #ef4444;
-  --border: rgba(255, 255, 255, 0.07);
-  --input: rgba(255, 255, 255, 0.07);
-  --ring: #E2725B;
-  --chart-1: #E2725B;
-  --chart-2: #D4A373;
-  --chart-3: #8B9A6B;
-  --chart-4: #6B8A9A;
-  --chart-5: #A1A1AA;
-  --sidebar: #050505;
-  --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #E2725B;
-  --sidebar-primary-foreground: #FAFAFA;
-  --sidebar-accent: rgba(226, 114, 91, 0.1);
-  --sidebar-accent-foreground: #E2725B;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
-  --sidebar-ring: #E2725B;
+/* Gradient helpers */
+.gradient-primary      { background: linear-gradient(135deg, #00333c 0%, #004B57 100%); }
+.bg-gradient-primary   { background: linear-gradient(135deg, #00333c 0%, #004B57 100%); }
+
+/* Animations */
+.ai-pulse      { animation: bff-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+.pulse-subtle  { animation: bff-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+
+@keyframes bff-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .6; }
 }
 
+/* Scrollbar */
+.no-scrollbar                       { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar    { display: none; }
+
+/* Tailwind base reset */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    background-color: #050505;
-    font-family: Figtree, system-ui, sans-serif;
-  }
-  html {
-    background-color: #050505;
-  }
-  h1, h2, h3, h4 {
-    font-family: 'EB Garamond', Georgia, serif;
-    letter-spacing: -0.02em;
-  }
-}
-
-/* ── Typography utilities ── */
-.font-serif {
-  font-family: 'EB Garamond', Georgia, serif;
-}
-.font-figtree {
-  font-family: Figtree, system-ui, sans-serif;
-}
-.font-mono-label {
-  font-family: 'JetBrains Mono', monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.75rem;
-}
-
-/* ── Noise texture overlay ── */
-.noise-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.03;
-  pointer-events: none;
-  mix-blend-mode: overlay;
-  border-radius: inherit;
-}
-
-/* ── Scrollbar styling ── */
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+  * { box-sizing: border-box; }
 }

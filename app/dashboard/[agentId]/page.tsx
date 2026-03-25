@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 import { redirect, notFound } from "next/navigation";
 import { getSessionUser } from "@/app/lib/session";
 import { prisma } from "@/app/lib/prisma";
-import TemplateDashboard from "../template-dashboard";
 
 export default async function AgentDashboardPage({
   params,
@@ -19,12 +18,6 @@ export default async function AgentDashboardPage({
 
   if (!agent) notFound();
 
-  const needsSetup = !!(agent.template && !(agent.config as Record<string, unknown>)?.setupComplete);
-
-  return (
-    <TemplateDashboard
-      agent={JSON.parse(JSON.stringify(agent))}
-      needsSetup={needsSetup}
-    />
-  );
+  // Redirect to main conversations view with agent context
+  redirect(`/dashboard/conversations?agentId=${agentId}`);
 }

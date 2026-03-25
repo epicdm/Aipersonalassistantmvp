@@ -1,22 +1,14 @@
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "BFF — AI WhatsApp Assistant for Business",
-  description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent. Set up in under 5 minutes. No technical skills needed.",
-  manifest: '/manifest.webmanifest',
-  metadataBase: new URL('https://bff.epic.dm'),
-  alternates: {
-    canonical: '/',
-  },
+  description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent. Set up in under 5 minutes.",
+  manifest: "/manifest.webmanifest",
+  metadataBase: new URL("https://bff.epic.dm"),
+  alternates: { canonical: "/" },
   openGraph: {
     title: "BFF — AI WhatsApp Assistant for Business",
     description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent.",
@@ -26,62 +18,50 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: "#E2725B",
-          colorBackground: "#050505",
-          colorInputBackground: "#111111",
-          colorInputText: "#FAFAFA",
-          colorText: "#FAFAFA",
-          colorTextSecondary: "#A1A1AA",
-          colorTextOnPrimaryBackground: "#FAFAFA",
-          colorDanger: "#ef4444",
-          colorSuccess: "#22c55e",
-          colorWarning: "#f59e0b",
-          colorNeutral: "#ffffff",
+          colorPrimary: "#00333c",
+          colorBackground: "#ffffff",
+          colorInputBackground: "#f2f4f4",
+          colorInputText: "#191c1d",
+          colorText: "#191c1d",
+          colorTextSecondary: "#40484a",
+          colorTextOnPrimaryBackground: "#ffffff",
+          colorDanger: "#ba1a1a",
+          colorSuccess: "#006d2f",
+          colorNeutral: "#191c1d",
           borderRadius: "0.75rem",
         },
         elements: {
-          card: "bg-[#111111] border border-white/10 shadow-2xl",
-          headerTitle: "text-white font-serif",
-          headerSubtitle: "text-[#A1A1AA]",
-          formButtonPrimary: "bg-[#E2725B] hover:bg-[#F48B76] text-white",
-          formFieldLabel: "text-[#A1A1AA]",
-          formFieldInput: "bg-[#111111] border-white/10 text-white placeholder:text-[#A1A1AA]",
-          footerActionLink: "text-[#E2725B] hover:text-[#F48B76]",
-          footerActionText: "text-[#A1A1AA]",
-          socialButtonsBlockButton: "bg-[#1A1A1A] border-white/10 text-white hover:bg-[#222222]",
-          socialButtonsBlockButtonText: "text-white",
-          dividerLine: "bg-white/10",
-          dividerText: "text-[#A1A1AA]",
-          identityPreviewText: "text-white",
-          identityPreviewEditButton: "text-[#E2725B]",
-          formFieldInputShowPasswordButton: "text-[#A1A1AA]",
-          otpCodeFieldInput: "bg-[#1A1A1A] border-white/10 text-white",
-          formResendCodeLink: "text-[#E2725B]",
-          alert: "bg-red-900/30 border-red-800 text-red-300",
-          alertText: "text-red-300",
-          badge: "bg-[#E2725B]/20 text-[#E2725B]",
-          avatarBox: "bg-[#E2725B]",
+          card: "bg-white border border-[#bfc8ca] shadow-lg",
+          headerTitle: "font-manrope text-[#00333c]",
+          headerSubtitle: "text-[#40484a]",
+          formButtonPrimary: "bg-[#00333c] hover:bg-[#004B57] text-white",
+          formFieldLabel: "text-[#40484a]",
+          formFieldInput: "bg-[#f2f4f4] border-[#bfc8ca] text-[#191c1d]",
+          footerActionLink: "text-[#00333c] hover:text-[#004B57]",
+          socialButtonsBlockButton: "bg-white border-[#bfc8ca] text-[#191c1d] hover:bg-[#f2f4f4]",
+          dividerLine: "bg-[#bfc8ca]",
+          badge: "bg-[#5dfd8a]/20 text-[#006d2f]",
+          avatarBox: "bg-[#004B57]",
         },
       }}
     >
-      <html lang="en" className="dark" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Figtree:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+            rel="stylesheet"
+          />
         </head>
-        <body className={`${geistMono.variable} antialiased dark`} style={{ fontFamily: 'Figtree, system-ui, sans-serif', backgroundColor: '#050505' }}>
-            {children}
-            <Toaster richColors theme="dark" />
+        <body style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa" }}>
+          {children}
+          <Toaster richColors />
         </body>
       </html>
     </ClerkProvider>

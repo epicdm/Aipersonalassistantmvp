@@ -1,267 +1,216 @@
 "use client";
+
 import DashboardShell from "@/app/components/dashboard-shell";
-
-import { useState, useEffect } from "react";
-import { Radio, Plus, Send, Trash2, RefreshCw, Users, Clock, Megaphone } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-
-type Broadcast = {
-  id: string;
-  name: string;
-  message: string;
-  status: string;
-  recipientCount: number;
-  sentCount: number;
-  failedCount: number;
-  createdAt: string;
-  agent?: { name: string };
-};
-
-type AgentOption = { id: string; name: string };
-
-function statusStyle(status: string) {
-  const map: Record<string, string> = {
-    draft: "bg-white/10/50 text-[#A1A1AA] border border-white/15",
-    sending: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-    sent: "bg-green-500/20 text-green-300 border border-green-500/30",
-    failed: "bg-red-500/20 text-red-300 border border-red-500/30",
-  };
-  return map[status] || map.draft;
-}
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function BroadcastsPage() {
-  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
-  const [agents, setAgents] = useState<AgentOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [userPlan, setUserPlan] = useState("free");
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
 
-  // Form state
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-  const [phones, setPhones] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState("");
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) router.replace("/sign-in");
+  }, [isLoaded, isSignedIn, router]);
 
-  const fetchBroadcasts = async () => {
-    setLoading(true);
-    try {
-      const [bcRes, agentRes, planRes] = await Promise.all([
-        fetch("/api/broadcast"),
-        fetch("/api/agent"),
-        fetch("/api/billing/plan"),
-      ]);
-      const bcData = await bcRes.json();
-      const agentData = await agentRes.json();
-      const planData = await planRes.json();
-      setBroadcasts(bcData.broadcasts || []);
-      const agentList = Array.isArray(agentData) ? agentData : [];
-      setAgents(agentList);
-      if (agentList.length > 0) setSelectedAgent(agentList[0].id);
-      setUserPlan(planData.plan || "free");
-    } catch {
-      toast.error("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchBroadcasts(); }, []);
-
-  const handleCreate = async (sendNow: boolean) => {
-    if (!name.trim() || !message.trim()) { toast.error("Name and message are required"); return; }
-    const phoneList = phones.split("\n").map((p) => p.trim()).filter(Boolean);
-    if (phoneList.length === 0) { toast.error("Add at least one recipient phone number"); return; }
-    if (!selectedAgent) { toast.error("Select an agent"); return; }
-
-    setCreating(true);
-    try {
-      const res = await fetch("/api/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, message, agentId: selectedAgent, phones: phoneList }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Failed to create"); return; }
-      toast.success("Broadcast created!");
-      setDialogOpen(false);
-      setName(""); setMessage(""); setPhones("");
-      await fetchBroadcasts();
-      if (sendNow) await triggerSend(data.broadcast.id);
-    } catch {
-      toast.error("Failed to create broadcast");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const triggerSend = async (id: string) => {
-    setSending(id);
-    try {
-      const res = await fetch(`/api/broadcast/${id}/send`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Send failed"); }
-      else { toast.success(`Sent ${data.sentCount} messages${data.failedCount > 0 ? `, ${data.failedCount} failed` : ""}`); await fetchBroadcasts(); }
-    } catch { toast.error("Send failed"); }
-    finally { setSending(null); }
-  };
-
-  const handleDelete = async (id: string) => {
-    await fetch(`/api/broadcast/${id}`, { method: "DELETE" });
-    setBroadcasts((prev) => prev.filter((b) => b.id !== id));
-    toast.success("Deleted");
-  };
+  if (!isLoaded || !isSignedIn) return null;
 
   return (
     <DashboardShell>
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#FAFAFA]">Broadcasts</h1>
-          <p className="text-sm text-[#A1A1AA] mt-0.5">Send messages to multiple contacts at once</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={fetchBroadcasts} disabled={loading} className="text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1A1A1A]">
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          {userPlan !== "free" && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-[#E2725B] to-[#D4A373] hover:from-[#F48B76] hover:to-[#D4A373] text-white shadow-lg shadow-[#E2725B]/20 transition-all cursor-pointer">
-                  <Plus className="w-4 h-4" /> New Broadcast
-                </span>
-              </DialogTrigger>
-              <DialogContent className="bg-[#111111] border border-white/[0.07] text-[#FAFAFA] max-w-lg">
-                <DialogHeader>
-                  <DialogTitle className="text-[#FAFAFA]">Create Broadcast</DialogTitle>
-                  <DialogDescription className="text-[#A1A1AA]">
-                    Send a WhatsApp message to multiple contacts at once.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div>
-                    <Label className="text-[#FAFAFA]/80 text-xs">Campaign Name</Label>
-                    <Input placeholder="e.g. July Promotion" value={name} onChange={(e) => setName(e.target.value)}
-                      className="mt-1 bg-[#1A1A1A] border-white/10 text-[#FAFAFA] placeholder:text-white/30" />
-                  </div>
-                  {agents.length > 1 && (
-                    <div>
-                      <Label className="text-[#FAFAFA]/80 text-xs">Agent</Label>
-                      <select value={selectedAgent} onChange={(e) => setSelectedAgent(e.target.value)}
-                        className="mt-1 w-full text-sm border border-white/10 rounded-lg px-3 py-2 bg-[#1A1A1A] text-[#FAFAFA]/80">
-                        {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <div>
-                    <Label className="text-[#FAFAFA]/80 text-xs">Message</Label>
-                    <textarea placeholder="Type your WhatsApp message..." value={message} onChange={(e) => setMessage(e.target.value)}
-                      rows={4} className="mt-1 w-full rounded-lg border border-white/10 bg-[#1A1A1A] px-3 py-2 text-sm text-[#FAFAFA] placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#E2725B]/50 resize-none" />
-                    <p className="text-[10px] text-white/30 mt-1">{message.length} characters</p>
-                  </div>
-                  <div>
-                    <Label className="text-[#FAFAFA]/80 text-xs">Recipients (one number per line)</Label>
-                    <textarea placeholder={"14165550100\n18005551234\n..."} value={phones} onChange={(e) => setPhones(e.target.value)}
-                      rows={5} className="mt-1 w-full rounded-lg border border-white/10 bg-[#1A1A1A] px-3 py-2 text-sm font-mono text-[#FAFAFA] placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#E2725B]/50 resize-none" />
-                    <p className="text-[10px] text-white/30 mt-1">
-                      {phones.split("\n").filter((p) => p.trim()).length} numbers · {userPlan === "pro" ? "max 500" : "unlimited"}
+      <div
+        className="min-h-screen"
+        style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", color: "#191c1d" }}
+        dangerouslySetInnerHTML={{ __html: `<!-- Top Navigation -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#f8f9fa] dark:bg-slate-950 flex justify-between items-center w-full px-6 py-4 max-w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</div>
+<span class="font-headline text-2xl font-bold tracking-tight text-[#004B57]">The Digital Concierge</span>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-[#004B57] font-bold border-b-2 border-[#5dfd8a] font-label text-sm uppercase tracking-wider" href="#">Performance</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Archive</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Workflows</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Billing</a>
+</nav>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e7e8e9] transition-transform active:scale-90">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="settings">settings</span>
+</button>
+</header>
+<!-- Sidebar for Web -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 flex flex-col hidden md:flex bg-white/80 backdrop-blur-xl shadow-2xl pt-24">
+<div class="px-6 mb-8">
+<div class="flex flex-col gap-1">
+<span class="font-headline font-black text-[#004B57] text-xl">Nexus Admin</span>
+<span class="text-xs font-medium text-slate-500">Professional Tier • v2.4.0</span>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="bg-[#5dfd8a] text-[#007232] rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+                Performance
+            </a>
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                Archive
+            </a>
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+                Workflows
+            </a>
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+                Billing
+            </a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-32 md:pl-64 min-h-screen">
+<div class="max-w-6xl mx-auto px-6 md:px-12 space-y-12">
+<!-- Hero Insight Section -->
+<section class="mt-8">
+<div class="flex items-center gap-3 mb-4">
+<span class="w-2 h-2 rounded-full bg-secondary ai-pulse"></span>
+<span class="text-secondary font-semibold uppercase tracking-widest text-xs">Live Intelligence Brief</span>
+</div>
+<h1 class="font-headline text-4xl md:text-5xl font-extrabold text-primary tracking-tight leading-tight max-w-3xl">
+                    Yesterday, I handled <span class="text-[#004B57] underline decoration-[#5dfd8a] decoration-4 underline-offset-8">450 chats</span> and captured <span class="text-[#004B57] underline decoration-[#5dfd8a] decoration-4 underline-offset-8">24 new leads</span> for your business.
+                </h1>
+</section>
+<!-- Bento Grid Metrics -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Resolution Rate -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0_20px_40px_rgba(25,28,29,0.06)] flex flex-col justify-between h-48 group hover:translate-y-[-4px] transition-transform duration-300">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant text-sm font-medium font-label uppercase tracking-wider">Resolution Rate</span>
+<span class="material-symbols-outlined text-primary opacity-20 group-hover:opacity-100 transition-opacity" data-icon="verified_user">verified_user</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-headline font-extrabold text-primary">92%</span>
+<span class="text-secondary font-bold text-sm">Target Met</span>
+</div>
+</div>
+<!-- Lead Conversion -->
+<div class="bg-gradient-to-br from-primary to-primary-container p-8 rounded-xl shadow-[0_20px_40px_rgba(0,51,60,0.1)] flex flex-col justify-between h-48 text-on-primary group hover:translate-y-[-4px] transition-transform duration-300">
+<div class="flex justify-between items-start">
+<span class="text-on-primary-container text-sm font-medium font-label uppercase tracking-wider">Lead Conversion</span>
+<span class="material-symbols-outlined text-secondary-fixed ai-pulse" data-icon="trending_up">trending_up</span>
+</div>
+<div class="flex flex-col">
+<span class="text-5xl font-headline font-extrabold">+12%</span>
+<span class="text-secondary-fixed text-sm font-medium">vs. yesterday average</span>
+</div>
+</div>
+<!-- Time Saved -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0_20px_40px_rgba(25,28,29,0.06)] flex flex-col justify-between h-48 group hover:translate-y-[-4px] transition-transform duration-300">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant text-sm font-medium font-label uppercase tracking-wider">Time Saved</span>
+<span class="material-symbols-outlined text-primary opacity-20 group-hover:opacity-100 transition-opacity" data-icon="schedule">schedule</span>
+</div>
+<div class="flex flex-col">
+<span class="text-5xl font-headline font-extrabold text-primary">18.5h</span>
+<span class="text-on-surface-variant text-sm">Human hours recovered</span>
+</div>
+</div>
+</section>
+<!-- Anomaly & Action Section (Asymmetric Layout) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Anomaly Card -->
+<div class="lg:col-span-7 bg-surface-container-low p-10 rounded-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-[#5dfd8a]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="relative z-10 space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="warning">warning</span>
+<span class="text-primary font-bold font-headline text-lg">Anomaly Detected</span>
+</div>
+<p class="text-on-surface-variant text-xl leading-relaxed font-body italic">
+                            "I noticed a surge in queries about <span class="text-primary font-bold">'International Shipping'</span> between 2 PM and 4 PM yesterday. Customers are specifically asking about EU delivery windows."
+                        </p>
+<div class="pt-4 flex gap-4">
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-surface" data-alt="professional female customer representative portrait with neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7Tdttd5bYpK4PSKo9DhLwnf0bFQbUBVjvFoSNTiLPWQWzmKBaQ1a2f7bcKt2_sIpVg77fMnWQ2Mh29TYJji9JyV4aF5iI3cbBiDYmA1zBLwZT0YfwUoP5YcAMB1acGWvQ3uzhUMiUj0lGbM0ru4fxazsVwRI3dtUeSLjrexrspgMsRNaDH4BoI8bV3-U3xG1iBXh3slaAR2G5I_pY9IvziRflEzm7sFNHzuIiWAsxE6J4zY2DxsOKdDk5vxV7kaytAKVdj_-UDP0"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface" data-alt="modern businessman in professional setting looking confident" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1e5It7GR06h-NZLDn9_D7rC-lIOC5rY8dG8AD1Che9BqF1dQlgFT2y4Qq84uuiojgS2rYUWKb9QHBV99yHFp6UignFEUjq6CpKNvJ9TF1WfbPZQJY-BxR4bO8tW3N5RiU-O3c-YR0FZxceHYA-IkjBKOEweY4hMfj2vVrXSrKIm7PUAo7YRl3_mNAnvLDDkT3eAzq3K9L4eOblDKBOFpivh8t6kkSo0O5b6UBKs1m487h8fzc6fllwEMJ9TLkfZOZE27AbQbjB_A"/>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-[10px] font-bold text-on-secondary-container border-2 border-surface">+142</div>
+</div>
+<span class="text-sm text-on-surface-variant self-center">Identified in 142 distinct sessions</span>
+</div>
+</div>
+</div>
+<!-- Action Suggestion (Glassmorphism) -->
+<div class="lg:col-span-5 glass-panel p-8 rounded-xl border border-white/20 shadow-xl space-y-6">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="lightbulb">lightbulb</span>
+</div>
+<h3 class="text-primary font-headline text-2xl font-bold">Actionable Suggestion</h3>
+<p class="text-on-surface-variant leading-snug">
+                        Would you like me to update the Knowledge Base with our new shipping protocols? I can automate responses for these new queries immediately.
                     </p>
-                  </div>
-                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300">
-                    ⚠️ Recipients must have messaged your agent in the last 24 hours for free-form messages.
-                  </div>
-                </div>
-                <DialogFooter className="gap-2">
-                  <Button variant="ghost" onClick={() => handleCreate(false)} disabled={creating} className="text-[#A1A1AA] hover:text-[#FAFAFA]">
-                    Save Draft
-                  </Button>
-                  <Button onClick={() => handleCreate(true)} disabled={creating}
-                    className="bg-gradient-to-r from-[#E2725B] to-[#D4A373] text-white border-0">
-                    <Send className="w-4 h-4 mr-2" />{creating ? "Creating..." : "Create & Send"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </div>
-
-      {/* Free plan gate */}
-      {userPlan === "free" && (
-        <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-12 text-center">
-          <div className="w-14 h-14 bg-[#E2725B]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Megaphone className="w-7 h-7 text-[#E2725B]" />
-          </div>
-          <h3 className="text-base font-semibold text-[#FAFAFA] mb-2">Upgrade to Send Broadcasts</h3>
-          <p className="text-sm text-[#A1A1AA] max-w-sm mx-auto mb-6">
-            Reach up to 500 contacts at once on Pro, or unlimited on Business.
-          </p>
-          <a href="/upgrade" className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-[#E2725B] to-[#D4A373] text-white transition-all">Upgrade Now →</a>
-        </div>
-      )}
-
-      {/* Broadcast list */}
-      {userPlan !== "free" && (
-        <>
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => <div key={i} className="bg-[#111111] border border-white/[0.07] rounded-2xl h-24 animate-pulse" />)}
-            </div>
-          ) : broadcasts.length === 0 ? (
-            <div className="bg-[#111111] border border-white/[0.07] border-dashed rounded-2xl p-12 text-center">
-              <Radio className="w-10 h-10 text-white/30 mx-auto mb-3" />
-              <p className="text-sm text-[#A1A1AA]">No broadcasts yet — create your first one</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {broadcasts.map((b) => (
-                <div key={b.id} className="bg-[#111111] border border-white/[0.07] rounded-2xl p-5 hover:border-white/10 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-sm font-semibold text-[#FAFAFA] truncate">{b.name}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize ${statusStyle(b.status)}`}>
-                          {b.status}
-                        </span>
-                        {b.agent && <span className="text-xs text-[#A1A1AA]">· {b.agent.name}</span>}
-                      </div>
-                      <p className="text-sm text-[#A1A1AA] truncate mb-2">{b.message}</p>
-                      <div className="flex items-center gap-4 text-xs text-white/30 flex-wrap">
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{b.recipientCount} recipients</span>
-                        {b.status !== "draft" && <>
-                          <span className="text-green-400">✓ {b.sentCount} sent</span>
-                          {b.failedCount > 0 && <span className="text-red-400">✗ {b.failedCount} failed</span>}
-                        </>}
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(b.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {b.status === "draft" && (
-                        <Button size="sm" onClick={() => triggerSend(b.id)} disabled={sending === b.id}
-                          className="bg-[#E2725B]/15 hover:bg-[#E2725B]/30 text-[#E2725B] border border-[#E2725B]/30">
-                          {sending === b.id ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
-                          {sending === b.id ? "Sending..." : "Send"}
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(b.id)}
-                        className="h-8 w-8 text-white/30 hover:text-red-400 hover:bg-red-500/10">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+<div class="flex flex-col gap-3 pt-4">
+<button class="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-4 px-6 rounded-lg font-bold flex items-center justify-center gap-2 group transition-all hover:shadow-lg active:scale-95">
+                            Confirm Update
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="w-full text-on-surface-variant py-4 px-6 rounded-lg font-medium hover:bg-surface-container-high transition-colors">
+                            I'll handle it manually
+                        </button>
+</div>
+</div>
+</section>
+<!-- Usage Trend / Visual Anchor -->
+<section class="bg-surface-container-lowest rounded-2xl p-1 shadow-sm">
+<div class="p-8 space-y-8">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-primary font-headline text-2xl font-bold">Usage Patterns</h2>
+<p class="text-on-surface-variant text-sm">Activity density across the last 24 hours</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface-container rounded-full text-xs font-bold text-primary">Live</span>
+<span class="px-3 py-1 bg-secondary-container/30 text-secondary rounded-full text-xs font-bold">Peak High</span>
+</div>
+</div>
+<!-- Decorative Visual Rep of Data -->
+<div class="h-48 w-full flex items-end gap-1 px-2">
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[35%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[45%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[60%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-sm h-[75%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t-sm h-[85%]"></div>
+<div class="flex-1 bg-secondary rounded-t-sm h-[100%]"></div>
+<div class="flex-1 bg-primary/60 rounded-t-sm h-[90%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t-sm h-[65%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[30%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[25%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[35%]"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[50%]"></div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation for Mobile -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 md:hidden bg-white/90 backdrop-blur-md shadow-[0_-10px_30px_rgba(25,28,29,0.04)] border-t border-slate-100 rounded-t-2xl">
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#00333c] to-[#004b57] text-white rounded-xl px-4 py-1 transition-transform active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-inter text-[10px] uppercase tracking-widest mt-1">Daily</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-inter text-[10px] uppercase tracking-widest mt-1">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="schema">schema</span>
+<span class="font-inter text-[10px] uppercase tracking-widest mt-1">Logic</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="speed">speed</span>
+<span class="font-inter text-[10px] uppercase tracking-widest mt-1">Usage</span>
+</a>
+</nav>` }}
+      />
     </DashboardShell>
   );
 }
