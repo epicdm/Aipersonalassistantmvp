@@ -3,160 +3,254 @@
 import DashboardShell from "@/app/components/dashboard-shell";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+interface Agent {
+  id: string;
+  name: string;
+  template: string;
+  status: string;
+  whatsappStatus: string;
+  ownerPhone: string | null;
+  activationCode: string | null;
+  createdAt: string;
+  purpose?: string;
+  tone?: string;
+}
+
+const TEMPLATE_ICON: Record<string, string> = {
+  receptionist: "phone",
+  concierge: "hotel",
+  sales: "trending_up",
+  support: "headset_mic",
+  collector: "payments",
+  assistant: "person",
+  "study-buddy": "school",
+  default: "smart_toy",
+};
+
+const STATUS_STYLE: Record<string, { bg: string; color: string; dot: string }> = {
+  active:  { bg: "rgba(93,253,138,0.2)", color: "#006d2f", dot: "#5dfd8a" },
+  draft:   { bg: "#f2f4f4", color: "#70787b", dot: "#bfc8ca" },
+  paused:  { bg: "rgba(245,158,11,0.1)", color: "#b45309", dot: "#f59e0b" },
+};
 
 export default function AgentsPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deploying, setDeploying] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) router.replace("/sign-in");
   }, [isLoaded, isSignedIn, router]);
 
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetch("/api/agent?all=true")
+      .then(r => r.json())
+      .then(data => setAgents(Array.isArray(data?.agents) ? data.agents : data?.agent ? [data.agent] : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [isSignedIn]);
+
+  const handleDeploy = async (agentId: string) => {
+    setDeploying(agentId);
+    try {
+      const res = await fetch("/api/agent/deploy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Agent deployed successfully");
+        setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: "active" } : a));
+      } else {
+        toast.error(data.error || "Deploy failed");
+      }
+    } catch { toast.error("Deploy failed"); }
+    finally { setDeploying(null); }
+  };
+
   if (!isLoaded || !isSignedIn) return null;
+
+  const activeCount = agents.filter(a => a.status === "active").length;
 
   return (
     <DashboardShell>
-      <div
-        className="min-h-screen"
-        style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", color: "#191c1d" }}
-        dangerouslySetInnerHTML={{ __html: `<!-- TopAppBar -->
-<nav class="bg-[#f8f9fa] dark:bg-slate-950 docked full-width top-0 sticky z-50 bg-gradient-to-b from-slate-100 to-transparent dark:from-slate-900 flat no shadows">
-<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[#004B57] dark:text-cyan-400 text-3xl">bubble_chart</span>
-<span class="text-[#004B57] dark:text-cyan-400 font-extrabold text-2xl tracking-tighter">BFF Assistant</span>
-</div>
-<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border-2 border-primary/10">
-<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Professional headshot of a smiling female executive in a modern office setting with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbAwuNhHB3_jEajdUgKqehPVWoNm2d1Ozn626EoTle2kOhjGvmcx28JvJ0q1EJf_m53BCqreK_W_ZFDF-axSic4czkLaD13OSMDxa8yxTAQ7JIS8rgTsyNMW6RRvvkyd_1SuUK1j6gZzaPt7LQSsvKWiANGo2cj-0KzfW82ocwhmURAxM52TuaRbnUjTqikinWa7N9Se_efjA0f6QIg-XA9qK91yDjl_7dOXZdH-wlFB7NH5TuB7_K1lxUZ2a3Z5XK4OblIvZW-mM"/>
-</div>
-</div>
-</nav>
-<main class="pb-24">
-<!-- Hero Section -->
-<section class="px-6 pt-12 pb-16">
-<div class="max-w-md mx-auto">
-<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/30 text-on-secondary-container font-label text-xs font-semibold mb-6 tracking-wide uppercase">
-<span class="w-2 h-2 rounded-full bg-secondary ai-pulse"></span>
-                    Now available for WhatsApp Business
+      <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+
+        {/* Header */}
+        <header style={{ background: "#f8f9fa", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e1e3e3", position: "sticky", top: 0, zIndex: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ color: "#004B57", fontSize: 24, fontVariationSettings: "'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24" }}>bubble_chart</span>
+            <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "#004B57", letterSpacing: "-0.02em", margin: 0 }}>BFF Assistant</h1>
+          </div>
+          <Link href="/create" style={{ display: "flex", alignItems: "center", gap: 6, background: "#00333c", color: "#fff", padding: "8px 16px", borderRadius: 9999, fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", textDecoration: "none" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+            New Agent
+          </Link>
+        </header>
+
+        <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 100px" }}>
+
+          {/* Hero stats */}
+          <section style={{ marginBottom: 40 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 12px", borderRadius: 9999, background: "rgba(93,253,138,0.2)", marginBottom: 16 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#006d2f", animation: activeCount > 0 ? "bff-pulse 2s infinite" : "none" }} />
+              <span style={{ color: "#006d2f", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                {activeCount} agent{activeCount !== 1 ? "s" : ""} live
+              </span>
+            </div>
+            <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "clamp(1.8rem,4vw,2.5rem)", color: "#00333c", letterSpacing: "-0.03em", marginBottom: 12 }}>
+              Your Business, Powered by <span style={{ color: "#006d2f" }}>AI</span>
+            </h1>
+            <p style={{ color: "#40484a", fontSize: "1rem", lineHeight: 1.6, maxWidth: 500 }}>
+              Each agent handles conversations on WhatsApp 24/7. Engineered for reliability.
+            </p>
+          </section>
+
+          {/* Feature pills */}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 36 }}>
+            {[
+              { icon: "smart_toy", label: "Autonomous Agent", desc: "Handles conversations without you" },
+              { icon: "verified", label: "Total Control", desc: "Approve, edit, or take over anytime" },
+              { icon: "bolt", label: "Instant Setup", desc: "Live in under 5 minutes" },
+              { icon: "schedule", label: "24/7 Presence", desc: "Never miss a customer message" },
+            ].map(f => (
+              <div key={f.label} style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #e1e3e3", borderRadius: 12, padding: "10px 14px" }}>
+                <span className="material-symbols-outlined" style={{ color: "#004B57", fontSize: 18 }}>{f.icon}</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#00333c" }}>{f.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Agents list */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", margin: 0 }}>
+              Your Agents ({agents.length})
+            </h2>
+          </div>
+
+          {loading ? (
+            [1,2].map(i => <div key={i} style={{ height: 120, borderRadius: 16, background: "#e1e3e3", marginBottom: 12, animation: "bff-pulse 2s infinite" }} />)
+          ) : agents.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 48, textAlign: "center", border: "2px dashed #e1e3e3" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#bfc8ca", display: "block", marginBottom: 16 }}>smart_toy</span>
+              <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "#00333c", marginBottom: 8 }}>No agents yet</h3>
+              <p style={{ color: "#70787b", marginBottom: 24 }}>Create your first AI agent to get started.</p>
+              <Link href="/create" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#00333c", color: "#fff", padding: "12px 28px", borderRadius: 9999, fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
+                Create your first agent <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_forward</span>
+              </Link>
+            </div>
+          ) : (
+            <>
+              {agents.map(agent => {
+                const statusCfg = STATUS_STYLE[agent.status] || STATUS_STYLE.draft;
+                const icon = TEMPLATE_ICON[agent.template] || TEMPLATE_ICON.default;
+                const isDeploying = deploying === agent.id;
+
+                return (
+                  <div key={agent.id} style={{ background: "#fff", borderRadius: 16, padding: 20, marginBottom: 12, border: "1px solid #e1e3e3" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(0,75,87,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 26, color: "#004B57", fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>{icon}</span>
+                        </div>
+                        <div>
+                          <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.05rem", color: "#00333c", margin: "0 0 4px" }}>{agent.name}</h3>
+                          <p style={{ color: "#70787b", fontSize: "0.8rem", margin: 0, textTransform: "capitalize" }}>{agent.template} agent</p>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, background: statusCfg.bg, padding: "4px 10px", borderRadius: 9999 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: statusCfg.dot, animation: agent.status === "active" ? "bff-pulse 2s infinite" : "none" }} />
+                        <span style={{ color: statusCfg.color, fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          {agent.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* WhatsApp status */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "#f2f4f4", borderRadius: 10, marginBottom: 14 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: agent.ownerPhone ? "#006d2f" : "#bfc8ca", fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>chat</span>
+                      <span style={{ fontSize: "0.8rem", color: agent.ownerPhone ? "#006d2f" : "#70787b", fontWeight: 500 }}>
+                        {agent.ownerPhone ? `WhatsApp connected · ${agent.ownerPhone}` : "WhatsApp not connected"}
+                      </span>
+                      {!agent.ownerPhone && (
+                        <Link href="/number" style={{ marginLeft: "auto", fontSize: "0.75rem", color: "#004B57", fontWeight: 600, textDecoration: "none" }}>
+                          Connect →
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Activation code */}
+                    {agent.activationCode && !agent.ownerPhone && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "rgba(93,253,138,0.1)", borderRadius: 10, marginBottom: 14, border: "1px solid rgba(93,253,138,0.3)" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#006d2f" }}>key</span>
+                        <span style={{ fontSize: "0.8rem", color: "#40484a" }}>Activation code:</span>
+                        <code style={{ fontFamily: "monospace", fontWeight: 700, color: "#00333c", letterSpacing: "0.1em", fontSize: "0.85rem" }}>{agent.activationCode}</code>
+                        <span style={{ fontSize: "0.75rem", color: "#70787b", marginLeft: "auto" }}>Text to +17672950333</span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {agent.status !== "active" && (
+                        <button onClick={() => handleDeploy(agent.id)} disabled={isDeploying}
+                          style={{ flex: 1, background: "#00333c", color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: isDeploying ? 0.7 : 1 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{isDeploying ? "hourglass_empty" : "rocket_launch"}</span>
+                          {isDeploying ? "Deploying..." : "Deploy Agent"}
+                        </button>
+                      )}
+                      <Link href={`/dashboard/conversations`}
+                        style={{ flex: agent.status === "active" ? 1 : 0, minWidth: 44, background: "rgba(0,75,87,0.08)", color: "#004B57", borderRadius: 10, padding: "10px 14px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat_bubble</span>
+                        {agent.status === "active" && "View Conversations"}
+                      </Link>
+                      <Link href={`/dashboard/settings`}
+                        style={{ width: 44, background: "#f2f4f4", color: "#40484a", borderRadius: 10, padding: "10px", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>settings</span>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Add another */}
+              <Link href="/create" style={{ display: "flex", alignItems: "center", gap: 14, background: "transparent", border: "2px dashed #bfc8ca", borderRadius: 16, padding: 20, textDecoration: "none", transition: "border-color 0.2s" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = "#004B57")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = "#bfc8ca")}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: "#f2f4f4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 26, color: "#70787b" }}>add</span>
                 </div>
-<h1 class="font-headline font-extrabold text-4xl leading-tight tracking-tight text-primary mb-4">
-                    Your Business, Powered by <span class="text-secondary">AI WhatsApp</span> Assistants.
-                </h1>
-<p class="font-body text-lg text-on-surface-variant mb-10 leading-relaxed">
-                    Automatically handle all customer conversations. Go live in minutes and transform your mobile communication.
-                </p>
-<div class="flex flex-col gap-4">
-<button class="bg-primary-gradient text-on-primary font-headline font-bold py-4 px-8 rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        Get Started
-                        <span class="material-symbols-outlined">arrow_forward</span>
-</button>
-<button class="bg-surface-container-high text-primary font-headline font-bold py-4 px-8 rounded-xl flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors active:scale-95">
-<span class="material-symbols-outlined">play_circle</span>
-                        Watch Demo
-                    </button>
-</div>
-</div>
-</section>
-<!-- Social Proof / Logos -->
-<section class="px-6 py-8 bg-surface-container-low">
-<p class="text-center font-label text-[10px] uppercase tracking-widest text-outline mb-6">Built for industry leaders</p>
-<div class="flex justify-around items-center opacity-40 grayscale gap-4 px-4">
-<div class="flex items-center gap-1 font-bold text-xl"><span class="material-symbols-outlined">hub</span> Meta</div>
-<div class="flex items-center gap-1 font-bold text-xl"><span class="material-symbols-outlined">chat_bubble</span> WhatsApp</div>
-<div class="flex items-center gap-1 font-bold text-xl"><span class="material-symbols-outlined">token</span> Stripe</div>
-</div>
-</section>
-<!-- Feature Bento Grid -->
-<section class="px-6 py-16">
-<h2 class="font-headline font-bold text-2xl text-primary mb-8 text-center">Engineered for Reliability</h2>
-<div class="grid grid-cols-1 gap-4">
-<!-- AI Agent Highlight (Large Card) -->
-<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_20px_40px_rgba(25,28,29,0.04)] relative overflow-hidden">
-<div class="flex items-center gap-4 mb-12">
-<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
-</div>
-<div>
-<h3 class="font-headline font-bold text-lg text-primary">Autonomous Agent</h3>
-<p class="font-body text-sm text-on-surface-variant">Intelligent decision making</p>
-</div>
-</div>
-<div class="space-y-3 relative z-10">
-<div class="glass-panel rounded-xl p-3 max-w-[85%] border-l-4 border-secondary shadow-sm">
-<p class="text-xs font-medium text-primary mb-1">Customer:</p>
-<p class="text-sm">Do you have table for 4 tonight?</p>
-</div>
-<div class="bg-primary-container text-on-primary-container rounded-xl p-3 max-w-[85%] ml-auto shadow-sm">
-<p class="text-xs font-medium opacity-70 mb-1">BFF Assistant:</p>
-<p class="text-sm">Yes! We have an opening at 8 PM. Shall I book it?</p>
-</div>
-</div>
-<!-- Decorative Background Element -->
-<div class="absolute -right-10 -bottom-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl"></div>
-</div>
-<!-- Secondary Grid Items -->
-<div class="grid grid-cols-2 gap-4">
-<div class="bg-surface-container-low rounded-xl p-5 flex flex-col justify-between aspect-square">
-<span class="material-symbols-outlined text-primary text-3xl mb-4">bolt</span>
-<div>
-<h4 class="font-headline font-bold text-sm text-primary mb-1">Instant Setup</h4>
-<p class="text-[11px] text-on-surface-variant leading-tight">Live in under 5 minutes with zero code required.</p>
-</div>
-</div>
-<div class="bg-surface-container-low rounded-xl p-5 flex flex-col justify-between aspect-square">
-<span class="material-symbols-outlined text-secondary text-3xl mb-4" style="font-variation-settings: 'FILL' 1;">history_toggle_off</span>
-<div>
-<h4 class="font-headline font-bold text-sm text-primary mb-1">24/7 Presence</h4>
-<p class="text-[11px] text-on-surface-variant leading-tight">Never miss a lead while you sleep. Constant engagement.</p>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Product Image Section -->
-<section class="px-6 py-8">
-<div class="rounded-2xl overflow-hidden bg-primary relative h-80 shadow-2xl">
-<img alt="BFF Platform Dashboard" class="w-full h-full object-cover opacity-60" data-alt="Modern smartphone displaying a clean WhatsApp conversation interface with a sophisticated AI business assistant dashboard in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4QDMTqPMIVCbGudxEqiU2M42muxjdV8kBK9ncoGtPHRKKmED3qTX7cmMwNMUmIZr2mvLQuI341-IBbxXEhxTj0Cn0eWGBrVZ_1Wn_fetJZTVFfOw3i18tt_oQV-wCCSwzue3dox-Drjwpa79SvEm9yNOu5xi3ilSqsFqPQq7E8qP-TRcB1WZxRBUnkWvOoIWLfWFOhof5YdZsz0bJ6ssnp4JjJf08GXIDyWq3iSnRNGTauh0Jg6iA_IesiE8-n8CJUoHBLgNfMN0"/>
-<div class="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent flex items-end p-8">
-<div>
-<h3 class="text-white font-headline font-bold text-xl mb-2">Total Control</h3>
-<p class="text-on-primary-container text-sm">Monitor your AI's performance in real-time through our intuitive mobile dashboard.</p>
-</div>
-</div>
-</div>
-</section>
-<!-- CTA Section -->
-<section class="px-6 py-20 text-center">
-<h2 class="font-headline font-extrabold text-3xl text-primary mb-4">Ready to scale?</h2>
-<p class="text-on-surface-variant mb-8 max-w-xs mx-auto">Join 2,000+ businesses automating their growth today.</p>
-<button class="w-full bg-secondary-container text-on-secondary-container font-headline font-bold py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                Start Free Trial
-                <span class="material-symbols-outlined">trending_up</span>
-</button>
-<p class="mt-4 text-[10px] text-outline uppercase font-semibold tracking-widest">No credit card required</p>
-</section>
-</main>
-<!-- BottomNavBar -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-2xl border-t border-[#bfc8ca]/15">
-<a class="flex flex-col items-center justify-center bg-[#5dfd8a] dark:bg-green-500/20 text-[#007232] dark:text-green-300 rounded-xl px-4 py-1.5 transition-transform duration-150 active:scale-90" href="/dashboard">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/agents">
-<span class="material-symbols-outlined">smart_toy</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Agents</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/conversations">
-<span class="material-symbols-outlined">forum</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Chats</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/settings">
-<span class="material-symbols-outlined">person</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
-</a>
-</nav>` }}
-      />
+                <div>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, color: "#40484a", margin: "0 0 2px", fontSize: "0.95rem" }}>Add another agent</p>
+                  <p style={{ color: "#bfc8ca", fontSize: "0.8rem", margin: 0 }}>Each agent handles a different line of business</p>
+                </div>
+              </Link>
+            </>
+          )}
+        </main>
+
+        {/* Bottom nav */}
+        <nav style={{ position: "fixed", bottom: 0, left: 0, width: "100%", zIndex: 50, display: "flex", justifyContent: "space-around", alignItems: "center", padding: "12px 16px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(191,200,202,0.15)" }}>
+          {[
+            { href: "/dashboard", icon: "home", label: "Home" },
+            { href: "/dashboard/conversations", icon: "chat_bubble", label: "Chats" },
+            { href: "/dashboard/agents", icon: "smart_toy", label: "Agents", active: true },
+            { href: "/dashboard/settings", icon: "settings_suggest", label: "Settings" },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 20px", borderRadius: 16, textDecoration: "none", background: item.active ? "#004B57" : "transparent", color: item.active ? "#fff" : "#40484a" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, fontVariationSettings: item.active ? "'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24" : "'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24" }}>{item.icon}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </DashboardShell>
   );
 }
