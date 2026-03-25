@@ -1,150 +1,199 @@
 "use client";
+
 import DashboardShell from "@/app/components/dashboard-shell";
-
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Users, Search, Plus, Upload, Phone, Mail, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ContactImportModal } from "@/app/components/contact-import-modal";
+import Link from "next/link";
+import { toast } from "sonner";
 
-type Contact = {
+interface Contact {
   id: string;
-  name: string;
+  name?: string;
   phone?: string;
   email?: string;
+  tags: string[];
   notes?: string;
-  tags: string;
+  stage?: string;
   createdAt: string;
-};
-
-function getInitials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+  doNotContact: boolean;
 }
 
-const GRADIENT_PAIRS = [
-  "from-[#E2725B] to-[#D4A373]",
-  "from-[#D4A373] to-[#E2725B]",
-  "from-blue-500 to-indigo-600",
-  "from-emerald-500 to-teal-600",
-  "from-rose-500 to-pink-600",
-  "from-amber-500 to-orange-600",
-];
-
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [importOpen, setImportOpen] = useState(false);
+  const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
 
-  const fetchContacts = async () => {
-    setLoading(true);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", email: "" });
+
+  useEffect(() => { if (isLoaded && !isSignedIn) router.replace("/sign-in"); }, [isLoaded, isSignedIn, router]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetch("/api/contacts")
+      .then(r => r.json())
+      .then(data => setContacts(Array.isArray(data?.contacts) ? data.contacts : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [isSignedIn]);
+
+  const addContact = async () => {
+    if (!form.name.trim()) { toast.error("Name is required"); return; }
+    setSaving(true);
     try {
-      const res = await fetch("/api/contacts");
+      const res = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
       const data = await res.json();
-      setContacts(Array.isArray(data) ? data : (data.contacts || []));
-    } catch {}
-    finally { setLoading(false); }
+      if (res.ok) {
+        toast.success("Contact added");
+        setContacts(prev => [data.contact, ...prev]);
+        setShowAdd(false);
+        setForm({ name: "", phone: "", email: "" });
+      } else toast.error(data.error || "Failed");
+    } catch { toast.error("Failed"); }
+    finally { setSaving(false); }
   };
 
-  useEffect(() => { fetchContacts(); }, []);
+  if (!isLoaded || !isSignedIn) return null;
 
-  const filtered = contacts.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.phone || "").includes(search) ||
-    (c.email || "").toLowerCase().includes(search.toLowerCase())
+  const filtered = contacts.filter(c =>
+    !search || [c.name, c.phone, c.email].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const initials = (c: Contact) => (c.name || c.phone || "?").slice(0, 2).toUpperCase();
 
   return (
     <DashboardShell>
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#FAFAFA]">Contacts</h1>
-          <p className="text-sm text-[#A1A1AA] mt-0.5">{contacts.length} contacts total</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setImportOpen(true)}
-            className="text-[#A1A1AA] hover:text-[#FAFAFA] hover:bg-[#1A1A1A] border border-white/10">
-            <Upload className="w-4 h-4 mr-2" /> Import CSV
-          </Button>
-          <Button className="bg-gradient-to-r from-[#E2725B] to-[#D4A373] hover:from-[#F48B76] hover:to-[#D4A373] text-white border-0 shadow-lg shadow-[#E2725B]/20">
-            <Plus className="w-4 h-4 mr-2" /> Add Contact
-          </Button>
-        </div>
-      </div>
+      <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+        <header style={{ background: "#f8f9fa", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e1e3e3", position: "sticky", top: 0, zIndex: 40 }}>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.125rem", color: "#00333c", margin: 0 }}>Contacts</h1>
+          <button onClick={() => setShowAdd(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#00333c", color: "#fff", border: "none", padding: "8px 16px", borderRadius: 9999, fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_add</span>
+            Add Contact
+          </button>
+        </header>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1AA]" />
-        <Input placeholder="Search contacts..." value={search} onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 bg-[#111111] border-white/[0.07] text-[#FAFAFA] placeholder:text-white/30 focus-visible:ring-[#E2725B]/50" />
-      </div>
+        <main style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px 100px" }}>
 
-      {/* List */}
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-[#111111] border border-white/[0.07] rounded-2xl h-16 animate-pulse" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-[#111111] border border-white/[0.07] border-dashed rounded-2xl p-16 text-center">
-          <Users className="w-12 h-12 text-white/30 mx-auto mb-4" />
-          <p className="text-sm font-semibold text-[#A1A1AA]">
-            {search ? "No contacts match your search" : "No contacts yet"}
-          </p>
-          {!search && (
-            <p className="text-xs text-white/30 mt-1 mb-5">Import from CSV or add contacts manually</p>
-          )}
-          {!search && (
-            <Button variant="ghost" onClick={() => setImportOpen(true)}
-              className="text-[#A1A1AA] hover:text-[#FAFAFA] border border-white/10">
-              <Upload className="w-4 h-4 mr-2" /> Import CSV
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((contact, i) => {
-            const tags = (() => { try { return JSON.parse(contact.tags); } catch { return []; } })();
-            return (
-              <div key={contact.id} className="bg-[#111111] border border-white/[0.07] rounded-2xl p-4 flex items-center gap-4 hover:border-white/10 transition-colors">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${GRADIENT_PAIRS[i % GRADIENT_PAIRS.length]} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
-                  {getInitials(contact.name)}
+          {/* Search */}
+          <div style={{ position: "relative", marginBottom: 20 }}>
+            <span className="material-symbols-outlined" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#70787b", fontSize: 20 }}>search</span>
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search contacts..."
+              style={{ width: "100%", background: "#fff", border: "1px solid #e1e3e3", borderRadius: 12, padding: "12px 14px 12px 44px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
+          </div>
+
+          {/* Add form */}
+          {showAdd && (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e1e3e3", marginBottom: 16 }}>
+              <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#00333c", marginBottom: 20 }}>New Contact</h3>
+              {[
+                { key: "name", label: "Name", placeholder: "Full name", required: true },
+                { key: "phone", label: "Phone (WhatsApp)", placeholder: "+1 767 555 1234" },
+                { key: "email", label: "Email", placeholder: "email@example.com" },
+              ].map(field => (
+                <div key={field.key} style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#70787b", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                    {field.label}{field.required && " *"}
+                  </label>
+                  <input value={(form as any)[field.key]} onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
+                    placeholder={field.placeholder}
+                    style={{ width: "100%", background: "#f2f4f4", border: "1px solid #e1e3e3", borderRadius: 10, padding: "10px 14px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#FAFAFA]">{contact.name}</p>
-                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                    {contact.phone && (
-                      <span className="flex items-center gap-1 text-xs text-[#A1A1AA]">
-                        <Phone className="w-3 h-3" />{contact.phone}
-                      </span>
-                    )}
-                    {contact.email && (
-                      <span className="flex items-center gap-1 text-xs text-[#A1A1AA]">
-                        <Mail className="w-3 h-3" />{contact.email}
-                      </span>
-                    )}
-                  </div>
+              ))}
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button onClick={addContact} disabled={saving}
+                  style={{ flex: 1, background: "#00333c", color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
+                  {saving ? "Saving..." : "Save Contact"}
+                </button>
+                <button onClick={() => setShowAdd(false)}
+                  style={{ width: 48, background: "#f2f4f4", border: "none", borderRadius: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#40484a" }}>close</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <div style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e1e3e3", flex: 1, textAlign: "center" }}>
+              <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#00333c", margin: "0 0 2px" }}>{contacts.length}</p>
+              <p style={{ color: "#70787b", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0, fontWeight: 600 }}>Total</p>
+            </div>
+            <div style={{ background: "#fff", borderRadius: 12, padding: "12px 16px", border: "1px solid #e1e3e3", flex: 1, textAlign: "center" }}>
+              <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.5rem", color: "#006d2f", margin: "0 0 2px" }}>{contacts.filter(c => c.phone).length}</p>
+              <p style={{ color: "#70787b", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0, fontWeight: 600 }}>WhatsApp</p>
+            </div>
+          </div>
+
+          {/* Contacts list */}
+          {loading ? (
+            [1,2,3,4].map(i => <div key={i} style={{ height: 72, borderRadius: 14, background: "#e1e3e3", marginBottom: 8, animation: "bff-pulse 2s infinite" }} />)
+          ) : filtered.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 48, textAlign: "center", border: "1px solid #e1e3e3" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 44, color: "#bfc8ca", display: "block", marginBottom: 14 }}>contacts</span>
+              <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#00333c", marginBottom: 8 }}>
+                {search ? "No contacts found" : "No contacts yet"}
+              </h3>
+              {!search && (
+                <p style={{ color: "#70787b", fontSize: "0.875rem", marginBottom: 24 }}>Contacts are added automatically when customers message your agent.</p>
+              )}
+            </div>
+          ) : (
+            filtered.map(contact => (
+              <div key={contact.id} style={{ background: "#fff", borderRadius: 14, padding: "16px 20px", marginBottom: 8, border: "1px solid #e1e3e3", display: "flex", gap: 14, alignItems: "center" }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = "#004B57")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = "#e1e3e3")}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(0,75,87,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "'Manrope', sans-serif", fontWeight: 700, color: "#004B57", fontSize: "0.9rem" }}>
+                  {initials(contact)}
                 </div>
-                {tags.length > 0 && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {tags.slice(0, 3).map((tag: string) => (
-                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-[#E2725B]/10 text-[#E2725B] border border-[#E2725B]/20">
-                        {tag}
-                      </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, color: "#00333c", margin: "0 0 2px", fontSize: "0.9rem" }}>
+                    {contact.name || "Unknown"}
+                  </p>
+                  <p style={{ color: "#70787b", fontSize: "0.75rem", margin: 0 }}>
+                    {[contact.phone, contact.email].filter(Boolean).join(" · ") || "No contact info"}
+                  </p>
+                </div>
+                {contact.tags?.length > 0 && (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {contact.tags.slice(0, 2).map(tag => (
+                      <span key={tag} style={{ background: "rgba(0,75,87,0.1)", color: "#004B57", fontSize: "0.65rem", fontWeight: 600, padding: "2px 8px", borderRadius: 9999 }}>{tag}</span>
                     ))}
                   </div>
                 )}
+                {contact.phone && (
+                  <a href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"
+                    style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(93,253,138,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, textDecoration: "none" }}>
+                    <span className="material-symbols-outlined" style={{ color: "#006d2f", fontSize: 18, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>chat</span>
+                  </a>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))
+          )}
+        </main>
 
-      <ContactImportModal open={importOpen} onOpenChange={setImportOpen} onSuccess={fetchContacts} />
-    </div>
+        <nav style={{ position: "fixed", bottom: 0, left: 0, width: "100%", zIndex: 50, display: "flex", justifyContent: "space-around", alignItems: "center", padding: "12px 16px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(191,200,202,0.15)" }}>
+          {[
+            { href: "/dashboard", icon: "home", label: "Home" },
+            { href: "/dashboard/conversations", icon: "chat_bubble", label: "Chats" },
+            { href: "/dashboard/agents", icon: "smart_toy", label: "Agents" },
+            { href: "/dashboard/settings", icon: "settings_suggest", label: "Settings" },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 20px", borderRadius: 16, textDecoration: "none", color: "#40484a" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </DashboardShell>
   );
 }

@@ -3,251 +3,260 @@
 import DashboardShell from "@/app/components/dashboard-shell";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+interface ConnectionStatus {
+  google: { signedIn: boolean; calendar: boolean };
+  facebook: { signedIn: boolean };
+  instagram?: { connected: boolean; username?: string };
+  whatsapp: { connected: boolean; phone?: string };
+}
+
+const INTEGRATIONS = [
+  {
+    id: "whatsapp",
+    name: "WhatsApp Business",
+    desc: "Receive and send customer messages through WhatsApp",
+    icon: "chat",
+    iconColor: "#006d2f",
+    iconBg: "rgba(93,253,138,0.15)",
+    category: "messaging",
+    href: "/number",
+    required: true,
+  },
+  {
+    id: "google_calendar",
+    name: "Google Calendar",
+    desc: "Allow customers to book appointments with natural language",
+    icon: "calendar_month",
+    iconColor: "#1a73e8",
+    iconBg: "rgba(26,115,232,0.1)",
+    category: "productivity",
+    href: null,
+  },
+  {
+    id: "shopify",
+    name: "Shopify",
+    desc: "Let AI sell products and sync inventory in real-time",
+    icon: "shopping_cart",
+    iconColor: "#5c6ac4",
+    iconBg: "rgba(92,106,196,0.1)",
+    category: "ecommerce",
+    href: null,
+    comingSoon: true,
+  },
+  {
+    id: "stripe",
+    name: "Stripe Payments",
+    desc: "Process payments and subscriptions through the AI interface",
+    icon: "payments",
+    iconColor: "#635bff",
+    iconBg: "rgba(99,91,255,0.1)",
+    category: "payments",
+    href: null,
+    comingSoon: true,
+  },
+  {
+    id: "reloadly",
+    name: "Reloadly Top-ups",
+    desc: "Send mobile airtime and data bundles worldwide via AI",
+    icon: "phone_iphone",
+    iconColor: "#e67e22",
+    iconBg: "rgba(230,126,34,0.1)",
+    category: "telecom",
+    href: null,
+    comingSoon: true,
+  },
+  {
+    id: "mailchimp",
+    name: "Mailchimp",
+    desc: "Automate subscriber list updates and campaign reporting",
+    icon: "mail",
+    iconColor: "#ffbe00",
+    iconBg: "rgba(255,190,0,0.1)",
+    category: "marketing",
+    href: null,
+    comingSoon: true,
+  },
+  {
+    id: "zendesk",
+    name: "Zendesk CRM",
+    desc: "Connect support tickets to AI workflows",
+    icon: "support_agent",
+    iconColor: "#03363d",
+    iconBg: "rgba(3,54,61,0.1)",
+    category: "crm",
+    href: null,
+    comingSoon: true,
+  },
+  {
+    id: "custom",
+    name: "Custom Webhook",
+    desc: "Build your own private plugin via API",
+    icon: "code",
+    iconColor: "#40484a",
+    iconBg: "#f2f4f4",
+    category: "developer",
+    href: null,
+    comingSoon: true,
+  },
+];
 
 export default function IntegrationsPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
+  const [connections, setConnections] = useState<ConnectionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => { if (isLoaded && !isSignedIn) router.replace("/sign-in"); }, [isLoaded, isSignedIn, router]);
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) router.replace("/sign-in");
-  }, [isLoaded, isSignedIn, router]);
+    if (!isSignedIn) return;
+    Promise.all([
+      fetch("/api/connections").then(r => r.json()).catch(() => ({})),
+      fetch("/api/whatsapp/connect").then(r => r.json()).catch(() => ({})),
+    ]).then(([connData, waData]) => {
+      setConnections({
+        google: connData?.google || { signedIn: false, calendar: false },
+        facebook: connData?.facebook || { signedIn: false },
+        instagram: connData?.instagram,
+        whatsapp: { connected: waData?.connected || false, phone: waData?.display_phone_number },
+      });
+    }).finally(() => setLoading(false));
+  }, [isSignedIn]);
+
+  const isConnected = (id: string): boolean => {
+    if (!connections) return false;
+    switch (id) {
+      case "whatsapp": return connections.whatsapp.connected;
+      case "google_calendar": return connections.google.calendar;
+      default: return false;
+    }
+  };
+
+  const filtered = INTEGRATIONS.filter(i =>
+    !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.desc.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (!isLoaded || !isSignedIn) return null;
 
+  const connectedCount = INTEGRATIONS.filter(i => isConnected(i.id)).length;
+
   return (
     <DashboardShell>
-      <div
-        className="min-h-screen"
-        style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", color: "#191c1d" }}
-        dangerouslySetInnerHTML={{ __html: `<!-- Top Navigation Shell -->
-<header class="bg-[#f8f9fa] dark:bg-[#191c1d] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 transition-colors">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
-<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional male user profile portrait with neutral background, soft studio lighting, high quality photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZBhN5p6zKtgUzebviAmCyTNX3Hrkgl-SjTyMKH4v1yoQp6-pPat1EdnL3P3_V4V5ui8-oYPzR41XE8nm0Qz4zQ3s5EVuYJu260osoEmxLEl7IaRutXliMvexx8fYib2CEChFEfjhEae1JIU87NhTS6DpCkmQ28USoYC1qxXNF2UUhvCfQezLYkiJNwp2ZRFXivnXhbL3bhgKOIjFJyLbY-Ko5FytAEeOzLidBTjIpmZe6x-unmyD2rnvY3UfZaHvgRNcQQT1g2bs"/>
-</div>
-<span class="text-[#004B57] dark:text-[#5dfd8a] font-black tracking-tighter text-xl font-headline">Nexus AI</span>
-</div>
-<nav class="hidden md:flex items-center gap-8">
-<a class="text-[#004B57] dark:text-[#5dfd8a] font-semibold text-sm transition-colors" href="/dashboard">Home</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/conversations">Channels</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/billing">Analytics</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/settings">Management</a>
-</nav>
-<div class="flex items-center gap-4">
-<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e7e8e9] dark:hover:bg-[#3f484a] transition-colors active:scale-95">
-<span class="material-symbols-outlined text-[#004B57] dark:text-[#5dfd8a]">notifications</span>
-</button>
-</div>
-</header>
-<main class="max-w-7xl mx-auto px-6 pt-12 pb-32">
-<!-- Hero & Search -->
-<section class="mb-12">
-<div class="max-w-3xl">
-<h1 class="font-headline font-extrabold text-4xl md:text-5xl text-primary tracking-tight mb-4">Toolbox Store</h1>
-<p class="text-on-surface-variant text-lg leading-relaxed mb-8">Extend your AI agent's capabilities with professional-grade plugins and seamless integrations.</p>
-<div class="relative group">
-<div class="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-<span class="material-symbols-outlined text-outline">search</span>
-</div>
-<input class="w-full h-16 pl-14 pr-6 bg-surface-container-highest rounded-xl border-none focus:ring-2 focus:ring-secondary/40 text-on-surface placeholder:text-outline transition-all text-lg font-medium" placeholder="Search for integrations or workflows..." type="text"/>
-</div>
-</div>
-</section>
-<!-- Categories -->
-<section class="mb-10 overflow-x-auto no-scrollbar">
-<div class="flex items-center gap-3 pb-2">
-<button class="px-6 py-2.5 bg-primary text-on-primary rounded-full font-semibold text-sm whitespace-nowrap">All Tools</button>
-<button class="px-6 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full font-semibold text-sm whitespace-nowrap transition-colors">E-commerce</button>
-<button class="px-6 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full font-semibold text-sm whitespace-nowrap transition-colors">Payments</button>
-<button class="px-6 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full font-semibold text-sm whitespace-nowrap transition-colors">Voice</button>
-<button class="px-6 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full font-semibold text-sm whitespace-nowrap transition-colors">CRM</button>
-<button class="px-6 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full font-semibold text-sm whitespace-nowrap transition-colors">Marketing</button>
-</div>
-</section>
-<!-- Plugin Grid -->
-<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-<!-- Shopify Sync -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-[#95bf47]/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-[#4a6b10] text-3xl">shopping_cart</span>
-</div>
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
-<span class="w-1.5 h-1.5 rounded-full bg-secondary pulse-subtle"></span>
-                            Active
-                        </span>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Shopify Sync</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Enable AI to sell products directly in chat and sync inventory in real-time.</p>
-</div>
-<div class="flex items-center gap-3">
-<button class="flex-1 py-3 px-4 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">Manage</button>
-<button class="p-3 bg-surface-container-high text-primary rounded-lg hover:bg-surface-container-highest transition-colors">
-<span class="material-symbols-outlined text-xl">settings</span>
-</button>
-</div>
-</div>
-<!-- Stripe Payments -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-[#635bff]/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-[#635bff] text-3xl">payments</span>
-</div>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Stripe Payments</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Process secure payments and subscriptions directly through the AI interface.</p>
-</div>
-<button class="w-full py-3 px-4 bg-secondary-container text-on-secondary-container rounded-lg font-bold text-sm hover:brightness-95 transition-all">Configure</button>
-</div>
-<!-- Reloadly Top-ups -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-primary-container/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-primary-container text-3xl">phone_iphone</span>
-</div>
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
-<span class="w-1.5 h-1.5 rounded-full bg-secondary pulse-subtle"></span>
-                            Active
-                        </span>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Reloadly Top-ups</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Send mobile airtime and data bundles to customers worldwide via AI commands.</p>
-</div>
-<div class="flex items-center gap-3">
-<button class="flex-1 py-3 px-4 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">Manage</button>
-<button class="p-3 bg-surface-container-high text-primary rounded-lg hover:bg-surface-container-highest transition-colors">
-<span class="material-symbols-outlined text-xl">settings</span>
-</button>
-</div>
-</div>
-<!-- Google Calendar Booking -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-[#4285f4]/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-[#4285f4] text-3xl">calendar_month</span>
-</div>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Google Calendar</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Allow users to book meetings and check availability with natural language.</p>
-</div>
-<button class="w-full py-3 px-4 bg-secondary-container text-on-secondary-container rounded-lg font-bold text-sm hover:brightness-95 transition-all">Configure</button>
-</div>
-<!-- WhatsApp Business -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-secondary text-3xl">forum</span>
-</div>
-<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
-<span class="w-1.5 h-1.5 rounded-full bg-secondary pulse-subtle"></span>
-                            Active
-                        </span>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">WhatsApp Hub</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Centralize all WhatsApp communications through your AI concierge agent.</p>
-</div>
-<div class="flex items-center gap-3">
-<button class="flex-1 py-3 px-4 bg-primary text-on-primary rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">Manage</button>
-<button class="p-3 bg-surface-container-high text-primary rounded-lg hover:bg-surface-container-highest transition-colors">
-<span class="material-symbols-outlined text-xl">settings</span>
-</button>
-</div>
-</div>
-<!-- Mailchimp -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-[#ffe01b]/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-[#7b6d0e] text-3xl">mail</span>
-</div>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Mailchimp</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Automate subscriber list updates and campaign reporting via AI.</p>
-</div>
-<button class="w-full py-3 px-4 bg-secondary-container text-on-secondary-container rounded-lg font-bold text-sm hover:brightness-95 transition-all">Configure</button>
-</div>
-<!-- Zendesk -->
-<div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col justify-between group hover:shadow-[0_20px_40px_rgba(25,28,29,0.06)] transition-all">
-<div>
-<div class="flex justify-between items-start mb-6">
-<div class="w-14 h-14 bg-[#03363d]/10 rounded-2xl flex items-center justify-center">
-<span class="material-symbols-outlined text-[#03363d] text-3xl">support_agent</span>
-</div>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-2">Zendesk CRM</h3>
-<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Connect support tickets to AI workflows for faster customer resolution.</p>
-</div>
-<button class="w-full py-3 px-4 bg-secondary-container text-on-secondary-container rounded-lg font-bold text-sm hover:brightness-95 transition-all">Configure</button>
-</div>
-<!-- Custom API Hook -->
-<div class="bg-surface-container-lowest border-2 border-dashed border-outline-variant/30 rounded-xl p-6 flex flex-col justify-center items-center text-center group hover:bg-surface-container transition-all">
-<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-outline text-3xl">add</span>
-</div>
-<h3 class="font-headline font-bold text-xl text-primary mb-1">Custom Tool</h3>
-<p class="text-on-surface-variant text-sm">Build your own private plugin via API</p>
-<button class="mt-6 text-primary font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Create Now <span class="material-symbols-outlined">arrow_forward</span>
-</button>
-</div>
-</section>
-<!-- Bento Spotlight Section -->
-<section class="mt-20">
-<h2 class="font-headline font-extrabold text-2xl text-primary mb-8">Featured Integration</h2>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-[400px]">
-<div class="md:col-span-2 relative rounded-3xl overflow-hidden group">
-<img alt="Analytics Dashboard" class="w-full h-full object-cover" data-alt="Modern high-tech command center interface with glowing data visualizations and neon accents in a dark room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmbh-_pKFcQqxI9lZBXXTxM9CRlrZ_RmgV6XiWsJHRab0DikdbKrCsoUX2xnEDVzoI-lJ4Z2TA13S8iaN4yQZbonA8iV6Wv4SYxWLquIVs40U1IHvqeqeDRt-jAypXOAvhtUaPtPNx8-ehSkCSTnTso4lg5FJrw8jMvkEgdHhTCx30GjUtyo-KaK9MdwxjRJ81JjFEEI9FRyvpY0e8IZ5UsZypv0CY4DgUfBqth_-Z1kiDIveSHCiPj7zaqELxFQF3R2VvbU93tZM"/>
-<div class="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent flex flex-col justify-end p-8">
-<span class="bg-secondary-fixed text-on-secondary-fixed text-[10px] font-black tracking-widest uppercase py-1 px-3 rounded-full mb-4 w-fit">New Arrival</span>
-<h3 class="font-headline font-extrabold text-3xl text-white mb-2">Advanced Analytics Pro</h3>
-<p class="text-white/80 max-w-lg mb-6">Gain deep behavioral insights with AI-driven customer sentiment analysis and automated reporting.</p>
-<button class="bg-white text-primary font-bold py-3 px-6 rounded-xl w-fit hover:scale-105 transition-transform active:scale-95">Explore Features</button>
-</div>
-</div>
-<div class="bg-[#004B57] rounded-3xl p-8 flex flex-col justify-center text-center text-white">
-<div class="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center mx-auto mb-6">
-<span class="material-symbols-outlined text-4xl text-secondary-fixed">auto_awesome</span>
-</div>
-<h3 class="font-headline font-bold text-2xl mb-4">AI Pulse Engine</h3>
-<p class="text-white/70 text-sm leading-relaxed mb-8">Our latest engine upgrade improves integration response times by 40%.</p>
-<div class="flex items-center justify-center gap-2 text-secondary-fixed font-bold">
-<span class="w-2 h-2 rounded-full bg-secondary-fixed pulse-subtle"></span>
-                        Live Status: Optimal
+      <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+        <header style={{ background: "#f8f9fa", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e1e3e3", position: "sticky", top: 0, zIndex: 40 }}>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.125rem", color: "#00333c", margin: 0 }}>Toolbox</h1>
+          <Link href="/dashboard" style={{ color: "#40484a", fontSize: "0.875rem", textDecoration: "none" }}>Home</Link>
+        </header>
+
+        <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 100px" }}>
+
+          {/* Header */}
+          <section style={{ marginBottom: 28 }}>
+            <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "clamp(1.6rem,4vw,2.2rem)", color: "#00333c", letterSpacing: "-0.03em", marginBottom: 8 }}>Toolbox Store</h1>
+            <p style={{ color: "#40484a", fontSize: "1rem", lineHeight: 1.6, maxWidth: 520, marginBottom: 20 }}>
+              Extend your AI agent's capabilities with professional-grade integrations.
+            </p>
+            {/* Search */}
+            <div style={{ position: "relative", maxWidth: 480 }}>
+              <span className="material-symbols-outlined" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#70787b", fontSize: 20 }}>search</span>
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search integrations..."
+                style={{ width: "100%", background: "#fff", border: "1px solid #e1e3e3", borderRadius: 12, padding: "12px 14px 12px 44px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
+            </div>
+          </section>
+
+          {/* Categories pills */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 24, overflowX: "auto", paddingBottom: 4 }}>
+            {["All", "Messaging", "Payments", "eCommerce", "CRM", "Productivity"].map((cat, i) => (
+              <button key={cat} style={{ padding: "8px 18px", borderRadius: 9999, border: "1px solid #e1e3e3", background: i === 0 ? "#00333c" : "#fff", color: i === 0 ? "#fff" : "#40484a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px,1fr))", gap: 16 }}>
+            {filtered.map(integration => {
+              const connected = isConnected(integration.id);
+              return (
+                <div key={integration.id} style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e1e3e3", display: "flex", flexDirection: "column", justifyContent: "space-between", transition: "box-shadow 0.2s" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(25,28,29,0.08)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = "none")}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 14, background: integration.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span className="material-symbols-outlined" style={{ color: integration.iconColor, fontSize: 26, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>{integration.icon}</span>
+                      </div>
+                      {connected && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(93,253,138,0.2)", padding: "3px 10px", borderRadius: 9999 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#5dfd8a", animation: "bff-pulse 2s infinite" }} />
+                          <span style={{ color: "#006d2f", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Active</span>
+                        </div>
+                      )}
+                      {integration.comingSoon && (
+                        <span style={{ background: "#f2f4f4", color: "#70787b", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", padding: "3px 10px", borderRadius: 9999 }}>Soon</span>
+                      )}
                     </div>
-</div>
-</div>
-</section>
-</main>
-<!-- Bottom Navigation Shell -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-[#191c1d]/80 backdrop-blur-xl border-t border-[#bfc8ca]/15 shadow-[0_-10px_40px_rgba(25,28,29,0.04)] md:hidden">
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard">
-<span class="material-symbols-outlined mb-1">home</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Home</span>
-</a>
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard/conversations">
-<span class="material-symbols-outlined mb-1">chat_bubble</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Channels</span>
-</a>
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard/billing">
-<span class="material-symbols-outlined mb-1">insights</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Analytics</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-[#004B57] dark:bg-[#5dfd8a] text-white dark:text-[#00391a] rounded-2xl px-5 py-2 pulse-subtle scale-110" href="/dashboard/settings">
-<span class="material-symbols-outlined mb-1">settings_suggest</span>
-<span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Manage</span>
-</a>
-</nav>
-<!-- Floating Action Button - Only on relevant management context -->
-<button class="fixed right-6 bottom-24 md:bottom-10 z-50 w-16 h-16 bg-gradient-to-br from-[#00333c] to-[#004b57] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
-<span class="material-symbols-outlined text-3xl">add</span>
-</button>` }}
-      />
+                    <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#00333c", margin: "0 0 6px" }}>{integration.name}</h3>
+                    <p style={{ color: "#40484a", fontSize: "0.8rem", lineHeight: 1.5, margin: "0 0 20px" }}>{integration.desc}</p>
+                  </div>
+
+                  {integration.comingSoon ? (
+                    <button disabled style={{ width: "100%", background: "#f2f4f4", color: "#70787b", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "not-allowed" }}>
+                      Coming Soon
+                    </button>
+                  ) : connected ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {integration.href ? (
+                        <Link href={integration.href} style={{ flex: 1, background: "#00333c", color: "#fff", borderRadius: 10, padding: "10px 14px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>settings</span>
+                          Manage
+                        </Link>
+                      ) : (
+                        <button style={{ flex: 1, background: "#00333c", color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>settings</span>
+                          Manage
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    integration.href ? (
+                      <Link href={integration.href} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "rgba(0,75,87,0.08)", color: "#004B57", borderRadius: 10, padding: "10px 14px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", textDecoration: "none" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_link</span>
+                        {integration.required ? "Connect" : "Configure"}
+                      </Link>
+                    ) : (
+                      <button onClick={() => toast.info(`${integration.name} integration coming soon`)}
+                        style={{ width: "100%", background: "rgba(0,75,87,0.06)", color: "#004B57", border: "none", borderRadius: 10, padding: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}>
+                        Configure
+                      </button>
+                    )
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </main>
+
+        <nav style={{ position: "fixed", bottom: 0, left: 0, width: "100%", zIndex: 50, display: "flex", justifyContent: "space-around", alignItems: "center", padding: "12px 16px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(191,200,202,0.15)" }}>
+          {[
+            { href: "/dashboard", icon: "home", label: "Home" },
+            { href: "/dashboard/conversations", icon: "chat_bubble", label: "Chats" },
+            { href: "/dashboard/agents", icon: "smart_toy", label: "Agents" },
+            { href: "/dashboard/settings", icon: "settings_suggest", label: "Settings" },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 20px", borderRadius: 16, textDecoration: "none", color: "#40484a" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </DashboardShell>
   );
 }

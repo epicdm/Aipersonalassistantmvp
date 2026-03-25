@@ -3,265 +3,253 @@
 import DashboardShell from "@/app/components/dashboard-shell";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+interface RoutingData {
+  inboundRouting: string;
+  didNumber: string | null;
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  didNumber?: string;
+  didSipServer?: string;
+  config?: any;
+}
 
 export default function CallsPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
 
+  const [routing, setRouting] = useState<RoutingData>({ inboundRouting: "whatsapp", didNumber: null });
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dialNumber, setDialNumber] = useState("");
+  const [calling, setCalling] = useState(false);
+  const [pbxExtension, setPbxExtension] = useState("");
+  const [fallbackNumber, setFallbackNumber] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+
+  useEffect(() => { if (isLoaded && !isSignedIn) router.replace("/sign-in"); }, [isLoaded, isSignedIn, router]);
+
   useEffect(() => {
-    if (isLoaded && !isSignedIn) router.replace("/sign-in");
-  }, [isLoaded, isSignedIn, router]);
+    if (!isSignedIn) return;
+    Promise.all([
+      fetch("/api/agent/routing").then(r => r.json()).catch(() => ({})),
+      fetch("/api/agent").then(r => r.json()).catch(() => ({})),
+    ]).then(([routingData, agentData]) => {
+      setRouting(routingData);
+      const a = agentData?.agent || agentData;
+      if (a?.id) {
+        setAgent(a);
+        const cfg = a.config?.callRouting || {};
+        setPbxExtension(cfg.sipExtension || a.didSipServer || "");
+        setFallbackNumber(cfg.destination || "");
+        setVoiceEnabled(cfg.voiceAgentEnabled ?? routingData.inboundRouting === "voice_agent");
+      }
+    }).finally(() => setLoading(false));
+  }, [isSignedIn]);
+
+  const saveRouting = async () => {
+    if (!agent) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/agent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agent.id,
+          inboundRouting: voiceEnabled ? "voice_agent" : "whatsapp",
+          callRouting: { voiceAgentEnabled: voiceEnabled, sipExtension: pbxExtension, destination: fallbackNumber, enabled: voiceEnabled },
+        }),
+      });
+      if (res.ok) toast.success("Call routing saved");
+      else toast.error("Failed to save");
+    } catch { toast.error("Failed to save"); }
+    finally { setSaving(false); }
+  };
+
+  const startCall = async () => {
+    if (!dialNumber.trim()) { toast.error("Enter a number to call"); return; }
+    setCalling(true);
+    try {
+      const res = await fetch("/api/calls/outbound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toNumber: dialNumber, agentId: agent?.id }),
+      });
+      const data = await res.json();
+      if (data.lkToken) {
+        toast.success("Call connecting...");
+      } else {
+        toast.error(data.error || "Call failed");
+      }
+    } catch { toast.error("Call failed"); }
+    finally { setCalling(false); }
+  };
 
   if (!isLoaded || !isSignedIn) return null;
 
   return (
     <DashboardShell>
-      <div
-        className="min-h-screen"
-        style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", color: "#191c1d" }}
-        dangerouslySetInnerHTML={{ __html: `<!-- Sidebar Navigation (Desktop) -->
-<aside class="hidden md:flex flex-col p-6 space-y-2 h-full w-64 fixed left-0 top-0 bg-slate-100 dark:bg-slate-950 z-40">
-<div class="text-lg font-bold text-cyan-900 dark:text-cyan-50 mb-8 font-headline tracking-tight">AI Management</div>
-<nav class="flex flex-col space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard">
-<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-<span class="font-inter text-sm font-medium">Dashboard</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 bg-white text-cyan-700 rounded-lg shadow-sm font-semibold translate-x-1 transition-all duration-200" href="/dashboard/settings">
-<span class="material-symbols-outlined" data-icon="settings_phone">settings_phone</span>
-<span class="font-inter text-sm font-medium">Voice Config</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/broadcasts">
-<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
-<span class="font-inter text-sm font-medium">Automations</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/conversations">
-<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
-<span class="font-inter text-sm font-medium">Real-time Monitor</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/billing">
-<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
-<span class="font-inter text-sm font-medium">Analytics</span>
-</a>
-</nav>
-</aside>
-<!-- Top AppBar -->
-<header class="flex justify-between items-center px-8 h-20 w-full fixed top-0 z-50 bg-slate-50/80 backdrop-blur-xl md:pl-72">
-<div class="text-2xl font-black text-cyan-900 font-headline tracking-tight">The Digital Concierge</div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
-<span class="w-2 h-2 rounded-full bg-secondary-fixed pulse-ai"></span>
-<span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">AI Live</span>
-</div>
-<button class="p-2 hover:bg-slate-100 transition-colors rounded-full">
-<span class="material-symbols-outlined text-cyan-900" data-icon="settings">settings</span>
-</button>
-<div class="w-10 h-10 rounded-full bg-primary-container overflow-hidden">
-<img class="w-full h-full object-cover" data-alt="professional portrait of a business executive in a modern office setting with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDikA3suB5lgfyo6QLdBBKaEQCBBnW4aqPBBP5D5hoAbN6IbO7x73G9J7teco3rB3I-d8ny0p1yBdFAPCPYzw3fMAZJx1tatbUcJFE3Lq2XNX4rLMK7JsSwlSY2KIbcmb2jkI2Yg-2l_yXouVkzXShW6S2BlLsDsG4TSmIYFu5Eh2z04hTWfnBS0VDZueaMpoAkQQ3PWWLgUw2Qz7WvqkQqUfuqcJ7QPkNxjylZx6YzrZzMWKTzwc60cF4i-6CIWnK0_UaaVmUZbKY"/>
-</div>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="pt-28 pb-24 px-6 md:pl-72 md:pr-12 max-w-7xl mx-auto">
-<!-- Header Section with Asymmetric Layout -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12 items-end">
-<div class="lg:col-span-8">
-<h1 class="font-headline text-5xl font-extrabold text-primary tracking-tight mb-4">Voice &amp; PBX Configuration</h1>
-<p class="text-on-surface-variant text-lg max-w-2xl leading-relaxed">
-                    Define how your business handles incoming voice traffic from WhatsApp. Orchestrate between AI efficiency and human expertise.
-                </p>
-</div>
-<div class="lg:col-span-4 flex justify-end">
-<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-4 rounded-xl font-bold shadow-lg flex items-center gap-2 hover:scale-[0.98] transition-all">
-<span>Deploy Changes</span>
-<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
-</button>
-</div>
-</div>
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-<!-- Primary Configuration: Bento Grid Style -->
-<div class="lg:col-span-2 space-y-8">
-<!-- AI Voice Section -->
-<section class="bg-surface-container-lowest p-8 rounded-lg shadow-sm border border-outline-variant/10">
-<div class="flex justify-between items-start mb-6">
-<div class="flex items-center gap-4">
-<div class="p-3 bg-secondary-container rounded-xl">
-<span class="material-symbols-outlined text-on-secondary-container text-3xl" data-icon="record_voice_over">record_voice_over</span>
-</div>
-<div>
-<h3 class="font-headline text-xl font-bold text-primary">AI Voice Assistant First</h3>
-<p class="text-sm text-on-surface-variant">Intelligent call screening and resolution</p>
-</div>
-</div>
-<label class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox" value=""/>
-<div class="w-14 h-7 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-secondary"></div>
-</label>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-<div class="p-5 bg-surface-container-low rounded-xl">
-<span class="text-xs font-bold text-on-surface-variant uppercase mb-2 block tracking-widest">Greeting Script</span>
-<p class="text-on-surface italic leading-relaxed">"Hello, thanks for calling BFF. How can our digital assistant help you today?"</p>
-</div>
-<div class="p-5 bg-surface-container-low rounded-xl">
-<span class="text-xs font-bold text-on-surface-variant uppercase mb-2 block tracking-widest">Voice Engine</span>
-<div class="flex items-center gap-2 mt-1">
-<span class="material-symbols-outlined text-secondary" data-icon="neurology">neurology</span>
-<span class="font-semibold text-primary">Neural HD - Samantha</span>
-</div>
-</div>
-</div>
-</section>
-<!-- PBX & Human Fallback -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-<!-- Direct PBX Extension -->
-<section class="bg-surface-container-lowest p-8 rounded-lg shadow-sm border border-outline-variant/10 flex flex-col h-full">
-<div class="p-3 bg-primary-container/10 w-fit rounded-xl mb-6 text-primary">
-<span class="material-symbols-outlined text-3xl" data-icon="dialpad">dialpad</span>
-</div>
-<h3 class="font-headline text-xl font-bold text-primary mb-2">Direct PBX Extension</h3>
-<p class="text-sm text-on-surface-variant mb-8 flex-grow">Route calls directly to a specific department or SIP phone.</p>
-<div class="space-y-4">
-<label class="block">
-<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Extension Number</span>
-<input class="mt-1 block w-full bg-surface-container-highest border-none rounded-lg p-3 text-primary focus:ring-2 focus:ring-secondary/40 placeholder:text-on-surface-variant/40" placeholder="e.g. 102" type="text"/>
-</label>
-</div>
-</section>
-<!-- Human Fallback -->
-<section class="bg-surface-container-lowest p-8 rounded-lg shadow-sm border border-outline-variant/10 flex flex-col h-full">
-<div class="p-3 bg-secondary-container/20 w-fit rounded-xl mb-6 text-secondary">
-<span class="material-symbols-outlined text-3xl" data-icon="support_agent">support_agent</span>
-</div>
-<h3 class="font-headline text-xl font-bold text-primary mb-2">Human Fallback</h3>
-<p class="text-sm text-on-surface-variant mb-8 flex-grow">Redirect to a human operator if AI resolution is not possible.</p>
-<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
-<span class="text-sm font-medium">Auto-forwarding</span>
-<span class="text-xs px-2 py-1 bg-secondary-fixed text-on-secondary-fixed rounded font-bold uppercase tracking-tighter">Enabled</span>
-</div>
-</section>
-</div>
-<!-- Operating Hours -->
-<section class="bg-surface-container-lowest p-8 rounded-lg shadow-sm border border-outline-variant/10">
-<div class="flex items-center justify-between mb-8">
-<div>
-<h3 class="font-headline text-xl font-bold text-primary">Operating Hours</h3>
-<p class="text-sm text-on-surface-variant">Calls outside these windows will trigger an automated voicemail.</p>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="schedule">schedule</span>
-</div>
-<div class="space-y-4">
-<!-- Monday-Friday Row -->
-<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-full font-bold text-primary">M-F</div>
-<span class="font-semibold">Weekdays</span>
-</div>
-<div class="flex items-center gap-4">
-<div class="px-4 py-2 bg-surface-container-low rounded-lg font-mono text-sm">09:00 AM</div>
-<span class="text-on-surface-variant">—</span>
-<div class="px-4 py-2 bg-surface-container-low rounded-lg font-mono text-sm">06:00 PM</div>
-</div>
-</div>
-<!-- Saturday Row -->
-<div class="flex items-center justify-between py-4 border-b border-surface-variant/30">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-full font-bold text-primary">S</div>
-<span class="font-semibold">Saturday</span>
-</div>
-<div class="flex items-center gap-4">
-<div class="px-4 py-2 bg-surface-container-low rounded-lg font-mono text-sm">10:00 AM</div>
-<span class="text-on-surface-variant">—</span>
-<div class="px-4 py-2 bg-surface-container-low rounded-lg font-mono text-sm">02:00 PM</div>
-</div>
-</div>
-<!-- Sunday Row -->
-<div class="flex items-center justify-between py-4">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 bg-surface-container-low flex items-center justify-center rounded-full font-bold text-primary/40">S</div>
-<span class="font-semibold text-on-surface-variant">Sunday</span>
-</div>
-<span class="text-sm italic text-on-surface-variant">Closed - All calls to Voicemail</span>
-</div>
-</div>
-</section>
-</div>
-<!-- Side Cards / Status Panel -->
-<div class="space-y-8">
-<!-- Live Health Card -->
-<div class="bg-primary text-on-primary p-8 rounded-lg relative overflow-hidden">
-<div class="absolute -right-8 -top-8 w-40 h-40 bg-primary-container rounded-full opacity-20"></div>
-<h4 class="font-headline text-lg font-bold mb-6">Service Health</h4>
-<div class="space-y-6 relative z-10">
-<div class="flex justify-between items-center">
-<span class="text-on-primary/70 text-sm">Voice Server</span>
-<div class="flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
-<span class="text-xs font-bold">STABLE</span>
-</div>
-</div>
-<div class="flex justify-between items-center">
-<span class="text-on-primary/70 text-sm">AI Latency</span>
-<span class="text-xs font-bold">120ms</span>
-</div>
-<div class="flex justify-between items-center">
-<span class="text-on-primary/70 text-sm">Concurrent Slots</span>
-<span class="text-xs font-bold">24 / 100</span>
-</div>
-</div>
-</div>
-<!-- Preview Card -->
-<div class="bg-surface-container-high/80 backdrop-blur-md p-8 rounded-lg border border-white/40">
-<h4 class="font-headline text-lg font-bold text-primary mb-6">Call Flow Preview</h4>
-<div class="relative pl-6 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-outline-variant/30">
-<div class="relative">
-<div class="absolute -left-[20px] top-1 w-3 h-3 rounded-full bg-secondary"></div>
-<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">Step 1: Intake</span>
-<p class="text-sm font-medium">Caller hits WhatsApp Number</p>
-</div>
-<div class="relative">
-<div class="absolute -left-[20px] top-1 w-3 h-3 rounded-full bg-secondary"></div>
-<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">Step 2: AI Agent</span>
-<p class="text-sm font-medium">Neural engine greets caller</p>
-</div>
-<div class="relative">
-<div class="absolute -left-[20px] top-1 w-3 h-3 rounded-full bg-outline-variant"></div>
-<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest block mb-1">Step 3: Resolve</span>
-<p class="text-sm font-medium">Direct to PBX Ext. if requested</p>
-</div>
-</div>
-</div>
-<!-- Info Graphic Card -->
-<div class="rounded-lg overflow-hidden h-64 relative group">
-<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="modern tech workspace with high-end microphones and communication gear in a sleek minimalist setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6tgo0BGx4eYyJfqUCLe0LFXAr6BlDF5Nm3O_O350CN1yHhp--B6IS375vCpfkMcAswljhl93WB8hMdbFt6KfPiqzYBJ6dfnOjbBXKVHTkKvIURvTmI3l1UyAeSSlemzWfvE21v35a06nd_vYKv1-sO49WJXRn11mcjTh4LVB9DVrrEHBZf-dwzTC3ajiI-YjU8vlCFMOodx3q8_t6DexgCF4U_hLw59Z8uP28ka0WAL08WxGIk2hS-byJ7Phi98cKEDfbx01Inok"/>
-<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex items-end p-6">
-<p class="text-on-primary text-sm font-medium leading-relaxed">Configuring advanced SIP trunking protocols with BFF's secure voice gateway.</p>
-</div>
-</div>
-</div>
-</div>
-</main>
-<!-- Bottom Navigation (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white/90 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/conversations">
-<span class="material-symbols-outlined" data-icon="podcasts">podcasts</span>
-<span class="font-inter text-[10px] uppercase tracking-widest font-bold">Monitor</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-emerald-100 text-emerald-700 rounded-2xl px-6 py-2" href="/dashboard/calls">
-<span class="material-symbols-outlined" data-icon="call">call</span>
-<span class="font-inter text-[10px] uppercase tracking-widest font-bold">Voice</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/broadcasts">
-<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
-<span class="font-inter text-[10px] uppercase tracking-widest font-bold">Workflows</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/conversations">
-<span class="material-symbols-outlined" data-icon="chat">chat</span>
-<span class="font-inter text-[10px] uppercase tracking-widest font-bold">Chat</span>
-</a>
-</nav>` }}
-      />
+      <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+        <header style={{ background: "#f8f9fa", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e1e3e3", position: "sticky", top: 0, zIndex: 40 }}>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.125rem", color: "#00333c", margin: 0 }}>Voice & Calls</h1>
+          <Link href="/dashboard" style={{ color: "#40484a", fontSize: "0.875rem", textDecoration: "none" }}>Home</Link>
+        </header>
+
+        <main style={{ maxWidth: 640, margin: "0 auto", padding: "24px 24px 100px" }}>
+
+          {/* Current status */}
+          <div style={{ background: voiceEnabled ? "linear-gradient(135deg,#00333c,#004B57)" : "#fff", borderRadius: 16, padding: 24, marginBottom: 24, border: voiceEnabled ? "none" : "1px solid #e1e3e3" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="material-symbols-outlined" style={{ color: voiceEnabled ? "#5dfd8a" : "#004B57", fontSize: 24, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>phone</span>
+                <h2 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1rem", color: voiceEnabled ? "#fff" : "#00333c", margin: 0 }}>
+                  {voiceEnabled ? "AI Voice Active" : "Voice Disabled"}
+                </h2>
+              </div>
+              {routing.didNumber && (
+                <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: voiceEnabled ? "rgba(255,255,255,0.7)" : "#70787b", fontWeight: 600 }}>{routing.didNumber}</span>
+              )}
+            </div>
+            <p style={{ color: voiceEnabled ? "rgba(255,255,255,0.7)" : "#70787b", fontSize: "0.85rem", margin: 0 }}>
+              {voiceEnabled ? "Inbound calls are answered by your AI voice agent automatically." : "Enable AI voice to have your agent answer inbound calls."}
+            </p>
+          </div>
+
+          {/* Outbound dialer */}
+          <section style={{ marginBottom: 24 }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Make a Call</h2>
+            <div style={{ background: "#fff", borderRadius: 16, padding: 20, border: "1px solid #e1e3e3" }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <span className="material-symbols-outlined" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#70787b", fontSize: 18 }}>phone</span>
+                  <input value={dialNumber} onChange={e => setDialNumber(e.target.value)}
+                    placeholder="+1 767 555 1234"
+                    style={{ width: "100%", background: "#f2f4f4", border: "1px solid #e1e3e3", borderRadius: 10, padding: "12px 14px 12px 42px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <button onClick={startCall} disabled={calling || !dialNumber.trim()}
+                  style={{ background: "#006d2f", color: "#fff", border: "none", borderRadius: 10, padding: "0 20px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, opacity: calling || !dialNumber.trim() ? 0.5 : 1, whiteSpace: "nowrap" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>call</span>
+                  {calling ? "Calling..." : "Call"}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Routing config */}
+          <section style={{ marginBottom: 24 }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Inbound Call Routing</h2>
+            <div style={{ background: "#fff", borderRadius: 16, padding: 20, border: "1px solid #e1e3e3" }}>
+
+              {/* AI Voice toggle */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, border: `1px solid ${voiceEnabled ? "rgba(0,75,87,0.3)" : "#e1e3e3"}`, background: voiceEnabled ? "rgba(0,75,87,0.05)" : "#fafafa", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span className="material-symbols-outlined" style={{ color: "#004B57", fontSize: 22, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>smart_toy</span>
+                  <div>
+                    <p style={{ fontWeight: 600, color: "#00333c", margin: "0 0 2px", fontSize: "0.875rem" }}>AI Voice Agent First</p>
+                    <p style={{ color: "#70787b", fontSize: "0.75rem", margin: 0 }}>AI answers automatically. Same context as text agent.</p>
+                  </div>
+                </div>
+                <button onClick={() => setVoiceEnabled(v => !v)}
+                  style={{ width: 44, height: 24, borderRadius: 12, background: voiceEnabled ? "#004B57" : "#e1e3e3", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: voiceEnabled ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                </button>
+              </div>
+
+              {/* PBX Extension */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#70787b", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                  PBX Extension <span style={{ color: "#bfc8ca", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+                </label>
+                <div style={{ position: "relative" }}>
+                  <span className="material-symbols-outlined" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#70787b", fontSize: 18 }}>dialpad</span>
+                  <input value={pbxExtension} onChange={e => setPbxExtension(e.target.value)}
+                    placeholder="e.g. 201"
+                    style={{ width: "100%", background: "#f2f4f4", border: "1px solid #e1e3e3", borderRadius: 10, padding: "10px 14px 10px 42px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <p style={{ color: "#bfc8ca", fontSize: "0.72rem", margin: "4px 0 0" }}>Route to this PBX extension after (or instead of) AI agent</p>
+              </div>
+
+              {/* Fallback number */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "#70787b", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>
+                  Human Fallback <span style={{ color: "#bfc8ca", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+                </label>
+                <div style={{ position: "relative" }}>
+                  <span className="material-symbols-outlined" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#70787b", fontSize: 18 }}>person</span>
+                  <input value={fallbackNumber} onChange={e => setFallbackNumber(e.target.value)}
+                    placeholder="+17675551234"
+                    style={{ width: "100%", background: "#f2f4f4", border: "1px solid #e1e3e3", borderRadius: 10, padding: "10px 14px 10px 42px", fontFamily: "'Inter', sans-serif", fontSize: "0.875rem", color: "#191c1d", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <p style={{ color: "#bfc8ca", fontSize: "0.72rem", margin: "4px 0 0" }}>Transfer here when AI can't handle the call</p>
+              </div>
+
+              {/* Flow summary */}
+              <div style={{ background: "#f2f4f4", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span className="material-symbols-outlined" style={{ color: "#004B57", fontSize: 16 }}>arrow_forward</span>
+                <span style={{ fontSize: "0.8rem", color: "#40484a" }}>
+                  Inbound → {voiceEnabled ? <strong style={{ color: "#004B57" }}>AI Voice Agent</strong> : <span>WhatsApp text only</span>}
+                  {pbxExtension && <> → <strong style={{ color: "#b45309" }}>ext. {pbxExtension}</strong></>}
+                  {fallbackNumber && <> → <strong style={{ color: "#006d2f" }}>{fallbackNumber}</strong></>}
+                </span>
+              </div>
+
+              <button onClick={saveRouting} disabled={saving || loading}
+                style={{ width: "100%", background: "#00333c", color: "#fff", border: "none", borderRadius: 12, padding: "12px", fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: saving ? 0.7 : 1 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{saving ? "hourglass_empty" : "save"}</span>
+                {saving ? "Saving..." : "Save Call Routing"}
+              </button>
+            </div>
+          </section>
+
+          {/* Voice number */}
+          {routing.didNumber && (
+            <section>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#70787b", marginBottom: 12 }}>Your Voice Number</h2>
+              <div style={{ background: "#fff", borderRadius: 14, padding: "18px 20px", border: "1px solid #e1e3e3", display: "flex", alignItems: "center", gap: 12 }}>
+                <span className="material-symbols-outlined" style={{ color: "#006d2f", fontSize: 22, fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24" }}>phone_in_talk</span>
+                <div>
+                  <p style={{ fontFamily: "monospace", fontWeight: 700, fontSize: "1.1rem", color: "#00333c", margin: "0 0 2px" }}>{routing.didNumber}</p>
+                  <p style={{ color: "#70787b", fontSize: "0.75rem", margin: 0 }}>Dedicated voice number</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {!routing.didNumber && !loading && (
+            <section>
+              <div style={{ background: "#fff", borderRadius: 14, padding: 20, border: "1px dashed #e1e3e3", textAlign: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 36, color: "#bfc8ca", display: "block", marginBottom: 10 }}>phone_missed</span>
+                <p style={{ fontWeight: 600, color: "#00333c", marginBottom: 6 }}>No voice number yet</p>
+                <p style={{ color: "#70787b", fontSize: "0.8rem", marginBottom: 16 }}>Get a dedicated number for inbound calls.</p>
+                <Link href="/number" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#00333c", color: "#fff", padding: "10px 20px", borderRadius: 9999, fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
+                  Get a number <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_forward</span>
+                </Link>
+              </div>
+            </section>
+          )}
+        </main>
+
+        <nav style={{ position: "fixed", bottom: 0, left: 0, width: "100%", zIndex: 50, display: "flex", justifyContent: "space-around", alignItems: "center", padding: "12px 16px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(191,200,202,0.15)" }}>
+          {[
+            { href: "/dashboard", icon: "home", label: "Home" },
+            { href: "/dashboard/conversations", icon: "chat_bubble", label: "Chats" },
+            { href: "/dashboard/agents", icon: "smart_toy", label: "Agents" },
+            { href: "/dashboard/settings", icon: "settings_suggest", label: "Settings" },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 20px", borderRadius: 16, textDecoration: "none", color: "#40484a" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>{item.icon}</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </DashboardShell>
   );
 }
