@@ -139,19 +139,19 @@ export default function AgentsPage() {
 </main>
 <!-- BottomNavBar -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-2xl border-t border-[#bfc8ca]/15">
-<a class="flex flex-col items-center justify-center bg-[#5dfd8a] dark:bg-green-500/20 text-[#007232] dark:text-green-300 rounded-xl px-4 py-1.5 transition-transform duration-150 active:scale-90" href="#">
+<a class="flex flex-col items-center justify-center bg-[#5dfd8a] dark:bg-green-500/20 text-[#007232] dark:text-green-300 rounded-xl px-4 py-1.5 transition-transform duration-150 active:scale-90" href="/dashboard">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Home</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/agents">
 <span class="material-symbols-outlined">smart_toy</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Agents</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/conversations">
 <span class="material-symbols-outlined">forum</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Chats</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] dark:hover:text-cyan-300 transition-transform duration-150 active:scale-90" href="/dashboard/settings">
 <span class="material-symbols-outlined">person</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
 </a>

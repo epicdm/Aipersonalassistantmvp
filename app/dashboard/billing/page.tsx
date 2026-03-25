@@ -154,25 +154,25 @@ export default function BillingPage() {
 <span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
 <div>
 <p class="font-headline font-bold text-primary text-sm">Reloadly Verification</p>
-<p class="text-sm text-on-surface-variant leading-relaxed">Your account is active. Transaction limits are currently set to $5,000 per day. <a class="text-secondary font-bold" href="#">Increase Limit</a></p>
+<p class="text-sm text-on-surface-variant leading-relaxed">Your account is active. Transaction limits are currently set to $5,000 per day. <a class="text-secondary font-bold" href="/dashboard/billing">Increase Limit</a></p>
 </div>
 </section>
 </main>
 <!-- BottomNavBar -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-3xl">
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/conversations">
 <span class="material-symbols-outlined mb-1" data-icon="forum">forum</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Chats</span>
 </a>
-<a class="flex flex-col items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-2xl px-5 py-2 scale-110 transition-transform duration-300 ease-out" href="#">
+<a class="flex flex-col items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-2xl px-5 py-2 scale-110 transition-transform duration-300 ease-out" href="/dashboard/billing">
 <span class="material-symbols-outlined mb-1" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Wallet</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/billing">
 <span class="material-symbols-outlined mb-1" data-icon="add_card">add_card</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Top-up</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors" href="/dashboard/broadcasts">
 <span class="material-symbols-outlined mb-1" data-icon="receipt_long">receipt_long</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">History</span>
 </a>

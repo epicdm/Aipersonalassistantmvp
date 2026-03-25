@@ -165,19 +165,19 @@ export default function ConversationsPage() {
 </main>
 <!-- BottomNavBar -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-2xl border-t border-[#bfc8ca]/15">
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="/dashboard">
 <span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Home</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="/dashboard/agents">
 <span class="material-symbols-outlined mb-1" data-icon="smart_toy">smart_toy</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Agents</span>
 </a>
-<a class="flex flex-col items-center justify-center bg-[#5dfd8a] dark:bg-green-500/20 text-[#007232] dark:text-green-300 rounded-xl px-4 py-1.5 scale-90 transition-transform duration-150" href="#">
+<a class="flex flex-col items-center justify-center bg-[#5dfd8a] dark:bg-green-500/20 text-[#007232] dark:text-green-300 rounded-xl px-4 py-1.5 scale-90 transition-transform duration-150" href="/dashboard/conversations">
 <span class="material-symbols-outlined mb-1" data-icon="forum" style="font-variation-settings: 'FILL' 1;">forum</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Chats</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-[#004B57] transition-colors" href="/dashboard/settings">
 <span class="material-symbols-outlined mb-1" data-icon="person">person</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Profile</span>
 </a>

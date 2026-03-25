@@ -29,10 +29,10 @@ export default function IntegrationsPage() {
 <span class="text-[#004B57] dark:text-[#5dfd8a] font-black tracking-tighter text-xl font-headline">Nexus AI</span>
 </div>
 <nav class="hidden md:flex items-center gap-8">
-<a class="text-[#004B57] dark:text-[#5dfd8a] font-semibold text-sm transition-colors" href="#">Home</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="#">Channels</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="#">Analytics</a>
-<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="#">Management</a>
+<a class="text-[#004B57] dark:text-[#5dfd8a] font-semibold text-sm transition-colors" href="/dashboard">Home</a>
+<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/conversations">Channels</a>
+<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/billing">Analytics</a>
+<a class="text-[#404849] dark:text-[#bfc8ca] font-semibold text-sm hover:text-[#004B57] dark:hover:text-[#5dfd8a] transition-colors" href="/dashboard/settings">Management</a>
 </nav>
 <div class="flex items-center gap-4">
 <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e7e8e9] dark:hover:bg-[#3f484a] transition-colors active:scale-95">
@@ -226,19 +226,19 @@ export default function IntegrationsPage() {
 </main>
 <!-- Bottom Navigation Shell -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-[#191c1d]/80 backdrop-blur-xl border-t border-[#bfc8ca]/15 shadow-[0_-10px_40px_rgba(25,28,29,0.04)] md:hidden">
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard">
 <span class="material-symbols-outlined mb-1">home</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Home</span>
 </a>
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard/conversations">
 <span class="material-symbols-outlined mb-1">chat_bubble</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Channels</span>
 </a>
-<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] dark:text-[#bfc8ca] px-5 py-2 hover:text-[#004B57] dark:hover:text-[#5dfd8a]" href="/dashboard/billing">
 <span class="material-symbols-outlined mb-1">insights</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Analytics</span>
 </a>
-<a class="flex flex-col items-center justify-center bg-[#004B57] dark:bg-[#5dfd8a] text-white dark:text-[#00391a] rounded-2xl px-5 py-2 pulse-subtle scale-110" href="#">
+<a class="flex flex-col items-center justify-center bg-[#004B57] dark:bg-[#5dfd8a] text-white dark:text-[#00391a] rounded-2xl px-5 py-2 pulse-subtle scale-110" href="/dashboard/settings">
 <span class="material-symbols-outlined mb-1">settings_suggest</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider">Manage</span>
 </a>

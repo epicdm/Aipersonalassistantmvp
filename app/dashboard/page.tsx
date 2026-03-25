@@ -179,22 +179,22 @@ export default function DashboardPage() {
 <!-- Bottom Navigation Bar (JSON Driven) -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 backdrop-blur-xl border-t border-[#bfc8ca]/15 shadow-[0_-10px_40px_rgba(25,28,29,0.04)] rounded-t-3xl">
 <!-- Home (Active) -->
-<a class="flex flex-col items-center justify-center bg-[#004B57] text-white rounded-2xl px-5 py-2 transition-transform duration-300 ease-out" href="#">
+<a class="flex flex-col items-center justify-center bg-[#004B57] text-white rounded-2xl px-5 py-2 transition-transform duration-300 ease-out" href="/dashboard">
 <span class="material-symbols-outlined" data-icon="home" data-weight="fill">home</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Home</span>
 </a>
 <!-- Channels -->
-<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Channels</span>
 </a>
 <!-- Analytics -->
-<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="/dashboard/billing">
 <span class="material-symbols-outlined" data-icon="insights">insights</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Analytics</span>
 </a>
 <!-- Management -->
-<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="#">
+<a class="flex flex-col items-center justify-center text-[#404849] px-5 py-2 hover:text-[#004B57] transition-colors" href="/dashboard/settings">
 <span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
 <span class="font-inter text-[11px] font-semibold uppercase tracking-wider mt-1">Management</span>
 </a>

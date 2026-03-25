@@ -24,23 +24,23 @@ export default function CallsPage() {
 <aside class="hidden md:flex flex-col p-6 space-y-2 h-full w-64 fixed left-0 top-0 bg-slate-100 dark:bg-slate-950 z-40">
 <div class="text-lg font-bold text-cyan-900 dark:text-cyan-50 mb-8 font-headline tracking-tight">AI Management</div>
 <nav class="flex flex-col space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard">
 <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
 <span class="font-inter text-sm font-medium">Dashboard</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 bg-white text-cyan-700 rounded-lg shadow-sm font-semibold translate-x-1 transition-all duration-200" href="#">
+<a class="flex items-center gap-3 px-4 py-3 bg-white text-cyan-700 rounded-lg shadow-sm font-semibold translate-x-1 transition-all duration-200" href="/dashboard/settings">
 <span class="material-symbols-outlined" data-icon="settings_phone">settings_phone</span>
 <span class="font-inter text-sm font-medium">Voice Config</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/broadcasts">
 <span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
 <span class="font-inter text-sm font-medium">Automations</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="sensors">sensors</span>
 <span class="font-inter text-sm font-medium">Real-time Monitor</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200 transition-all duration-200 rounded-lg group" href="/dashboard/billing">
 <span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
 <span class="font-inter text-sm font-medium">Analytics</span>
 </a>
@@ -244,19 +244,19 @@ export default function CallsPage() {
 </main>
 <!-- Bottom Navigation (Mobile Only) -->
 <nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white/90 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="podcasts">podcasts</span>
 <span class="font-inter text-[10px] uppercase tracking-widest font-bold">Monitor</span>
 </a>
-<a class="flex flex-col items-center justify-center bg-emerald-100 text-emerald-700 rounded-2xl px-6 py-2" href="#">
+<a class="flex flex-col items-center justify-center bg-emerald-100 text-emerald-700 rounded-2xl px-6 py-2" href="/dashboard/calls">
 <span class="material-symbols-outlined" data-icon="call">call</span>
 <span class="font-inter text-[10px] uppercase tracking-widest font-bold">Voice</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/broadcasts">
 <span class="material-symbols-outlined" data-icon="bolt">bolt</span>
 <span class="font-inter text-[10px] uppercase tracking-widest font-bold">Workflows</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="chat">chat</span>
 <span class="font-inter text-[10px] uppercase tracking-widest font-bold">Chat</span>
 </a>

@@ -29,10 +29,10 @@ export default function BroadcastsPage() {
 <span class="font-headline text-2xl font-bold tracking-tight text-[#004B57]">The Digital Concierge</span>
 </div>
 <nav class="hidden md:flex items-center gap-8">
-<a class="text-[#004B57] font-bold border-b-2 border-[#5dfd8a] font-label text-sm uppercase tracking-wider" href="#">Performance</a>
-<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Archive</a>
-<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Workflows</a>
-<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="#">Billing</a>
+<a class="text-[#004B57] font-bold border-b-2 border-[#5dfd8a] font-label text-sm uppercase tracking-wider" href="/dashboard/billing">Performance</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="/dashboard/broadcasts">Archive</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="/dashboard/broadcasts">Workflows</a>
+<a class="text-slate-500 hover:bg-[#e7e8e9] px-3 py-1 rounded transition-colors font-label text-sm uppercase tracking-wider" href="/dashboard/billing">Billing</a>
 </nav>
 <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e7e8e9] transition-transform active:scale-90">
 <span class="material-symbols-outlined text-on-surface-variant" data-icon="settings">settings</span>
@@ -47,19 +47,19 @@ export default function BroadcastsPage() {
 </div>
 </div>
 <nav class="flex flex-col gap-2">
-<a class="bg-[#5dfd8a] text-[#007232] rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<a class="bg-[#5dfd8a] text-[#007232] rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="/dashboard/billing">
 <span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
                 Performance
             </a>
-<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="/dashboard/broadcasts">
 <span class="material-symbols-outlined" data-icon="history">history</span>
                 Archive
             </a>
-<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="/dashboard/broadcasts">
 <span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
                 Workflows
             </a>
-<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="#">
+<a class="text-slate-600 hover:bg-slate-100 rounded-lg mx-2 flex items-center gap-3 px-4 py-3 font-inter text-sm font-medium transition-transform hover:translate-x-1" href="/dashboard/billing">
 <span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
                 Billing
             </a>
@@ -193,19 +193,19 @@ export default function BroadcastsPage() {
 </main>
 <!-- Bottom Navigation for Mobile -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 md:hidden bg-white/90 backdrop-blur-md shadow-[0_-10px_30px_rgba(25,28,29,0.04)] border-t border-slate-100 rounded-t-2xl">
-<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#00333c] to-[#004b57] text-white rounded-xl px-4 py-1 transition-transform active:scale-95 duration-150" href="#">
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#00333c] to-[#004b57] text-white rounded-xl px-4 py-1 transition-transform active:scale-95 duration-150" href="/dashboard">
 <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
 <span class="font-inter text-[10px] uppercase tracking-widest mt-1">Daily</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="search">search</span>
 <span class="font-inter text-[10px] uppercase tracking-widest mt-1">Search</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="/dashboard">
 <span class="material-symbols-outlined" data-icon="schema">schema</span>
 <span class="font-inter text-[10px] uppercase tracking-widest mt-1">Logic</span>
 </a>
-<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="#">
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-[#004B57] transition-transform active:scale-95 duration-150" href="/dashboard/billing">
 <span class="material-symbols-outlined" data-icon="speed">speed</span>
 <span class="font-inter text-[10px] uppercase tracking-widest mt-1">Usage</span>
 </a>

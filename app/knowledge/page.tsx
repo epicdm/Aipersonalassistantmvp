@@ -164,19 +164,19 @@ export default function KnowledgePage() {
 </main>
 <!-- BottomNavBar -->
 <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-white dark:bg-[#00333c] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-t-2xl">
-<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="#">
+<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="/dashboard">
 <span class="material-symbols-outlined" data-icon="home">home</span>
 <span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Home</span>
 </a>
-<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="#">
+<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="/dashboard/agents">
 <span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
 <span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Agents</span>
 </a>
-<a class="flex flex-col items-center justify-center text-[#007232] dark:text-[#5dfd8a] bg-[#5dfd8a]/10 dark:bg-[#5dfd8a]/20 rounded-xl px-4 py-1.5 animate-pulse-subtle" href="#">
+<a class="flex flex-col items-center justify-center text-[#007232] dark:text-[#5dfd8a] bg-[#5dfd8a]/10 dark:bg-[#5dfd8a]/20 rounded-xl px-4 py-1.5 animate-pulse-subtle" href="/knowledge">
 <span class="material-symbols-outlined" data-icon="auto_stories" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
 <span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Knowledge</span>
 </a>
-<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="#">
+<a class="flex flex-col items-center justify-center text-[#191c1d]/50 dark:text-[#bfc8ca] px-4 py-1.5 hover:text-[#004b57] transition-all" href="/dashboard/conversations">
 <span class="material-symbols-outlined" data-icon="chat">chat</span>
 <span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Chats</span>
 </a>
