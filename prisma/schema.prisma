@@ -370,4 +370,24 @@ model Subscription {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime
   User             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+// ─── Isola Multi-Tenant Registry ─────────────────────────────────────────────
+// One row per provisioned business tenant. containerPort comes from the
+// Postgres SEQUENCE tenant_port_seq (3200–3299). The SEQUENCE is created in
+// the migration SQL — Prisma does not manage it natively.
+// tokenEncrypted stores the WA token as "iv:authTag:ciphertext" (base64),
+// AES-256-GCM, keyed by TENANT_MASTER_KEY env var.
+// status lifecycle: provisioning → active → inactive
+model TenantRegistry {
+  tenantId        String   @id @default(uuid())
+  waPhoneNumberId String   @unique
+  containerPort   Int      @unique
+  tokenEncrypted  String
+  template        String   @default("professional")
+  status          String   @default("provisioning")
+  createdAt       DateTime @default(now())
+
+  @@index([waPhoneNumberId])
+  @@map("tenant_registry")
+}
 }

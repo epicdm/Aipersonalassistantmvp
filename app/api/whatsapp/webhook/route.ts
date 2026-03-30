@@ -576,6 +576,40 @@ async function processWebhook(body: any) {
   // Extract which phone number received this message
   const incomingPhoneId: string = change?.metadata?.phone_number_id || process.env.META_PHONE_ID || '1003873729481088'
 
+  // ── Isola multi-tenant routing ────────────────────────────────────────────
+  // If this phone_number_id belongs to an isola tenant container, proxy the
+  // raw webhook body to that container and stop processing here.
+  // BFF's own agents (EPIC's personal/business users) are not in tenant_registry
+  // and fall through to the existing logic below.
+  {
+    const tenant = await prisma.tenantRegistry.findUnique({
+      where: { waPhoneNumberId: incomingPhoneId },
+    }).catch(() => null)
+
+    if (tenant) {
+      if (tenant.status !== 'active') {
+        console.log(`[WA] Tenant ${tenant.tenantId} not active (${tenant.status}) — dropping message`)
+        return
+      }
+      try {
+        const containerUrl = `http://66.118.37.12:${tenant.containerPort}/webhook`
+        const res = await fetch(containerUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
+        })
+        if (!res.ok) {
+          console.error(`[WA] tenant=${tenant.tenantId} container:${tenant.containerPort} returned ${res.status} — message dead-lettered`)
+        }
+      } catch (err: any) {
+        console.error(`[WA] tenant=${tenant.tenantId} container:${tenant.containerPort} unreachable: ${err.message} — message dead-lettered`)
+      }
+      return  // Stop — tenant container handles response to customer
+    }
+  }
+  // ── End multi-tenant routing ──────────────────────────────────────────────
+
   const from = String(message.from || '').trim()
   const metaMessageId = String(message.id || '') || null
 
