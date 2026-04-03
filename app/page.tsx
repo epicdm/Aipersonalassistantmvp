@@ -3,15 +3,15 @@ import { auth } from "@clerk/nextjs/server";
 import { LandingWrapper } from "@/app/components/landing-wrapper";
 
 export const metadata = {
-  title: "BFF — AI WhatsApp Assistant for Business",
-  description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent. Set up in under 5 minutes.",
-  metadataBase: new URL("https://bff.epic.dm"),
+  title: "Isola — Run your business from anywhere",
+  description: "Your business on WhatsApp, on autopilot. AI agents that answer calls, reply to messages, and handle customers 24/7. Built in Dominica for the Caribbean.",
+  metadataBase: new URL("https://isola.epic.dm"),
   alternates: { canonical: "/" },
   openGraph: {
-    title: "BFF — AI WhatsApp Assistant for Business",
-    description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent.",
-    url: "https://bff.epic.dm",
-    siteName: "BFF",
+    title: "Isola — Run your business from anywhere",
+    description: "Your business on WhatsApp, on autopilot. AI agents that answer calls, reply to messages, and handle customers 24/7.",
+    url: "https://isola.epic.dm",
+    siteName: "Isola by EPIC",
     type: "website",
   },
 };
