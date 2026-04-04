@@ -56,7 +56,7 @@ export default function DashboardPage() {
   if (!isLoaded || !isSignedIn) return null;
 
   const activeAgents = agents.filter(a => a.status === "active").length;
-  const waConnected = agents.filter(a => a.ownerPhone).length;
+  const waConnected = agents.filter(a => a.ownerPhone || a.whatsappStatus === 'connected').length;
   const totalMessages = conversations.reduce((s, c) => s + (c.messageCount || 0), 0);
   const pending = conversations.filter(c => c.status === "pending_approval").length;
 
