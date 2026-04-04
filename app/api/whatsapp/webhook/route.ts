@@ -683,45 +683,157 @@ async function processWebhook(body: any) {
 
   if (!text) return
 
-  // ── WhatsApp Flow trigger (onboarding keywords on any EPIC number) ────
-  const ONBOARDING_KEYWORDS = ['signup', 'sign up', 'get started', 'new agent', 'set up', 'setup', 'i want an agent', 'isola']
-  if (ONBOARDING_KEYWORDS.some(kw => text.toLowerCase().includes(kw))) {
-    const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
-    if (FLOW_ID) {
-      try {
-        const META_TOKEN = process.env.META_WA_TOKEN || ''
+  // ── Isola onboarding trigger ──────────────────────────────────────────────
+  const ONBOARDING_KEYWORDS = ['signup', 'sign up', 'get started', 'new agent', 'set up', 'setup', 'i want an agent', 'isola', 'hello', 'hi']
+  const lowerText = text.toLowerCase().trim()
+
+  // Handle button replies from the onboarding menu
+  if (message.type === 'interactive' && message.interactive?.type === 'button_reply') {
+    const btnId = message.interactive.button_reply?.id || ''
+
+    if (btnId === 'onboard_business') {
+      // Path A: Business agent — send to website for Embedded Signup
+      const META_TOKEN = process.env.META_WA_TOKEN || ''
+      await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp', to: from, type: 'interactive',
+          interactive: {
+            type: 'cta_url',
+            body: { text: 'Connect your Facebook account to import your business details automatically. Or tap "Enter Manually" to type your info.' },
+            action: {
+              name: 'cta_url',
+              parameters: { display_text: 'Connect with Facebook', url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://bff.epic.dm'}/number` },
+            },
+          },
+        }),
+      }).catch((e: any) => console.error('[WA] CTA send failed:', e.message))
+
+      // Also send the manual fallback option
+      const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
+      if (FLOW_ID) {
         await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
           body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: from,
-            type: 'interactive',
+            messaging_product: 'whatsapp', to: from, type: 'interactive',
             interactive: {
               type: 'flow',
-              body: { text: 'Set up your AI business agent in 2 minutes. Tap below to get started.' },
-              action: {
-                name: 'flow',
-                parameters: {
-                  flow_message_version: '3',
-                  flow_id: FLOW_ID,
-                  flow_cta: 'Get Started',
-                  flow_action: 'navigate',
-                  flow_action_payload: { screen: 'TEMPLATE', data: { phone: from } },
-                },
-              },
+              body: { text: 'Or set up without Facebook:' },
+              action: { name: 'flow', parameters: {
+                flow_message_version: '3', flow_id: FLOW_ID, flow_cta: 'Enter Manually',
+                flow_action: 'navigate', flow_action_payload: { screen: 'TEMPLATE', data: { greeting: 'Set up your AI business agent.' } },
+              }},
             },
           }),
-        })
-        console.log('[WA] Sent onboarding Flow to:', from)
-        return // Flow handles the rest
-      } catch (err: any) {
-        console.error('[WA] Failed to send Flow:', err.message)
-        // Fall through to normal agent handling
+        }).catch((e: any) => console.error('[WA] Flow fallback failed:', e.message))
       }
+      console.log('[WA] Business onboarding path for:', from)
+      return
+    }
+
+    if (btnId === 'onboard_personal') {
+      // Path B: Personal assistant — send personal Flow
+      const PERSONAL_FLOW_ID = process.env.ISOLA_PERSONAL_FLOW_ID
+      const META_TOKEN = process.env.META_WA_TOKEN || ''
+      if (PERSONAL_FLOW_ID) {
+        await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: from, type: 'interactive',
+            interactive: {
+              type: 'flow',
+              body: { text: 'Set up your personal AI assistant in 1 minute.' },
+              action: { name: 'flow', parameters: {
+                flow_message_version: '3', flow_id: PERSONAL_FLOW_ID, flow_cta: 'Get Started',
+                flow_action: 'navigate', flow_action_payload: { screen: 'PERSONAL_INFO', data: { greeting: 'Your personal AI assistant.' } },
+              }},
+            },
+          }),
+        }).catch((e: any) => console.error('[WA] Personal Flow failed:', e.message))
+      } else {
+        await sendWhatsAppMessage(from, 'Personal assistant coming soon! For now, try setting up a business agent.', incomingPhoneId)
+      }
+      console.log('[WA] Personal assistant path for:', from)
+      return
+    }
+
+    if (btnId === 'onboard_demo') {
+      // Path C: Demo — activate demo mode for this conversation
+      await sendWhatsAppMessage(from,
+        "Welcome to the Isola demo! I'm an AI agent for a sample business.\n\n" +
+        "Try asking me anything a customer would ask:\n" +
+        '• "What are your hours?"\n' +
+        '• "Do you deliver?"\n' +
+        '• "I want to place an order"\n\n' +
+        "I'll respond like a real business agent. Send me a message!",
+        incomingPhoneId
+      )
+      console.log('[WA] Demo mode activated for:', from)
+      return
+    }
+
+    if (btnId === 'onboard_activate') {
+      // "Activate My Agent" button from confirmation message
+      // Look up pending signup and trigger provisioning
+      try {
+        const pending = await prisma.pendingSignup.findFirst({
+          where: { phone: from, status: { in: ['flow_complete', 'enriched'] } },
+          orderBy: { createdAt: 'desc' },
+        })
+        if (pending) {
+          await prisma.pendingSignup.update({ where: { id: pending.id }, data: { status: 'provisioning' } })
+          await sendWhatsAppMessage(from, 'Setting up your agent now... This takes about 60 seconds.', incomingPhoneId)
+          // Trigger provisioning async
+          fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://bff.epic.dm'}/api/isola/provision-number`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-internal-secret': process.env.INTERNAL_SECRET || '' },
+            body: JSON.stringify({
+              businessName: pending.businessName, template: pending.template || 'professional',
+              email: pending.email, flowToken: pending.flowToken,
+            }),
+          }).catch((e: any) => console.error('[WA] Provision trigger failed:', e.message))
+        } else {
+          await sendWhatsAppMessage(from, 'No pending setup found. Message "signup" to start fresh.', incomingPhoneId)
+        }
+      } catch (e: any) {
+        console.error('[WA] Activation failed:', e.message)
+      }
+      return
     }
   }
-  // ── End Flow trigger ──────────────────────────────────────────────────────
+
+  // Send onboarding menu on keyword match
+  if (ONBOARDING_KEYWORDS.some(kw => lowerText.includes(kw))) {
+    const META_TOKEN = process.env.META_WA_TOKEN || ''
+    try {
+      await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp', to: from, type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: `Hi ${contactName || 'there'}! Welcome to Isola — AI agents for your business.\n\nWhat are you looking for?` },
+            action: {
+              buttons: [
+                { type: 'reply', reply: { id: 'onboard_business', title: 'Business Agent' } },
+                { type: 'reply', reply: { id: 'onboard_personal', title: 'Personal Assistant' } },
+                { type: 'reply', reply: { id: 'onboard_demo', title: 'Try a Demo' } },
+              ],
+            },
+          },
+        }),
+      })
+      console.log('[WA] Sent onboarding menu to:', from)
+      return
+    } catch (err: any) {
+      console.error('[WA] Failed to send menu:', err.message)
+    }
+  }
+  // ── End onboarding trigger ────────────────────────────────────────────────
 
   const existing = metaMessageId
     ? await prisma.whatsAppMessage.findFirst({ where: { metaMessageId } }).catch(() => null)

@@ -238,7 +238,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // ── 11. Return 202 ─────────────────────────────────────────────────────
+  // ── 11. Async enrichment (pull FB page data if token allows) ─────────────
+  // Fire-and-forget: don't block the signup response
+  import('@/app/lib/business-enrichment').then(async ({ enrichFromFacebook, sendEnrichmentConfirmation, seedAgentKnowledge }) => {
+    try {
+      const enriched = await enrichFromFacebook(wabaToken, displayPhone)
+      if (enriched) {
+        // Update tenant with enriched data
+        await prisma.tenantRegistry.update({
+          where: { tenantId },
+          data: {
+            businessName: enriched.pageName,
+            template: enriched.template,
+          },
+        })
+        // Send confirmation to WhatsApp (if we have the customer's phone)
+        if (displayPhone) {
+          const phone = displayPhone.replace(/\D/g, '')
+          if (phone.length >= 10) {
+            await sendEnrichmentConfirmation(phone, enriched)
+          }
+        }
+        console.log('[signup] Enrichment complete:', enriched.pageName, '→', enriched.template)
+      }
+    } catch (err: any) {
+      console.error('[signup] Enrichment failed (non-blocking):', err.message)
+    }
+  }).catch(() => {})
+
+  // ── 12. Return 202 ─────────────────────────────────────────────────────
   console.log('[signup] Tenant provisioning started:', { tenantId, phoneNumberId, containerPort, businessId })
 
   return NextResponse.json({

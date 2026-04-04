@@ -1,0 +1,111 @@
+{
+  "version": "6.2",
+  "routing_model": {
+    "PERSONAL_INFO": ["PREFERENCES"],
+    "PREFERENCES": []
+  },
+  "screens": [
+    {
+      "id": "PERSONAL_INFO",
+      "title": "Your Assistant",
+      "data": {
+        "greeting": {
+          "type": "string",
+          "__example__": "Your personal AI assistant."
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "personal_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "${data.greeting}"
+              },
+              {
+                "type": "TextInput",
+                "label": "Your Name",
+                "name": "user_name",
+                "required": true,
+                "input-type": "text",
+                "helper-text": "What should your assistant call you?"
+              },
+              {
+                "type": "TextInput",
+                "label": "Your Email",
+                "name": "email",
+                "required": true,
+                "input-type": "email",
+                "helper-text": "For your account"
+              },
+              {
+                "type": "Footer",
+                "label": "Next",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": { "type": "screen", "name": "PREFERENCES" },
+                  "payload": {
+                    "user_name": "${form.user_name}",
+                    "email": "${form.email}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PREFERENCES",
+      "title": "Preferences",
+      "terminal": true,
+      "data": {
+        "user_name": {
+          "type": "string",
+          "__example__": "Eric"
+        },
+        "email": {
+          "type": "string",
+          "__example__": "eric@example.com"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "pref_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "What should your assistant help with?"
+              },
+              {
+                "type": "TextArea",
+                "label": "What do you need help with?",
+                "name": "help_with",
+                "required": false,
+                "helper-text": "e.g. reminders, scheduling, research, messages, general help"
+              },
+              {
+                "type": "Footer",
+                "label": "Activate My Assistant",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "user_name": "${data.user_name}",
+                    "email": "${data.email}",
+                    "help_with": "${form.help_with}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
