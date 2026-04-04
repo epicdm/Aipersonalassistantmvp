@@ -370,6 +370,7 @@ model Subscription {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime
   User             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 // ─── Isola Multi-Tenant Registry ─────────────────────────────────────────────
 // One row per provisioned business tenant. containerPort comes from the
@@ -426,5 +427,4 @@ model IsolaSignup {
   @@index([wabaId])
   @@index([stripeSubscriptionId])
   @@map("isola_signup")
-}
 }
