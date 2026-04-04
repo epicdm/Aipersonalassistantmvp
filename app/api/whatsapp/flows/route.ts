@@ -164,25 +164,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     let response: any
 
     if (action === 'INIT') {
-      // First screen load — generate flow_token, return template list
-      const flowToken = crypto.randomUUID()
-      const dids = await getAvailableDids()
-
-      await prisma.pendingSignup.create({
-        data: {
-          flowToken,
-          phone: data?.phone || 'unknown',
-          status: 'flow_started',
-        },
-      })
-
+      // Minimal INIT — just return the first screen with greeting
       response = {
         screen: 'TEMPLATE',
         data: {
-          flow_token: flowToken,
-          templates: TEMPLATES,
-          available_numbers: dids.slice(0, 5),
-          plans: PLANS,
+          greeting: 'Welcome to Isola! Set up your AI business agent.',
         },
       }
     } else if (action === 'data_exchange') {
