@@ -8,13 +8,17 @@ import { prisma } from '@/app/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-// Pool of EPIC 818 numbers provisioned in Magnus.
-// These are real DIDs. Remove from pool once assigned to a tenant.
+// Pool of EPIC 818 numbers provisioned in Magnus (verified 2026-04-04).
+// These are the ACTUAL DIDs from Magnus DID table.
+// Remove from pool once assigned to a tenant.
 const DID_POOL = [
-  '17678181019', '17678183081', '17678185018', '17678185042',
-  '17678185168', '17678186449', '17678186649', '17678187708',
-  '17678189043', '17678189320', '17678189430', '17678189475',
-  '17678189632', '17678189637', '17678189656', '17678189733',
+  '17678183456', '17678188564', '17678180000', '17678180857',
+  '17678187511', '17678180300', '17678182815', '17678185999',
+  '17678182530', '17678184780', '17678185784', '17678184040',
+  '17678185911', '17678182751', '17678188617', '17678182507',
+  '17678188641', '17678186416', '17678182668', '17678183742',
+  '17678182741', '17678187626', '17678183366', '17678184934',
+  '17678187055',
 ]
 
 export async function GET() {

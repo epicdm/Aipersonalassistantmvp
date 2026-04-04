@@ -34,7 +34,7 @@ export const dynamic = 'force-dynamic'
 const META_WA_TOKEN = process.env.META_WA_TOKEN || ''
 
 const VALID_TEMPLATES = ['pharmacy', 'professional', 'restaurant', 'retail']
-const DID_RE          = /^1767818\d{4}$/
+const DID_RE          = /^1767\d{7}$/  // Any Dominica 767 number
 
 export async function POST(req: NextRequest) {
   let body: { did?: string; businessName?: string; template?: string }
