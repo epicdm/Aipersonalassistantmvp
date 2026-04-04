@@ -428,3 +428,32 @@ model IsolaSignup {
   @@index([stripeSubscriptionId])
   @@map("isola_signup")
 }
+
+// ─── WhatsApp Flow Pending Signups ───────────────────────────────────────────
+// Tracks in-progress onboarding via WhatsApp Flows.
+// flow_token correlates Flow screens → Stripe session → provisioning.
+// Status lifecycle: flow_started → flow_complete → payment_pending → provisioning → active
+// Error states: provision_failed, payment_failed, payment_expired, abandoned
+model PendingSignup {
+  id              String    @id @default(cuid())
+  flowToken       String    @unique @map("flow_token")
+  phone           String
+  email           String?
+  template        String?
+  businessName    String?
+  businessData    Json?
+  planId          String?
+  reservedDid     String?   @map("reserved_did")
+  reservedUntil   DateTime? @map("reserved_until")
+  stripeSessionId String?   @map("stripe_session_id")
+  tenantId        String?   @map("tenant_id")
+  status          String    @default("flow_started")
+  errorMessage    String?   @map("error_message")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([flowToken])
+  @@index([phone])
+  @@index([status])
+  @@map("pending_signup")
+}
