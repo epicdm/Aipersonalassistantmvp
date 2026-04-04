@@ -115,6 +115,34 @@ export default function DashboardPage() {
             </p>
           </section>
 
+          {/* Getting Started Banner — shows when agent exists but no WhatsApp connected */}
+          {!loading && agents.length > 0 && waConnected === 0 && (
+            <section style={{ background: "linear-gradient(135deg, #0066ff15, #00333c10)", border: "1px solid #00333c20", borderRadius: 16, padding: 24, marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ width: 48, height: 48, background: "#00333c15", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 24 }}>📱</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <h3 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#00333c", margin: "0 0 6px" }}>
+                    Connect your WhatsApp number
+                  </h3>
+                  <p style={{ color: "#40484a", fontSize: "0.9rem", lineHeight: 1.5, margin: "0 0 16px" }}>
+                    Your agent <strong>{agents[0]?.name}</strong> is ready! Connect a WhatsApp number so customers can start messaging.
+                    You can bring your own business number or get a new Dominica (+1 767) number from us.
+                  </p>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <Link href="/number" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#00333c", color: "#fff", padding: "10px 20px", borderRadius: 9999, fontWeight: 600, fontSize: "0.85rem", textDecoration: "none" }}>
+                      Connect WhatsApp Number
+                    </Link>
+                    <Link href="/dashboard/settings" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: "#00333c", border: "1px solid #00333c30", padding: "10px 20px", borderRadius: 9999, fontWeight: 600, fontSize: "0.85rem", textDecoration: "none" }}>
+                      Configure {agents[0]?.name} first
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Bento cards */}
           <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 40 }}>
             {/* Active agents */}
