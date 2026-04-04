@@ -432,12 +432,12 @@ function StepActivate({
         )}
       </motion.div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
         <button
           onClick={onContinue}
-          className="text-[#40484a] hover:text-[#00333c]/80 text-sm underline underline-offset-4 transition-colors cursor-pointer"
+          className="px-6 py-3 bg-[#00333c]/10 hover:bg-[#00333c]/20 text-[#00333c] rounded-xl font-medium transition-colors cursor-pointer"
         >
-          or continue to dashboard →
+          Skip for now → Go to Dashboard
         </button>
       </motion.div>
     </div>
@@ -480,6 +480,22 @@ export default function CreationFlow() {
     if (!agentName.trim()) return;
     setCreating(true);
     try {
+      // Check if agent already exists (user went back and tried again)
+      const checkRes = await fetch("/api/agent");
+      if (checkRes.ok) {
+        const existing = await checkRes.json();
+        if (existing.agent?.id) {
+          // Agent already exists — skip creation, go to activate
+          if (existing.agent.activationCode) {
+            setActivationCode(existing.agent.activationCode);
+          }
+          if (typeof window !== "undefined") sessionStorage.removeItem("bff_template");
+          setStep("activate");
+          setCreating(false);
+          return;
+        }
+      }
+
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
