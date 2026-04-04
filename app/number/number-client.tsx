@@ -253,6 +253,8 @@ function NewNumberForm() {
   const [country, setCountry] = useState("+1767");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [provisionedNumber, setProvisionedNumber] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,26 +263,50 @@ function NewNumberForm() {
       return;
     }
     setLoading(true);
+    setStatusMessage("Finding your number...");
     try {
-      const res = await fetch("/api/number/provision", {
+      const res = await fetch("/api/isola/provision-number", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          business_name: businessName.trim(),
-          country_code: country,
+          businessName: businessName.trim(),
+          template: "professional",
         }),
       });
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
       const data = await res.json();
-      if (data.success && data.phone_number) {
-        toast.success("Number provisioned: " + data.phone_number);
+      if (data.tenantId) {
+        setStatusMessage("Setting up your agent... (30-60 seconds)");
+        // Poll for status
+        const pollStatus = async () => {
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            try {
+              const statusRes = await fetch(`/api/isola/provision-status?tenantId=${data.tenantId}`);
+              const status = await statusRes.json();
+              if (status.active) {
+                setProvisionedNumber(status.did || data.did || "your new number");
+                setSubmitted(true);
+                setStatusMessage("");
+                toast.success("Your agent is live!");
+                return;
+              }
+              setStatusMessage(status.label || "Setting up...");
+            } catch {}
+          }
+          // Timeout after 90s
+          setSubmitted(true);
+          setStatusMessage("");
+          toast.success("Your agent is being set up! We'll WhatsApp you when it's ready.");
+        };
+        pollStatus();
       } else {
-        // Fallback — request queued
         setSubmitted(true);
-        toast.success("Request submitted!");
+        toast.success("Request submitted! We'll set up your number shortly.");
       }
-    } catch {
-      setSubmitted(true);
-      toast.success("Request submitted!");
+    } catch (err: any) {
+      toast.error("Setup failed: " + err.message);
+      setStatusMessage("");
     } finally {
       setLoading(false);
     }
@@ -290,10 +316,13 @@ function NewNumberForm() {
     return (
       <div className="bg-[#00333c]/10 border border-[#E2725B]/30 rounded-xl p-6 text-center space-y-2">
         <CheckCircle className="w-8 h-8 text-[#004B57] mx-auto" />
-        <p className="text-[#004B57] font-medium">Request Received!</p>
+        <p className="text-[#004B57] font-medium">
+          {provisionedNumber ? `Your number: ${provisionedNumber}` : "Your Agent is Being Set Up!"}
+        </p>
         <p className="text-[#A1A1AA] text-sm">
-          We'll set up your number within 24 hours. We'll WhatsApp you when it's
-          ready.
+          {provisionedNumber
+            ? "Your AI agent is live and ready to handle customer messages!"
+            : "We'll WhatsApp you when your agent is ready. Usually takes about 60 seconds."}
         </p>
       </div>
     );
