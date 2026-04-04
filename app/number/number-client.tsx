@@ -428,7 +428,7 @@ export default function NumberClient() {
   >("loading");
   const [connectedData, setConnectedData] = useState<any>(null);
   const [phoneData, setPhoneData] = useState<any>(null);
-  const [openPath, setOpenPath] = useState<number | null>(null);
+  const [openPath, setOpenPath] = useState<number | null>(2);
 
   useEffect(() => {
     Promise.all([
