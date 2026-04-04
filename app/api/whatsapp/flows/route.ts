@@ -153,6 +153,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { screen, data, action, flow_token, version } = decryptedData
 
+  // Handle error notifications from client
+  if (data?.error) {
+    console.warn('[flows] Client error:', data.error, data.error_message)
+    const errResp = encryptResponse({ version, data: { acknowledged: true } }, aesKey, iv)
+    return new NextResponse(errResp, { headers: { 'Content-Type': 'text/plain' } })
+  }
+
   try {
     let response: any
 
@@ -271,16 +278,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       response = { screen: 'ERROR', data: { error_message: 'Unknown action' } }
     }
 
-    // Encrypt and return as plain text (Meta expects encrypted base64 string)
-    const encrypted = encryptResponse(response, aesKey, iv)
+    // Add version to response (required by Meta) and encrypt
+    const fullResponse = { version, ...response }
+    console.log('[flows] Sending response:', JSON.stringify({ version, screen: response.screen }))
+    const encrypted = encryptResponse(fullResponse, aesKey, iv)
     return new NextResponse(encrypted, {
       headers: { 'Content-Type': 'text/plain' },
     })
 
   } catch (err: any) {
-    console.error('[flows] Handler error:', err.message)
+    console.error('[flows] Handler error:', err.message, err.stack)
     const errorResponse = encryptResponse(
-      { screen: 'ERROR', data: { error_message: 'Something went wrong. Please try again.' } },
+      { version, data: { acknowledged: true } },
       aesKey, iv
     )
     return new NextResponse(errorResponse, {
