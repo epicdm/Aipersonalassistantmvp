@@ -15,7 +15,10 @@ import { alertEric } from '@/app/lib/alert'
 
 export const dynamic = 'force-dynamic'
 
-const FLOW_PRIVATE_KEY = process.env.FLOW_PRIVATE_KEY || ''
+// Private key can be stored as PEM text or base64-encoded PEM
+const FLOW_PRIVATE_KEY_RAW = process.env.FLOW_PRIVATE_KEY || ''
+const FLOW_PRIVATE_KEY_B64 = process.env.FLOW_PRIVATE_KEY_B64 || ''
+const FLOW_PRIVATE_KEY = FLOW_PRIVATE_KEY_RAW || (FLOW_PRIVATE_KEY_B64 ? Buffer.from(FLOW_PRIVATE_KEY_B64, 'base64').toString('utf8') : '')
 const FLOW_PASSPHRASE  = process.env.FLOW_PASSPHRASE  || ''
 
 // ── Encryption helpers (Meta WhatsApp Flows protocol) ───────────────────────
