@@ -48,7 +48,7 @@ async function sendWhatsApp(to, message) {
   const phone = to.replace(/\D/g, '');
   if (phone.length < 7) return;
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${WA_PHONE_ID}/messages`, {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${WA_PHONE_ID}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

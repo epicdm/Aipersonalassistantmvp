@@ -20,7 +20,7 @@ export async function sendWhatsAppMessage(phone: string, message: string, fromPh
   if (!token) throw new Error('WHATSAPP_TOKEN not configured')
   const phoneId = fromPhoneId || DEFAULT_PHONE_ID
 
-  const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export async function sendWhatsAppVoiceNote(phone: string, text: string, voice =
   formData.append('type', 'audio/mpeg')
   formData.append('file', new Blob([audioBuffer], { type: 'audio/mpeg' }), 'voice.mp3')
 
-  const uploadRes = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/media`, {
+  const uploadRes = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/media`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -70,7 +70,7 @@ export async function sendWhatsAppVoiceNote(phone: string, text: string, voice =
   const mediaId = uploadData.id
   if (!mediaId) throw new Error('No media ID returned from upload')
 
-  const msgRes = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+  const msgRes = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({
@@ -88,7 +88,7 @@ export async function sendTypingIndicator(messageId: string, fromPhoneId?: strin
   if (!token || !messageId) return
   const phoneId = fromPhoneId || DEFAULT_PHONE_ID
   try {
-    await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+    await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -127,7 +127,7 @@ export async function sendInteractiveButtons(
   if (headerText) interactive.header = { type: 'text', text: headerText }
   if (footerText) interactive.footer = { text: footerText }
 
-  const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'interactive', interactive }),
@@ -169,7 +169,7 @@ export async function sendInteractiveList(
   if (headerText) interactive.header = { type: 'text', text: headerText }
   if (footerText) interactive.footer = { text: footerText }
 
-  const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'interactive', interactive }),
@@ -185,7 +185,7 @@ export async function markAsRead(messageId: string, fromPhoneId?: string): Promi
   if (!token || !messageId) return
   const phoneId = fromPhoneId || DEFAULT_PHONE_ID
   try {
-    await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+    await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: messageId }),

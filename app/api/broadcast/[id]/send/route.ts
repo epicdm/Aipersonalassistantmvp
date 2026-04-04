@@ -4,7 +4,7 @@ import { prisma } from "@/app/lib/prisma";
 
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || "";
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "1003873729481088";
-const WA_API_URL = `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`;
+const WA_API_URL = `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_ID}/messages`;
 
 async function sendWhatsAppMessage(phone: string, message: string): Promise<{ success: boolean; error?: string }> {
   try {

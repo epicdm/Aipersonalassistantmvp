@@ -12,7 +12,7 @@ const PHONE_ID = process.env.META_PHONE_ID || '1003873729481088'
 const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
 const DAILY_FREE_LIMIT = 50
 const DAILY_UPGRADE_WARN_AT = 48
-const WA_BASE_URL = `https://graph.facebook.com/v21.0/${PHONE_ID}/messages`
+const WA_BASE_URL = `https://graph.facebook.com/v25.0/${PHONE_ID}/messages`
 
 type SessionType = 'owner' | 'customer'
 
@@ -812,7 +812,26 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  // Verify Meta signature before processing
+  const rawBody = Buffer.from(await req.arrayBuffer())
+  const signature = req.headers.get('x-hub-signature-256') || ''
+
+  if (signature) {
+    // Only verify if signature header is present (Meta always sends it)
+    const { verifyMetaSignature } = await import('@/app/lib/meta-verify')
+    if (!verifyMetaSignature(rawBody, signature)) {
+      console.error('[WA webhook] Signature verification failed')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+  }
+
+  let body: any
+  try {
+    body = JSON.parse(rawBody.toString('utf8'))
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
   processWebhook(body).catch((error) => console.error('[WA webhook]', error))
   return NextResponse.json({ ok: true })
 }

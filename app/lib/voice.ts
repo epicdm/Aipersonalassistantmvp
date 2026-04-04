@@ -15,7 +15,7 @@ export async function transcribeWhatsAppAudio(mediaId: string): Promise<string |
   try {
     // Step 1: Get media URL from WhatsApp
     const mediaRes = await fetch(
-      `https://graph.facebook.com/v21.0/${mediaId}`,
+      `https://graph.facebook.com/v25.0/${mediaId}`,
       { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } }
     );
     if (!mediaRes.ok) {
