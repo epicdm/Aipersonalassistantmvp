@@ -683,10 +683,9 @@ async function processWebhook(body: any) {
 
   if (!text) return
 
-  // ── WhatsApp Flow trigger (onboarding keywords on EPIC's main number) ───
+  // ── WhatsApp Flow trigger (onboarding keywords on any EPIC number) ────
   const ONBOARDING_KEYWORDS = ['signup', 'sign up', 'get started', 'new agent', 'set up', 'setup', 'i want an agent', 'isola']
-  const isMainNumber = incomingPhoneId === (process.env.META_PHONE_ID || '1003873729481088')
-  if (isMainNumber && ONBOARDING_KEYWORDS.some(kw => text.toLowerCase().includes(kw))) {
+  if (ONBOARDING_KEYWORDS.some(kw => text.toLowerCase().includes(kw))) {
     const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
     if (FLOW_ID) {
       try {
