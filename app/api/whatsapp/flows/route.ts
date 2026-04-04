@@ -127,17 +127,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  // Health check ping from Meta
-  if (body.action === 'ping') {
+  // Plain-text health check (Meta may send unencrypted ping before encryption is set up)
+  if (body.action === 'ping' && !body.encrypted_flow_data) {
     return NextResponse.json({ data: { status: 'active' } })
   }
 
+  // Decrypt the request (Meta encrypts ALL real requests)
   let decryptedData: any, aesKey: Buffer, iv: Buffer
   try {
     ({ decryptedData, aesKey, iv } = decryptRequest(body))
   } catch (err: any) {
     console.error('[flows] Decryption failed:', err.message)
-    return NextResponse.json({ error: 'Decryption failed' }, { status: 400 })
+    // Return 421 to tell Meta client to re-download public key and retry
+    return new NextResponse('Decryption failed', { status: 421 })
+  }
+
+  console.log('[flows] Decrypted action:', decryptedData.action, 'screen:', decryptedData.screen)
+
+  // Health check ping from Meta (comes encrypted)
+  if (decryptedData.action === 'ping') {
+    const pingResponse = { version: decryptedData.version || '3.0', data: { status: 'active' } }
+    const encrypted = encryptResponse(pingResponse, aesKey, iv)
+    return new NextResponse(encrypted, { headers: { 'Content-Type': 'text/plain' } })
   }
 
   const { screen, data, action, flow_token, version } = decryptedData
@@ -260,10 +271,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       response = { screen: 'ERROR', data: { error_message: 'Unknown action' } }
     }
 
-    // Encrypt and return
+    // Encrypt and return as plain text (Meta expects encrypted base64 string)
     const encrypted = encryptResponse(response, aesKey, iv)
     return new NextResponse(encrypted, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
     })
 
   } catch (err: any) {
@@ -273,7 +284,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       aesKey, iv
     )
     return new NextResponse(errorResponse, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
     })
   }
 }
