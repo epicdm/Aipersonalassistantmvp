@@ -3,6 +3,116 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+
+/* ─── Inline number provisioning (no redirect to /number) ─── */
+function InlineProvision({ agentName }: { agentName: string }) {
+  const [status, setStatus] = useState<"idle" | "provisioning" | "done" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [number, setNumber] = useState("");
+  const router = useRouter();
+
+  const handleProvision = async () => {
+    setStatus("provisioning");
+    setMessage("Finding your number...");
+    try {
+      const res = await fetch("/api/isola/provision-number", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessName: agentName, template: "professional" }),
+      });
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      const data = await res.json();
+
+      if (data.tenantId) {
+        setMessage("Setting up your agent... (30-60 seconds)");
+        // Poll for status
+        for (let i = 0; i < 30; i++) {
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            const statusRes = await fetch(`/api/isola/provision-status?tenantId=${data.tenantId}`);
+            const statusData = await statusRes.json();
+            if (statusData.active) {
+              setNumber(statusData.did || data.did || "your new number");
+              setStatus("done");
+              setMessage("");
+              return;
+            }
+            setMessage(statusData.label || "Setting up...");
+          } catch {}
+        }
+        // Timeout but still success
+        setStatus("done");
+        setMessage("Your agent is being set up. Check the dashboard in a moment.");
+      } else {
+        setStatus("done");
+        setMessage("Setting up! We'll WhatsApp you when ready.");
+      }
+    } catch (err: any) {
+      setStatus("error");
+      setMessage(err.message || "Something went wrong");
+    }
+  };
+
+  if (status === "done") {
+    return (
+      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
+        <div className="text-4xl">✅</div>
+        <p className="text-emerald-700 font-bold text-lg">
+          {number ? `Your number: ${number}` : "Your agent is being set up!"}
+        </p>
+        <p className="text-[#40484a] text-sm">
+          {number
+            ? `${agentName} is live! Customers can message this number.`
+            : "We'll notify you when it's ready."}
+        </p>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="mt-2 px-6 py-3 bg-[#00333c] text-white rounded-xl font-bold hover:bg-[#004B57] transition-colors cursor-pointer"
+        >
+          Go to Dashboard →
+        </button>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center space-y-3">
+        <p className="text-red-700 font-bold">Setup failed: {message}</p>
+        <button onClick={() => { setStatus("idle"); setMessage(""); }}
+          className="text-[#40484a] underline cursor-pointer">Try again</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-left">
+        <p className="text-emerald-700 font-bold text-sm mb-1">📱 Get your business WhatsApp number</p>
+        <p className="text-[#40484a] text-xs">
+          We&apos;ll set up a dedicated Dominica number (+1 767) for {agentName}. Takes about 60 seconds.
+        </p>
+      </div>
+      <button
+        onClick={handleProvision}
+        disabled={status === "provisioning"}
+        className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-emerald-500/30 transition-all hover:scale-105 cursor-pointer disabled:cursor-wait disabled:hover:scale-100"
+      >
+        {status === "provisioning" ? (
+          <>
+            <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {message}
+          </>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            Get My Number &amp; Activate {agentName}
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
 import {
   Sparkles,
   ArrowRight,
@@ -307,31 +417,12 @@ function StepActivate({
           </>
         ) : (
           <>
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-left">
-              <p className="text-amber-300 font-bold text-sm mb-1">📱 Your business needs its own WhatsApp number</p>
-              <p className="text-amber-200/70 text-xs leading-relaxed">
-                Choose how to connect: bring your own number or get a new Dominica number from us.
-              </p>
+            <InlineProvision agentName={agentName} />
+            <div className="text-center mt-4">
+              <a href="/number" className="text-[#40484a] hover:text-[#00333c] text-sm underline underline-offset-4">
+                Or bring your own WhatsApp Business number →
+              </a>
             </div>
-            <a
-              href="/number"
-              className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-emerald-500/30 transition-all hover:scale-105"
-            >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-              Get a New 767 Number (Easiest)
-            </a>
-            <a
-              href="/number"
-              className="flex items-center justify-center gap-3 w-full py-4 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 transition-all hover:scale-105"
-            >
-              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              Bring My Own WhatsApp Number
-            </a>
-            <p className="text-sm text-[#40484a] mt-2">
-              Both options take about 2 minutes.
-            </p>
             {activationCode && (
               <p className="text-xs text-[#40484a] text-center mt-2">
                 Your activation code: <span className="font-mono text-[#40484a]">{activationCode}</span>
