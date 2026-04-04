@@ -1,0 +1,232 @@
+{
+  "version": "6.2",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "TEMPLATE": ["BUSINESS_INFO"],
+    "BUSINESS_INFO": ["PLAN"],
+    "PLAN": ["NUMBER"],
+    "NUMBER": []
+  },
+  "screens": [
+    {
+      "id": "TEMPLATE",
+      "title": "Your Business",
+      "data": {
+        "flow_token": { "type": "string", "__example__": "abc-123" },
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "retail", "title": "Retail / Shop" },
+            { "id": "restaurant", "title": "Restaurant / Hospitality" },
+            { "id": "medical", "title": "Medical / Dental" },
+            { "id": "professional", "title": "Professional Services" },
+            { "id": "collections", "title": "Collections" },
+            { "id": "isp", "title": "ISP / Telecom" },
+            { "id": "service", "title": "General Service Business" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "template_form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "label": "What kind of business do you run?",
+                "name": "template",
+                "required": true,
+                "data-source": "${data.templates}"
+              },
+              {
+                "type": "Footer",
+                "label": "Next",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "template": "${form.template}",
+                    "flow_token": "${data.flow_token}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "BUSINESS_INFO",
+      "title": "About Your Business",
+      "data": {
+        "flow_token": { "type": "string", "__example__": "abc-123" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "business_form",
+            "children": [
+              {
+                "type": "TextInput",
+                "label": "Business Name",
+                "name": "business_name",
+                "required": true,
+                "input-type": "text",
+                "helper-text": "e.g. Glenn's Butcher Shop"
+              },
+              {
+                "type": "TextInput",
+                "label": "Your Email",
+                "name": "email",
+                "required": true,
+                "input-type": "email",
+                "helper-text": "For account access and receipts"
+              },
+              {
+                "type": "TextInput",
+                "label": "Business Hours",
+                "name": "business_hours",
+                "required": false,
+                "input-type": "text",
+                "helper-text": "e.g. Mon-Fri 8am-5pm, Sat 8am-1pm"
+              },
+              {
+                "type": "TextArea",
+                "label": "Top questions your customers ask",
+                "name": "top_faqs",
+                "required": false,
+                "helper-text": "Your AI agent will learn to answer these"
+              },
+              {
+                "type": "Footer",
+                "label": "Next",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "business_name": "${form.business_name}",
+                    "email": "${form.email}",
+                    "business_hours": "${form.business_hours}",
+                    "top_faqs": "${form.top_faqs}",
+                    "flow_token": "${data.flow_token}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PLAN",
+      "title": "Choose Your Plan",
+      "data": {
+        "flow_token": { "type": "string", "__example__": "abc-123" },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "community", "title": "Community — Free (limited)" },
+            { "id": "starter", "title": "Starter — $49/mo" },
+            { "id": "business", "title": "Business — $99/mo" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "plan_form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "label": "Pick your plan",
+                "name": "plan",
+                "required": true,
+                "data-source": "${data.plans}"
+              },
+              {
+                "type": "Footer",
+                "label": "Next",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "plan": "${form.plan}",
+                    "flow_token": "${data.flow_token}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "NUMBER",
+      "title": "Your WhatsApp Number",
+      "terminal": true,
+      "data": {
+        "flow_token": { "type": "string", "__example__": "abc-123" },
+        "available_numbers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "17678186823", "title": "+1 767-818-6823" },
+            { "id": "17678185018", "title": "+1 767-818-5018" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "number_form",
+            "children": [
+              {
+                "type": "Dropdown",
+                "label": "Choose your business number",
+                "name": "selected_number",
+                "required": true,
+                "data-source": "${data.available_numbers}"
+              },
+              {
+                "type": "Footer",
+                "label": "Set Up My Agent",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "selected_number": "${form.selected_number}",
+                    "flow_token": "${data.flow_token}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
