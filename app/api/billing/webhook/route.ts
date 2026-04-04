@@ -1,14 +1,24 @@
 /**
  * POST /api/billing/webhook
- * Handles Fiserv payment success webhook
- * Updates user plan and provisions DIDs for Pro/Business plans
+ * Handles both Stripe and legacy Fiserv payment webhooks.
+ * Stripe: checkout.session.completed → trigger provisioning for Flow signups.
+ * Fiserv: payment success → upgrade user plan + provision DIDs.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
-import { provisionDID } from '@/app/lib/did-provisioner'
+import { alertEric } from '@/app/lib/alert'
+
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
 
 export async function POST(req: NextRequest) {
+  // ── Stripe webhook (detected by stripe-signature header) ──────────────
+  const stripeSignature = req.headers.get('stripe-signature')
+  if (stripeSignature && STRIPE_WEBHOOK_SECRET) {
+    return handleStripeWebhook(req, stripeSignature)
+  }
+
+  // ── Legacy Fiserv webhook (no stripe-signature header) ────────────────
   try {
     const payload = await req.json()
     const { userId, plan, success, transactionId } = payload
@@ -99,4 +109,96 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({ status: 'Billing webhook endpoint active' })
+}
+
+// ── Stripe webhook handler ────────────────────────────────────────────────
+
+async function handleStripeWebhook(req: NextRequest, signature: string): Promise<NextResponse> {
+  const body = await req.text()
+
+  let event: any
+  try {
+    const Stripe = (await import('stripe')).default
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+    event = stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET)
+  } catch (err: any) {
+    console.error('[billing/stripe] Signature verification failed:', err.message)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+  }
+
+  console.log('[billing/stripe] Event:', event.type, event.id)
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const flowToken = session.metadata?.flow_token
+
+    if (!flowToken) {
+      console.log('[billing/stripe] No flow_token in metadata — skipping')
+      return NextResponse.json({ ok: true })
+    }
+
+    const signup = await prisma.pendingSignup.findUnique({ where: { flowToken } })
+    if (!signup) {
+      console.error('[billing/stripe] flow_token not found:', flowToken)
+      await alertEric(`Stripe payment for unknown flow_token: ${flowToken}`)
+      return NextResponse.json({ ok: true })
+    }
+
+    // Idempotency
+    if (['provisioning', 'active'].includes(signup.status)) {
+      console.log('[billing/stripe] Already processing — skipping duplicate:', flowToken)
+      return NextResponse.json({ ok: true })
+    }
+
+    // Trigger provisioning
+    try {
+      await prisma.pendingSignup.update({ where: { flowToken }, data: { status: 'provisioning' } })
+
+      const provRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://bff.epic.dm'}/api/isola/provision-number`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': process.env.INTERNAL_SECRET || '',
+        },
+        body: JSON.stringify({
+          did: signup.reservedDid,
+          businessName: signup.businessName,
+          template: signup.template || 'professional',
+          email: signup.email,
+          flowToken,
+        }),
+        signal: AbortSignal.timeout(60000),
+      })
+
+      if (!provRes.ok) throw new Error(`Provision returned ${provRes.status}`)
+
+      const result = await provRes.json()
+      await prisma.pendingSignup.update({
+        where: { flowToken },
+        data: { tenantId: result.tenantId },
+      })
+
+      const { sendWhatsAppMessage } = await import('@/app/lib/whatsapp')
+      await sendWhatsAppMessage(signup.phone,
+        `Payment received! Setting up your AI agent now... We'll message you in about 60 seconds.`
+      )
+    } catch (err: any) {
+      console.error('[billing/stripe] Post-payment provision failed:', err.message)
+      await prisma.pendingSignup.update({
+        where: { flowToken },
+        data: { status: 'provision_failed', errorMessage: err.message },
+      })
+      await alertEric(`PAYMENT RECEIVED but provisioning FAILED for ${flowToken}. Customer ${signup.phone} paid but has no agent! Error: ${err.message}`)
+    }
+  } else if (event.type === 'checkout.session.expired') {
+    const flowToken = event.data.object?.metadata?.flow_token
+    if (flowToken) {
+      await prisma.pendingSignup.update({
+        where: { flowToken },
+        data: { status: 'payment_expired' },
+      }).catch(() => null)
+    }
+  }
+
+  return NextResponse.json({ ok: true })
 }

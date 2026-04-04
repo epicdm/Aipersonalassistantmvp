@@ -683,6 +683,47 @@ async function processWebhook(body: any) {
 
   if (!text) return
 
+  // ── WhatsApp Flow trigger (onboarding keywords on EPIC's main number) ───
+  const ONBOARDING_KEYWORDS = ['signup', 'sign up', 'get started', 'new agent', 'set up', 'setup', 'i want an agent', 'isola']
+  const isMainNumber = incomingPhoneId === (process.env.META_PHONE_ID || '1003873729481088')
+  if (isMainNumber && ONBOARDING_KEYWORDS.some(kw => text.toLowerCase().includes(kw))) {
+    const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
+    if (FLOW_ID) {
+      try {
+        const META_TOKEN = process.env.META_WA_TOKEN || ''
+        await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: from,
+            type: 'interactive',
+            interactive: {
+              type: 'flow',
+              body: { text: 'Set up your AI business agent in 2 minutes. Tap below to get started.' },
+              action: {
+                name: 'flow',
+                parameters: {
+                  flow_message_version: '3',
+                  flow_id: FLOW_ID,
+                  flow_cta: 'Get Started',
+                  flow_action: 'navigate',
+                  flow_action_payload: { screen: 'TEMPLATE', data: { phone: from } },
+                },
+              },
+            },
+          }),
+        })
+        console.log('[WA] Sent onboarding Flow to:', from)
+        return // Flow handles the rest
+      } catch (err: any) {
+        console.error('[WA] Failed to send Flow:', err.message)
+        // Fall through to normal agent handling
+      }
+    }
+  }
+  // ── End Flow trigger ──────────────────────────────────────────────────────
+
   const existing = metaMessageId
     ? await prisma.whatsAppMessage.findFirst({ where: { metaMessageId } }).catch(() => null)
     : null
