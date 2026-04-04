@@ -41,7 +41,6 @@ export async function getSessionUser(): Promise<SessionUser | null> {
           data: {
             id: user.id,
             email,
-            passwordHash: "clerk-managed",
             plan: "free",
           },
         });
