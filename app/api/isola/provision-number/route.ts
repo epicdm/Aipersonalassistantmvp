@@ -42,12 +42,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { did, businessName = 'My Business', template = 'professional' } = body
+  let { did, businessName = 'My Business', template = 'professional' } = body
+
+  // Auto-assign a DID from the pool if none provided
+  if (!did) {
+    try {
+      const availRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://bff.epic.dm'}/api/isola/available-numbers`, {
+        headers: { 'x-internal-secret': process.env.INTERNAL_SECRET || '' },
+        signal: AbortSignal.timeout(8000),
+      })
+      const availData = await availRes.json()
+      if (availData.numbers?.length > 0) {
+        did = availData.numbers[0].id || availData.numbers[0]
+      }
+    } catch {}
+  }
 
   if (!did || !DID_RE.test(did))
-    return NextResponse.json({ error: 'Invalid DID format (must be 1767818XXXX)' }, { status: 400 })
-  if (!VALID_TEMPLATES.includes(template))
-    return NextResponse.json({ error: 'Invalid template' }, { status: 400 })
+    return NextResponse.json({ error: 'No available numbers. Please try again shortly.' }, { status: 400 })
+  if (!VALID_TEMPLATES.includes(template)) template = 'professional' // fallback instead of error
   if (!META_WA_TOKEN)
     return NextResponse.json({ error: 'META_WA_TOKEN not configured' }, { status: 500 })
 
