@@ -26,6 +26,7 @@ import { encryptToken } from '@/app/lib/crypto'
 import { alertEric } from '@/app/lib/alert'
 
 const OCMT_URL = process.env.OCMT_URL || 'http://66.118.37.12:4000'
+const OCMT_CALLBACK_SECRET = process.env.OCMT_CALLBACK_SECRET || process.env.OCMT_AUTH_TOKEN || ''
 
 // POST — Embedded Signup callback (called by your demo page after Meta OAuth)
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -140,6 +141,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // PATCH — Called by OCMT when container /health returns OK
 // Sets status=active so BFF webhook handler starts routing to this tenant
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  // Verify internal secret — OCMT must include x-callback-secret header
+  if (OCMT_CALLBACK_SECRET) {
+    const secret = req.headers.get('x-callback-secret') || ''
+    if (secret !== OCMT_CALLBACK_SECRET) {
+      console.error('[provision] PATCH rejected — invalid or missing x-callback-secret')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
   const body = await req.json().catch(() => null)
   if (!body?.tenantId || !body?.status) {
     return NextResponse.json({ error: 'Missing tenantId or status' }, { status: 400 })

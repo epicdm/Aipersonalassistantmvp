@@ -89,7 +89,10 @@ function MetaEmbeddedSignup({ onSuccess }: { onSuccess: (data: any) => void }) {
               displayPhone: embeddedData.display_phone_number || "",
             }),
           })
-            .then((r) => r.json())
+            .then((r) => {
+              if (!r.ok) throw new Error(`Server error (${r.status})`);
+              return r.json();
+            })
             .then((data) => {
               setLoading(false);
               if (data.ok) {
