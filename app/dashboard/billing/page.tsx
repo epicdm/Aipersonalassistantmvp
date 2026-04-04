@@ -71,6 +71,22 @@ export default function BillingPage() {
     finally { setUpgrading(null); }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "portal" }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Could not open billing portal");
+      }
+    } catch { toast.error("Could not open billing portal"); }
+  };
+
   if (!isLoaded || !isSignedIn) return null;
 
   const currentPlan = PLAN_FEATURES[plan.plan] || PLAN_FEATURES.free;
@@ -118,6 +134,20 @@ export default function BillingPage() {
               </div>
             </div>
           </section>
+
+          {/* Manage Subscription */}
+          {plan.plan !== "free" && (
+            <section style={{ marginBottom: 28 }}>
+              <button onClick={handleManageSubscription}
+                style={{ width: "100%", background: "#fff", borderRadius: 14, padding: "16px 20px", border: "1px solid #e1e3e3", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>
+                <div style={{ textAlign: "left" }}>
+                  <p style={{ fontWeight: 600, color: "#00333c", margin: "0 0 4px", fontSize: "0.875rem" }}>Manage Subscription</p>
+                  <p style={{ color: "#70787b", fontSize: "0.75rem", margin: 0 }}>Update payment method, change plan, or cancel</p>
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#70787b" }}>open_in_new</span>
+              </button>
+            </section>
+          )}
 
           {/* Upgrade */}
           {plan.plan !== "business" && (

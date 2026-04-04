@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TEMPLATES } from "@/app/lib/templates";
+import { TEMPLATES } from "@/app/lib/agent-templates";
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "sk-443f0af69dc14ee095fce92d16928850";
 

@@ -1,0 +1,172 @@
+{
+  "version": "6.2",
+  "routing_model": {
+    "SELECT_SERVICE": ["SELECT_TIME"],
+    "SELECT_TIME": ["CONFIRM"]
+  },
+  "screens": [
+    {
+      "id": "SELECT_SERVICE",
+      "title": "Book an Appointment",
+      "data": {
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "svc_1", "title": "Haircut - $20 (30 min)" },
+            { "id": "svc_2", "title": "Dental Checkup - $50 (45 min)" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "service_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "What would you like to book?"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "label": "Select a service",
+                "name": "service_id",
+                "required": true,
+                "data-source": "${data.services}"
+              },
+              {
+                "type": "Footer",
+                "label": "Next",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "service_id": "${form.service_id}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SELECT_TIME",
+      "title": "Pick a Time",
+      "data": {
+        "service_name": {
+          "type": "string",
+          "__example__": "Dental Checkup"
+        },
+        "available_slots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "__example__": [
+            { "id": "slot_1", "title": "Today 2:00 PM" },
+            { "id": "slot_2", "title": "Today 3:00 PM" },
+            { "id": "slot_3", "title": "Tomorrow 9:00 AM" }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "time_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "${data.service_name}"
+              },
+              {
+                "type": "TextBody",
+                "text": "Choose an available time:"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "label": "Available times",
+                "name": "slot_id",
+                "required": true,
+                "data-source": "${data.available_slots}"
+              },
+              {
+                "type": "TextInput",
+                "label": "Your name",
+                "name": "customer_name",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "Footer",
+                "label": "Confirm Booking",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "slot_id": "${form.slot_id}",
+                    "customer_name": "${form.customer_name}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "CONFIRM",
+      "title": "Booking Confirmed",
+      "terminal": true,
+      "data": {
+        "confirmation": {
+          "type": "string",
+          "__example__": "Your appointment is confirmed!"
+        },
+        "details": {
+          "type": "string",
+          "__example__": "Dental Checkup on April 5 at 2:00 PM"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "confirm_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "${data.confirmation}"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.details}"
+              },
+              {
+                "type": "Footer",
+                "label": "Done",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

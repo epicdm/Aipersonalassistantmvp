@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/app/lib/session";
 import { prisma } from "@/app/lib/prisma";
-import { getMaxAgents } from "@/app/lib/templates";
+import { getMaxAgents } from "@/app/lib/agent-templates";
 
 export async function GET(req: Request) {
   const user = await getSessionUser();

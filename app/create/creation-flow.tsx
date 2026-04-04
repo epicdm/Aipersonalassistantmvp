@@ -121,7 +121,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { TEMPLATES } from "@/app/lib/templates";
+import { TEMPLATES } from "@/app/lib/agent-templates";
 
 // ─── Default agent names per template ────────────────────────
 

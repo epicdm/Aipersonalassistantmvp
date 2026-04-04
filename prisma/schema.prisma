@@ -81,14 +81,20 @@ model Agent {
   user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities              AgentActivity[]
   agentContacts           AgentContact[]
+  bookings                Booking[]
+  businessHours           BusinessHours[]
   CallLog                 CallLog[]
   Campaign                Campaign[]
   conversations           Conversation[]
+  dailyStats              DailyStat[]
+  feedback                Feedback[]
   knowledgeSources        KnowledgeSource[]
   messageDrafts           MessageDraft[]
   MessageQueue            MessageQueue[]
   PendingReply            PendingReply[]
+  products                Product[]
   SentSummary             SentSummary[]
+  services                Service[]
   whatsAppMessages        WhatsAppMessage[]
 
   @@index([shareCode])
@@ -150,6 +156,8 @@ model Contact {
   name           String?
   phone          String
   email          String?
+  instagramId    String?        @unique
+  facebookPsid   String?        @unique
   createdAt      DateTime       @default(now())
   channel        String         @default("whatsapp")
   customFields   Json?
@@ -160,6 +168,8 @@ model Contact {
   stage          String?
   tags           String[]       @default([])
   agentContacts  AgentContact[]
+  bookings       Booking[]
+  feedback       Feedback[]
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations  Conversation[]
 
@@ -207,13 +217,14 @@ model WhatsAppMessage {
 }
 
 model AgentContact {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   agentId        String
   contactId      String
-  firstContactAt DateTime @default(now())
-  lastContactAt  DateTime @default(now())
-  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  firstContactAt DateTime  @default(now())
+  lastContactAt  DateTime  @default(now())
+  lastInboundAt  DateTime?
+  agent          Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  contact        Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, contactId])
 }
@@ -456,4 +467,109 @@ model PendingSignup {
   @@index([phone])
   @@index([status])
   @@map("pending_signup")
+}
+
+// ─── Meta Ecosystem: Commerce ────────────────────────────────────────────────
+
+model Product {
+  id           String   @id @default(cuid())
+  agentId      String
+  name         String
+  description  String?
+  price        Float
+  imageUrl     String?
+  catalogId    String?
+  category     String?
+  availability Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  agent        Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, category])
+  @@index([catalogId])
+}
+
+// ─── Meta Ecosystem: Services ────────────────────────────────────────────────
+
+model Service {
+  id        String    @id @default(cuid())
+  agentId   String
+  name      String
+  duration  Int       // minutes
+  price     Float
+  createdAt DateTime  @default(now())
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+
+  @@index([agentId])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  agentId     String
+  serviceId   String
+  contactId   String
+  datetime    DateTime
+  status      String   @default("confirmed") // confirmed | cancelled | completed | no_show
+  depositPaid Boolean  @default(false)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  service     Service  @relation(fields: [serviceId], references: [id])
+  contact     Contact  @relation(fields: [contactId], references: [id])
+
+  @@index([agentId, datetime])
+  @@index([contactId])
+}
+
+model BusinessHours {
+  id        String @id @default(cuid())
+  agentId   String
+  dayOfWeek Int    // 0=Sun, 6=Sat
+  openTime  String // HH:MM
+  closeTime String // HH:MM
+  agent     Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, dayOfWeek])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  agentId   String
+  contactId String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  contact   Contact  @relation(fields: [contactId], references: [id])
+
+  @@index([agentId, createdAt])
+}
+
+// ─── Meta Ecosystem: Analytics ───────────────────────────────────────────────
+
+model DailyStat {
+  id      String   @id @default(cuid())
+  agentId String
+  date    DateTime @db.Date
+  metric  String   // messages_sent, messages_received, response_time_avg, bookings, revenue, etc.
+  value   Float
+  agent   Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, date, metric])
+  @@index([agentId, date])
+}
+
+// ─── Infrastructure: Webhook Receipt Log ─────────────────────────────────────
+
+model WebhookLog {
+  id          String    @id @default(cuid())
+  source      String    // whatsapp | instagram | messenger | stripe
+  rawPayload  Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([source, createdAt])
 }

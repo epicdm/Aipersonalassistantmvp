@@ -180,6 +180,232 @@ export async function sendInteractiveList(
   }
 }
 
+// ─── Media Messages ──────────────────────────────────────────────────────────
+
+export async function uploadMedia(
+  file: Blob,
+  mimeType: string,
+  fromPhoneId?: string
+): Promise<string> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const formData = new FormData()
+  formData.append('messaging_product', 'whatsapp')
+  formData.append('type', mimeType)
+  formData.append('file', file, 'upload')
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+  if (!res.ok) throw new Error(`Media upload failed: ${await res.text()}`)
+
+  const data = await res.json()
+  if (!data.id) throw new Error('No media ID returned')
+  return data.id
+}
+
+export async function sendImageMessage(
+  phone: string,
+  imageUrl: string,
+  caption?: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'image',
+      image: { link: imageUrl, ...(caption ? { caption } : {}) },
+    }),
+  })
+  if (!res.ok) throw new Error(`Image send failed: ${await res.text()}`)
+}
+
+export async function sendDocumentMessage(
+  phone: string,
+  documentUrl: string,
+  filename: string,
+  caption?: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'document',
+      document: { link: documentUrl, filename, ...(caption ? { caption } : {}) },
+    }),
+  })
+  if (!res.ok) throw new Error(`Document send failed: ${await res.text()}`)
+}
+
+export async function sendVideoMessage(
+  phone: string,
+  videoUrl: string,
+  caption?: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'video',
+      video: { link: videoUrl, ...(caption ? { caption } : {}) },
+    }),
+  })
+  if (!res.ok) throw new Error(`Video send failed: ${await res.text()}`)
+}
+
+export async function sendStickerMessage(
+  phone: string,
+  stickerMediaId: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'sticker',
+      sticker: { id: stickerMediaId },
+    }),
+  })
+  if (!res.ok) throw new Error(`Sticker send failed: ${await res.text()}`)
+}
+
+// ─── Product Messages ────────────────────────────────────────────────────────
+
+export async function sendProductMessage(
+  phone: string,
+  catalogId: string,
+  productRetailerId: string,
+  bodyText?: string,
+  footerText?: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'interactive',
+      interactive: {
+        type: 'product',
+        body: { text: bodyText || 'Check out this product:' },
+        ...(footerText ? { footer: { text: footerText } } : {}),
+        action: {
+          catalog_id: catalogId,
+          product_retailer_id: productRetailerId,
+        },
+      },
+    }),
+  })
+  if (!res.ok) throw new Error(`Product message failed: ${await res.text()}`)
+}
+
+export async function sendMultiProductMessage(
+  phone: string,
+  catalogId: string,
+  sections: { title: string; productRetailerIds: string[] }[],
+  headerText?: string,
+  bodyText?: string,
+  footerText?: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'interactive',
+      interactive: {
+        type: 'product_list',
+        header: { type: 'text', text: headerText || 'Our Products' },
+        body: { text: bodyText || 'Browse our catalog:' },
+        ...(footerText ? { footer: { text: footerText } } : {}),
+        action: {
+          catalog_id: catalogId,
+          sections: sections.slice(0, 10).map(s => ({
+            title: s.title.slice(0, 24),
+            product_items: s.productRetailerIds.slice(0, 30).map(id => ({
+              product_retailer_id: id,
+            })),
+          })),
+        },
+      },
+    }),
+  })
+  if (!res.ok) throw new Error(`Multi-product message failed: ${await res.text()}`)
+}
+
+// ─── Business Profile ────────────────────────────────────────────────────────
+
+export async function updateBusinessProfile(
+  fields: {
+    about?: string
+    address?: string
+    description?: string
+    email?: string
+    websites?: string[]
+    vertical?: string
+    profile_picture_handle?: string
+  },
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/whatsapp_business_profile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      ...fields,
+    }),
+  })
+  if (!res.ok) throw new Error(`Profile update failed: ${await res.text()}`)
+}
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
 export async function markAsRead(messageId: string, fromPhoneId?: string): Promise<void> {
   const token = META_TOKEN || WHATSAPP_TOKEN
   if (!token || !messageId) return

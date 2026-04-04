@@ -1,13 +1,28 @@
 /**
  * POST /api/billing/checkout
- * Creates a Fiserv checkout session for plan upgrade
+ * Creates a Stripe Checkout Session for plan upgrade.
+ * Returns { url } for redirect to Stripe-hosted checkout.
+ *
+ * POST /api/billing/portal
+ * Creates a Stripe Customer Portal session for subscription management.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/app/lib/prisma'
+import Stripe from 'stripe'
 
-const FISERV_API_URL = process.env.FISERV_API_URL || 'https://api01.epic.dm'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bff.epic.dm'
+
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY || '')
+}
+
+// Stripe Price IDs — set these in .env or create them in Stripe Dashboard
+const PRICE_IDS: Record<string, string> = {
+  pro: process.env.STRIPE_PRICE_PRO || '',
+  business: process.env.STRIPE_PRICE_BUSINESS || '',
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,16 +31,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { plan } = await req.json()
+    const body = await req.json()
+
+    // ── Portal session (manage existing subscription) ─────────────────────
+    if (body.action === 'portal') {
+      return handlePortal(userId)
+    }
+
+    // ── Checkout session (new subscription) ───────────────────────────────
+    const { plan } = body
     if (!plan || !['pro', 'business'].includes(plan)) {
       return NextResponse.json({ error: 'Valid plan required: pro or business' }, { status: 400 })
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
-
+    const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -33,66 +52,58 @@ export async function POST(req: NextRequest) {
     // Check if already on this plan or higher
     const planOrder: Record<string, number> = { free: 0, pro: 1, business: 2 }
     if ((planOrder[user.plan] ?? 0) >= (planOrder[plan] ?? 0)) {
-      return NextResponse.json({
-        error: `You are already on ${user.plan} plan or higher`,
-      }, { status: 400 })
+      return NextResponse.json({ error: `Already on ${user.plan} or higher` }, { status: 400 })
     }
 
-    // Plan prices in cents
-    const planPrices: Record<string, number> = {
-      pro: 2900,      // $29.00
-      business: 9900, // $99.00
+    const priceId = PRICE_IDS[plan]
+    if (!priceId) {
+      return NextResponse.json({ error: 'Price not configured for this plan' }, { status: 500 })
     }
 
-    const planLabels: Record<string, string> = {
-      pro: 'BFF Pro Plan - $29/month',
-      business: 'BFF Business Plan - $99/month',
-    }
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bff.epic.dm'
-
-    // Call Fiserv via the n8n webhook (same pattern as ace-landing)
-    const fiservResponse = await fetch(`${FISERV_API_URL}/n8n/webhook/bff-checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: userId,
+    // Get or create Stripe customer
+    let customerId = user.stripeCustomerId
+    if (!customerId) {
+      const customer = await getStripe().customers.create({
         email: user.email,
-        plan,
-        amount: planPrices[plan],
-        description: planLabels[plan],
-        returnUrl: `${appUrl}/dashboard?upgraded=${plan}`,
-        cancelUrl: `${appUrl}/upgrade`,
-        webhookUrl: `${appUrl}/api/billing/webhook`,
-      }),
-    })
-
-    if (!fiservResponse.ok) {
-      const errorText = await fiservResponse.text()
-      console.error('[Billing Checkout] Fiserv error:', errorText)
-      return NextResponse.json({ error: 'Payment gateway error' }, { status: 500 })
+        metadata: { userId, clerkId: user.clerkId || '' },
+      })
+      customerId = customer.id
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customerId },
+      })
     }
 
-    const result = await fiservResponse.json()
-
-    if (!result.success || !result.checkoutUrl) {
-      return NextResponse.json({
-        error: result.message || 'Failed to create checkout session',
-      }, { status: 500 })
-    }
-
-    // Store pending upgrade
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        pendingPlan: plan,
-        pendingPlanSince: new Date(),
+    // Create Checkout Session
+    const session = await getStripe().checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${APP_URL}/dashboard?upgraded=${plan}`,
+      cancel_url: `${APP_URL}/dashboard/billing`,
+      metadata: { userId, plan },
+      subscription_data: {
+        metadata: { userId, plan },
       },
     })
 
-    return NextResponse.json({ success: true, checkoutUrl: result.checkoutUrl })
+    return NextResponse.json({ url: session.url })
   } catch (error: any) {
     console.error('[Billing Checkout]', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
   }
+}
+
+async function handlePortal(userId: string): Promise<NextResponse> {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user?.stripeCustomerId) {
+    return NextResponse.json({ error: 'No billing account found' }, { status: 400 })
+  }
+
+  const session = await getStripe().billingPortal.sessions.create({
+    customer: user.stripeCustomerId,
+    return_url: `${APP_URL}/dashboard/billing`,
+  })
+
+  return NextResponse.json({ url: session.url })
 }

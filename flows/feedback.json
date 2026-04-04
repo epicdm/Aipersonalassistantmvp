@@ -1,0 +1,68 @@
+{
+  "version": "6.2",
+  "routing_model": {
+    "FEEDBACK": []
+  },
+  "screens": [
+    {
+      "id": "FEEDBACK",
+      "title": "Rate Your Experience",
+      "terminal": true,
+      "data": {
+        "greeting": {
+          "type": "string",
+          "__example__": "How was your experience with us?"
+        },
+        "business_name": {
+          "type": "string",
+          "__example__": "Green's Dental"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "feedback_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "${data.greeting}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "label": "Rating",
+                "name": "rating",
+                "required": true,
+                "data-source": [
+                  { "id": "5", "title": "⭐⭐⭐⭐⭐ Excellent" },
+                  { "id": "4", "title": "⭐⭐⭐⭐ Great" },
+                  { "id": "3", "title": "⭐⭐⭐ Good" },
+                  { "id": "2", "title": "⭐⭐ Fair" },
+                  { "id": "1", "title": "⭐ Poor" }
+                ]
+              },
+              {
+                "type": "TextArea",
+                "label": "Comments (optional)",
+                "name": "comment",
+                "required": false
+              },
+              {
+                "type": "Footer",
+                "label": "Submit Feedback",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "rating": "${form.rating}",
+                    "comment": "${form.comment}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
