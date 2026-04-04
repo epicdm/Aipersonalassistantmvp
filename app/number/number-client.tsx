@@ -512,31 +512,71 @@ export default function NumberClient() {
         {/* ── Connected State ── */}
         {status === "connected" && connectedData && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center space-y-4">
-            <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
+            <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
             <h2 className="text-2xl font-bold text-[#00333c]">
               WhatsApp Connected!
             </h2>
-            <p className="text-green-300 text-lg font-mono">
+            <p className="text-[#00333c] text-xl font-mono font-bold">
               {connectedData.display_phone_number ||
                 connectedData.phone ||
                 "Connected"}
             </p>
-            <p className="text-[#A1A1AA] text-sm">
-              Your business WhatsApp number is active and receiving messages.
+            <p className="text-[#40484a] text-sm">
+              Your agent is live and ready to handle customer messages on this number.
             </p>
+            <div className="flex flex-col gap-3 pt-2">
+              <a
+                href={`https://wa.me/${(connectedData.display_phone_number || connectedData.phone || "").replace(/\D/g, "")}?text=Hi`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl font-bold text-base transition-all"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Send a Test Message
+              </a>
+              <a
+                href="/dashboard"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#00333c] hover:bg-[#004B57] text-white rounded-xl font-bold text-base transition-all"
+              >
+                Go to Dashboard
+              </a>
+              <a
+                href="/dashboard/settings"
+                className="text-[#40484a] hover:text-[#00333c] text-sm underline underline-offset-4 transition-colors"
+              >
+                Configure your agent →
+              </a>
+            </div>
           </div>
         )}
 
         {/* ── Provisioned State ── */}
         {status === "provisioned" && phoneData && (
-          <div className="bg-[#111111] border border-white/[0.07] rounded-2xl p-8 text-center space-y-4">
-            <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
+          <div className="rounded-2xl p-8 text-center space-y-4" style={{background:"#f0fdf4",border:"1px solid #bbf7d0"}}>
+            <CheckCircle className="w-10 h-10 text-green-600 mx-auto" />
             <p className="text-2xl font-bold font-mono text-[#00333c]">
               {phoneData.number || phoneData.did}
             </p>
-            <p className="text-xs text-[#A1A1AA]">
-              Your agent's phone number is active
+            <p className="text-sm text-[#40484a]">
+              Your agent&apos;s phone number is active and receiving messages.
             </p>
+            <div className="flex flex-col gap-3 pt-2">
+              <a
+                href={`https://wa.me/${(phoneData.number || phoneData.did || "").replace(/\D/g, "")}?text=Hi`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xl font-bold text-base transition-all"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Send a Test Message
+              </a>
+              <a
+                href="/dashboard"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#00333c] hover:bg-[#004B57] text-white rounded-xl font-bold text-base transition-all"
+              >
+                Go to Dashboard
+              </a>
+            </div>
           </div>
         )}
 
