@@ -178,7 +178,61 @@ export function seedAgentKnowledge(enriched: EnrichedBusiness): Record<string, a
   }
 }
 
-// ── Send confirmation message to WhatsApp ────────────────────────────────────
+// ── Send pre-filled WhatsApp Flow after enrichment ───────────────────────────
+
+export async function sendPrefilledFlow(
+  phone: string,
+  enriched: EnrichedBusiness,
+  fromPhoneId?: string
+): Promise<void> {
+  const META_TOKEN = process.env.META_WA_TOKEN || ''
+  const phoneId = fromPhoneId || process.env.META_PHONE_ID || process.env.WHATSAPP_PHONE_ID || ''
+  const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
+
+  if (!FLOW_ID) {
+    console.error('[enrichment] No ISOLA_ONBOARDING_FLOW_ID set, sending confirmation instead')
+    return sendEnrichmentConfirmation(phone, enriched, fromPhoneId)
+  }
+
+  // Format hours for pre-fill
+  let hoursStr = ''
+  if (enriched.hours) {
+    const entries = Object.entries(enriched.hours).slice(0, 3)
+    hoursStr = entries.map(([k, v]) => `${k}: ${v}`).join(', ')
+  }
+
+  await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp', to: phone, type: 'interactive',
+      interactive: {
+        type: 'flow',
+        body: { text: `We imported your business details from Facebook! Review and confirm:` },
+        action: { name: 'flow', parameters: {
+          flow_message_version: '3', flow_id: FLOW_ID, flow_cta: 'Review & Confirm',
+          flow_action: 'navigate', flow_action_payload: {
+            screen: 'TEMPLATE',
+            data: {
+              greeting: `Welcome ${enriched.pageName}! We imported your details.`,
+              // Pre-fill fields — Flow screens will show these
+              prefilled_name: enriched.pageName,
+              prefilled_category: enriched.category,
+              prefilled_template: enriched.template,
+              prefilled_email: enriched.email || '',
+              prefilled_hours: hoursStr,
+              prefilled_website: enriched.website || '',
+            },
+          },
+        }},
+      },
+    }),
+  })
+
+  console.log('[enrichment] Sent pre-filled Flow to:', phone)
+}
+
+// ── Send confirmation message to WhatsApp (fallback) ─────────────────────────
 
 export async function sendEnrichmentConfirmation(
   phone: string,

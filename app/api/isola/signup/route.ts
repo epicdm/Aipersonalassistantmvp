@@ -240,7 +240,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // ── 11. Async enrichment (pull FB page data if token allows) ─────────────
   // Fire-and-forget: don't block the signup response
-  import('@/app/lib/business-enrichment').then(async ({ enrichFromFacebook, sendEnrichmentConfirmation, seedAgentKnowledge }) => {
+  import('@/app/lib/business-enrichment').then(async ({ enrichFromFacebook, sendPrefilledFlow, seedAgentKnowledge }) => {
     try {
       const enriched = await enrichFromFacebook(wabaToken, displayPhone)
       if (enriched) {
@@ -256,7 +256,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         if (displayPhone) {
           const phone = displayPhone.replace(/\D/g, '')
           if (phone.length >= 10) {
-            await sendEnrichmentConfirmation(phone, enriched)
+            await sendPrefilledFlow(phone, enriched)
           }
         }
         console.log('[signup] Enrichment complete:', enriched.pageName, '→', enriched.template)

@@ -692,7 +692,34 @@ async function processWebhook(body: any) {
     const btnId = message.interactive.button_reply?.id || ''
 
     if (btnId === 'onboard_business') {
-      // Path A: Business agent — send to website for Embedded Signup
+      // Path A: Business agent — two options
+      const META_TOKEN = process.env.META_WA_TOKEN || ''
+      const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
+
+      // Option 1: Connect Facebook to pre-fill the form
+      await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${META_TOKEN}` },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp', to: from, type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: 'How would you like to set up?\n\n*Connect Facebook* — we\'ll import your business name, hours, and logo automatically (fastest)\n\n*Enter Manually* — type your business details in a quick form' },
+            action: {
+              buttons: [
+                { type: 'reply', reply: { id: 'onboard_fb_connect', title: 'Connect Facebook' } },
+                { type: 'reply', reply: { id: 'onboard_manual', title: 'Enter Manually' } },
+              ],
+            },
+          },
+        }),
+      }).catch((e: any) => console.error('[WA] Business options failed:', e.message))
+      console.log('[WA] Business onboarding path for:', from)
+      return
+    }
+
+    if (btnId === 'onboard_fb_connect') {
+      // Send CTA URL to Facebook Login page
       const META_TOKEN = process.env.META_WA_TOKEN || ''
       await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
         method: 'POST',
@@ -701,16 +728,21 @@ async function processWebhook(body: any) {
           messaging_product: 'whatsapp', to: from, type: 'interactive',
           interactive: {
             type: 'cta_url',
-            body: { text: 'Connect your Facebook account to import your business details automatically. Or tap "Enter Manually" to type your info.' },
+            body: { text: 'Tap below to connect your Facebook account. We\'ll import your business details and send you a pre-filled form right here in WhatsApp.' },
             action: {
               name: 'cta_url',
               parameters: { display_text: 'Connect with Facebook', url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://bff.epic.dm'}/number` },
             },
           },
         }),
-      }).catch((e: any) => console.error('[WA] CTA send failed:', e.message))
+      }).catch((e: any) => console.error('[WA] FB CTA failed:', e.message))
+      console.log('[WA] Facebook connect for:', from)
+      return
+    }
 
-      // Also send the manual fallback option
+    if (btnId === 'onboard_manual') {
+      // Send WhatsApp Flow directly (blank form)
+      const META_TOKEN = process.env.META_WA_TOKEN || ''
       const FLOW_ID = process.env.ISOLA_ONBOARDING_FLOW_ID
       if (FLOW_ID) {
         await fetch(`https://graph.facebook.com/v25.0/${incomingPhoneId}/messages`, {
@@ -720,16 +752,16 @@ async function processWebhook(body: any) {
             messaging_product: 'whatsapp', to: from, type: 'interactive',
             interactive: {
               type: 'flow',
-              body: { text: 'Or set up without Facebook:' },
+              body: { text: 'Fill in your business details:' },
               action: { name: 'flow', parameters: {
-                flow_message_version: '3', flow_id: FLOW_ID, flow_cta: 'Enter Manually',
+                flow_message_version: '3', flow_id: FLOW_ID, flow_cta: 'Set Up Agent',
                 flow_action: 'navigate', flow_action_payload: { screen: 'TEMPLATE', data: { greeting: 'Set up your AI business agent.' } },
               }},
             },
           }),
-        }).catch((e: any) => console.error('[WA] Flow fallback failed:', e.message))
+        }).catch((e: any) => console.error('[WA] Manual Flow failed:', e.message))
       }
-      console.log('[WA] Business onboarding path for:', from)
+      console.log('[WA] Manual entry for:', from)
       return
     }
 
