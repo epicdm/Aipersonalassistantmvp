@@ -3,7 +3,7 @@ import { prisma } from '@/app/lib/prisma'
 
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || process.env.META_WA_TOKEN || ''
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || process.env.META_PHONE_ID || '1003873729481088'
-const WA_API_URL = `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_ID}/messages`
+const WA_API_URL = `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_ID}/messages`
 
 type CampaignWithRelations = Awaited<ReturnType<typeof getScopedCampaign>>
 

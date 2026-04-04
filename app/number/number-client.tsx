@@ -79,21 +79,24 @@ function MetaEmbeddedSignup({ onSuccess }: { onSuccess: (data: any) => void }) {
         if (response.authResponse) {
           const code = response.authResponse.code;
           const embeddedData = (window as any).__waEmbeddedData || {};
-          fetch("/api/whatsapp/connect", {
+          fetch("/api/isola/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               code,
-              phone_number_id: embeddedData.phone_number_id || "",
-              waba_id: embeddedData.waba_id || "",
-              display_phone_number: embeddedData.display_phone_number || "",
+              phoneNumberId: embeddedData.phone_number_id || "",
+              wabaId: embeddedData.waba_id || "",
+              displayPhone: embeddedData.display_phone_number || "",
             }),
           })
-            .then((r) => r.json())
+            .then((r) => {
+              if (!r.ok) throw new Error(`Server error (${r.status})`);
+              return r.json();
+            })
             .then((data) => {
               setLoading(false);
-              if (data.success) {
-                toast.success("WhatsApp Business connected!");
+              if (data.ok) {
+                toast.success("WhatsApp Business connected! Your agent is being set up.");
                 onSuccess(data);
               } else {
                 toast.error(data.error || "Connection failed");

@@ -4,16 +4,16 @@ import "./globals.css";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "BFF — AI WhatsApp Assistant for Business",
+  title: "Isola — Run your business from anywhere",
   description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent. Set up in under 5 minutes.",
   manifest: "/manifest.webmanifest",
-  metadataBase: new URL("https://bff.epic.dm"),
+  metadataBase: new URL("https://isola.epic.dm"),
   alternates: { canonical: "/" },
   openGraph: {
-    title: "BFF — AI WhatsApp Assistant for Business",
+    title: "Isola — Run your business from anywhere",
     description: "Turn your WhatsApp into a 24/7 AI-powered customer service agent.",
-    url: "https://bff.epic.dm",
-    siteName: "BFF",
+    url: "https://isola.epic.dm",
+    siteName: "Isola",
     type: "website",
   },
 };

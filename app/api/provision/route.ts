@@ -21,71 +21,12 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
+import { verifyMetaSignature } from '@/app/lib/meta-verify'
+import { encryptToken } from '@/app/lib/crypto'
+import { alertEric } from '@/app/lib/alert'
 
-const META_APP_SECRET   = process.env.META_APP_SECRET   || ''
-const OCMT_URL          = process.env.OCMT_URL          || 'http://66.118.37.12:4000'
-const TENANT_MASTER_KEY = process.env.TENANT_MASTER_KEY || ''
-const ERIC_PHONE        = process.env.ERIC_PHONE        || ''
-const META_WA_TOKEN     = process.env.META_WA_TOKEN     || ''
-const META_PHONE_ID     = process.env.META_PHONE_ID     || ''
-
-function verifyMetaSignature(rawBody: Buffer, signature: string): boolean {
-  if (!META_APP_SECRET) {
-    console.error('[provision] META_APP_SECRET not set — rejecting all callbacks')
-    return false
-  }
-  const expected = 'sha256=' + crypto
-    .createHmac('sha256', META_APP_SECRET)
-    .update(rawBody)
-    .digest('hex')
-  try {
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
-  } catch {
-    return false
-  }
-}
-
-function encryptToken(token: string): string {
-  if (!TENANT_MASTER_KEY) throw new Error('TENANT_MASTER_KEY not configured')
-  // AES-256-GCM with random IV. Output: "iv:authTag:ciphertext" (base64).
-  // Key derivation: SHA-256 of master key string → 32-byte key.
-  // Sprint 0: direct master key encryption. Sprint 1: per-tenant envelope key.
-  const key      = crypto.createHash('sha256').update(TENANT_MASTER_KEY).digest()
-  const iv       = crypto.randomBytes(12)
-  const cipher   = crypto.createCipheriv('aes-256-gcm', key, iv)
-  const encrypted = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()])
-  const authTag  = cipher.getAuthTag()
-  return [
-    iv.toString('base64'),
-    authTag.toString('base64'),
-    encrypted.toString('base64'),
-  ].join(':')
-}
-
-async function alertEric(message: string): Promise<void> {
-  if (!ERIC_PHONE || !META_WA_TOKEN || !META_PHONE_ID) {
-    console.warn('[provision] Alert skipped — ERIC_PHONE/META_WA_TOKEN/META_PHONE_ID not set')
-    return
-  }
-  try {
-    await fetch(`https://graph.facebook.com/v21.0/${META_PHONE_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${META_WA_TOKEN}`,
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: ERIC_PHONE,
-        type: 'text',
-        text: { body: message },
-      }),
-      signal: AbortSignal.timeout(8000),
-    })
-  } catch (err: any) {
-    console.error('[provision] Failed to alert Eric:', err.message)
-  }
-}
+const OCMT_URL = process.env.OCMT_URL || 'http://66.118.37.12:4000'
+const OCMT_CALLBACK_SECRET = process.env.OCMT_CALLBACK_SECRET || process.env.OCMT_AUTH_TOKEN || ''
 
 // POST — Embedded Signup callback (called by your demo page after Meta OAuth)
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -200,6 +141,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // PATCH — Called by OCMT when container /health returns OK
 // Sets status=active so BFF webhook handler starts routing to this tenant
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  // Verify internal secret — OCMT must include x-callback-secret header
+  if (OCMT_CALLBACK_SECRET) {
+    const secret = req.headers.get('x-callback-secret') || ''
+    if (secret !== OCMT_CALLBACK_SECRET) {
+      console.error('[provision] PATCH rejected — invalid or missing x-callback-secret')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
   const body = await req.json().catch(() => null)
   if (!body?.tenantId || !body?.status) {
     return NextResponse.json({ error: 'Missing tenantId or status' }, { status: 400 })

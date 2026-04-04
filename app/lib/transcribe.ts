@@ -5,7 +5,7 @@ import crypto from 'crypto'
 
 const WA_TOKEN = process.env.WHATSAPP_TOKEN || process.env.META_WA_TOKEN || ''
 const GROQ_API_KEY = process.env.GROQ_API_KEY || ''
-const GRAPH_API_VERSION = 'v21.0'
+const GRAPH_API_VERSION = 'v25.0'
 
 /**
  * Download a WhatsApp media file by its media ID.

@@ -1,53 +1,58 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, CheckCircle2, Zap, Shield, MessageSquare, Phone } from "lucide-react";
-import { TEMPLATES } from "@/app/lib/templates";
+import { motion } from "motion/react";
+import { ArrowRight, CheckCircle2, Zap, Shield, MessageSquare, Phone, PhoneCall } from "lucide-react";
 
 interface LandingProps {
   onStart: () => void;
 }
 
-const PERSONAL_TEMPLATES = [
-  { slug: "assistant", name: "Personal Assistant", emoji: "📅", desc: "Tasks, reminders & life org" },
-  { slug: "study-buddy", name: "Study Buddy", emoji: "📚", desc: "Homework help & exam prep" },
-  { slug: "life_coach", name: "Life Coach", emoji: "🎯", desc: "Goals & motivation" },
-  { slug: "fitness_coach", name: "Fitness Coach", emoji: "💪", desc: "Workouts & nutrition" },
-  { slug: "language_tutor", name: "Language Tutor", emoji: "🌍", desc: "Learn any language" },
-  { slug: "wellness_buddy", name: "Wellness Buddy", emoji: "🧘", desc: "Mindfulness & support" },
+const TEMPLATES = [
+  { slug: "retail", name: "I sell things", emoji: "🛍️", desc: "Shops, boutiques, food vendors" },
+  { slug: "service", name: "I do services", emoji: "🔧", desc: "Plumbers, electricians, mechanics" },
+  { slug: "hospitality", name: "I run a place", emoji: "🏨", desc: "Hotels, restaurants, cafes" },
+  { slug: "professional", name: "I'm a professional", emoji: "💼", desc: "Doctors, lawyers, consultants" },
+  { slug: "personal", name: "It's just me", emoji: "🧑", desc: "Freelancers, solopreneurs" },
+  { slug: "community", name: "I run a community", emoji: "🏫", desc: "Churches, schools, clubs" },
+  { slug: "isp", name: "Telecom / ISP", emoji: "📡", desc: "Internet, cable, connectivity" },
 ];
-
-const BUSINESS_TEMPLATES = TEMPLATES.filter(t =>
-  ["receptionist", "concierge", "collector", "sales", "support"].includes(t.slug)
-);
 
 const PRICING = [
   {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    desc: "Try it out. No card needed.",
-    features: ["1 AI agent", "100 messages/mo", "WhatsApp connect", "Basic templates"],
-    cta: "Start free",
+    name: "Solo",
+    price: "$25",
+    period: "/month",
+    desc: "For freelancers and solo operators.",
+    features: ["1 AI agent", "2,000 messages/mo", "WhatsApp connect", "All templates"],
+    cta: "Get started",
     primary: false,
   },
   {
-    name: "Starter",
-    price: "$29",
+    name: "Business",
+    price: "$59",
     period: "/month",
-    desc: "For growing businesses.",
-    features: ["3 AI agents", "5,000 messages/mo", "All templates", "Voice calls", "Priority support"],
+    desc: "For small businesses ready to grow.",
+    features: ["3 AI agents", "5,000 messages/mo", "Dedicated WhatsApp number", "All templates", "Priority support"],
     cta: "Get started",
     primary: true,
   },
   {
     name: "Pro",
-    price: "$99",
+    price: "$129",
     period: "/month",
-    desc: "For teams that move fast.",
-    features: ["Unlimited agents", "Unlimited messages", "Custom knowledge base", "API access", "Dedicated support"],
+    desc: "Voice calls + full AI team.",
+    features: ["4 AI agents", "15,000 messages/mo", "Voice calls (WhatsApp + phone)", "Custom knowledge base", "Dedicated support"],
     cta: "Go pro",
+    primary: false,
+  },
+  {
+    name: "Team",
+    price: "$249",
+    period: "/month",
+    desc: "For established businesses.",
+    features: ["8 AI agents", "40,000 messages/mo", "2 dedicated numbers", "Voice calls included", "API access", "White-glove onboarding"],
+    cta: "Contact us",
     primary: false,
   },
 ];
@@ -66,7 +71,14 @@ const itemVariants = {
 };
 
 export function Landing({ onStart }: LandingProps) {
-  const [templateTab, setTemplateTab] = useState<"business" | "personal">("business");
+  const [showXCD, setShowXCD] = useState(false);
+  const xcdRate = 2.70;
+
+  const formatPrice = (usd: string) => {
+    if (!showXCD) return usd;
+    const num = parseInt(usd.replace("$", ""));
+    return `EC$${Math.round(num * xcdRate)}`;
+  };
 
   const handleTemplateClick = (slug: string) => {
     if (typeof window !== "undefined") {
@@ -74,8 +86,6 @@ export function Landing({ onStart }: LandingProps) {
     }
     onStart();
   };
-
-  const visibleTemplates = templateTab === "business" ? BUSINESS_TEMPLATES : PERSONAL_TEMPLATES;
 
   return (
     <div className="min-h-screen text-[#FAFAFA] relative overflow-hidden" style={{ backgroundColor: '#050505', fontFamily: 'Figtree, system-ui, sans-serif' }}>
@@ -98,10 +108,10 @@ export function Landing({ onStart }: LandingProps) {
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-10 py-5 max-w-7xl mx-auto">
         <div className="flex items-center gap-2.5">
           <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.6rem', fontWeight: 600, letterSpacing: '-0.03em', color: '#FAFAFA' }}>
-            BFF
+            Isola
           </span>
           <span className="text-[#A1A1AA] text-xs ml-1 hidden sm:block" style={{ fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-            AI Assistant
+            by EPIC
           </span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm text-[#A1A1AA]">
@@ -124,17 +134,17 @@ export function Landing({ onStart }: LandingProps) {
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
           <div className="inline-block mb-8">
             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E2725B', border: '1px solid rgba(226,114,91,0.3)', borderRadius: '100px', padding: '6px 16px' }}>
-              WhatsApp AI for business
+              Built in Dominica. Built for the Caribbean.
             </span>
           </div>
 
           <h1 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: 'clamp(3.5rem, 10vw, 7rem)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: '0.95', marginBottom: '1.5rem', color: '#FAFAFA' }}>
-            Your business,<br />
-            <span style={{ color: '#E2725B' }}>always on.</span>
+            Your business on WhatsApp,<br />
+            <span style={{ color: '#E2725B' }}>on autopilot.</span>
           </h1>
 
           <p className="text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed" style={{ color: '#A1A1AA' }}>
-            An AI agent on WhatsApp that handles your customers 24/7 — answers questions, books appointments, follows up on leads. Set up in under 5 minutes.
+            AI agents that answer calls, reply to messages, and handle your customers 24/7. Your own local number, your own AI team. Set up in under 5 minutes.
           </p>
         </motion.div>
 
@@ -153,15 +163,17 @@ export function Landing({ onStart }: LandingProps) {
           >
             Start for free <ArrowRight className="w-4 h-4" />
           </button>
-          <button
-            onClick={onStart}
+          <a
+            href="https://wa.me/17678183742"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 px-8 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
             style={{ border: '1px solid rgba(255,255,255,0.1)', color: '#FAFAFA', backgroundColor: 'transparent' }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            See a demo
-          </button>
+            <PhoneCall className="w-4 h-4" /> Call our AI demo
+          </a>
         </motion.div>
 
         <motion.div
@@ -171,9 +183,9 @@ export function Landing({ onStart }: LandingProps) {
           className="flex items-center justify-center gap-6 mt-10 text-sm flex-wrap"
           style={{ color: '#A1A1AA' }}
         >
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" style={{ color: '#8B9A6B' }} /> No credit card required</span>
+          <a href="https://wa.me/17672950333?text=Hello" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-[#FAFAFA] transition-colors"><MessageSquare className="w-4 h-4" style={{ color: '#25D366' }} /> Message our AI demo</a>
           <span className="flex items-center gap-1.5"><Zap className="w-4 h-4" style={{ color: '#D4A373' }} /> Live in 5 minutes</span>
-          <span className="flex items-center gap-1.5"><Shield className="w-4 h-4" style={{ color: '#6B8A9A' }} /> You stay in control</span>
+          <span className="flex items-center gap-1.5"><Shield className="w-4 h-4" style={{ color: '#6B8A9A' }} /> 14-day free trial</span>
         </motion.div>
       </section>
 
@@ -189,7 +201,7 @@ export function Landing({ onStart }: LandingProps) {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               { n: "01", icon: <MessageSquare className="w-5 h-5" />, title: "Pick a template", desc: "Choose from business or personal AI templates. Each one is pre-trained and ready to go." },
-              { n: "02", icon: <Phone className="w-5 h-5" />, title: "Connect WhatsApp", desc: "Migrate your number, use your existing API, or get a fresh number from BFF." },
+              { n: "02", icon: <Phone className="w-5 h-5" />, title: "Connect WhatsApp", desc: "Get your own dedicated number or connect your existing WhatsApp Business account." },
               { n: "03", icon: <Zap className="w-5 h-5" />, title: "Go live", desc: "Your AI starts handling messages instantly. It knows your business and gets smarter every day." },
             ].map((item, i) => (
               <motion.div
@@ -220,55 +232,35 @@ export function Landing({ onStart }: LandingProps) {
             <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA', marginBottom: '0.75rem' }}>
               Pick your AI
             </h2>
-            <p style={{ color: '#A1A1AA', marginBottom: '2rem' }}>Templates built for how you actually work.</p>
-
-            {/* Tabs */}
-            <div className="inline-flex rounded-full p-1" style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {(["business", "personal"] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setTemplateTab(tab)}
-                  className="px-6 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer capitalize"
-                  style={{
-                    backgroundColor: templateTab === tab ? '#E2725B' : 'transparent',
-                    color: templateTab === tab ? '#FAFAFA' : '#A1A1AA',
-                  }}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+            <p style={{ color: '#A1A1AA', marginBottom: '2rem' }}>Pick what fits your business. We handle the rest.</p>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={templateTab}
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-2 md:grid-cols-3 gap-4"
-            >
-              {visibleTemplates.map((t) => (
-                <motion.button
-                  key={t.slug}
-                  variants={itemVariants}
-                  onClick={() => handleTemplateClick(t.slug)}
-                  className="text-left p-5 rounded-2xl cursor-pointer transition-all"
-                  style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}
-                  whileHover={{ y: -4, borderColor: 'rgba(226,114,91,0.3)' }}
-                >
-                  <div className="text-3xl mb-3">{t.emoji}</div>
-                  <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.1rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.25rem' }}>
-                    {t.name}
-                  </h3>
-                  <p style={{ color: '#A1A1AA', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                    {"desc" in t ? (t as any).desc : (t as any).tagline}
-                  </p>
-                </motion.button>
-              ))}
-            </motion.div>
-          </AnimatePresence>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            {TEMPLATES.map((t) => (
+              <motion.button
+                key={t.slug}
+                variants={itemVariants}
+                onClick={() => handleTemplateClick(t.slug)}
+                className="text-left p-5 rounded-2xl cursor-pointer transition-all"
+                style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}
+                whileHover={{ y: -4, borderColor: 'rgba(226,114,91,0.3)' }}
+              >
+                <div className="text-3xl mb-3">{t.emoji}</div>
+                <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.1rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.25rem' }}>
+                  {t.name}
+                </h3>
+                <p style={{ color: '#A1A1AA', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                  {t.desc}
+                </p>
+              </motion.button>
+            ))}
+          </motion.div>
         </div>
       </section>
 
@@ -279,9 +271,16 @@ export function Landing({ onStart }: LandingProps) {
             <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA', marginBottom: '0.75rem' }}>
               Simple pricing
             </h2>
-            <p style={{ color: '#A1A1AA' }}>Start free. Upgrade when you need more.</p>
+            <p style={{ color: '#A1A1AA', marginBottom: '1rem' }}>14-day free trial on all plans. Cancel anytime.</p>
+            <button
+              onClick={() => setShowXCD(!showXCD)}
+              className="text-xs px-4 py-1.5 rounded-full transition-all cursor-pointer"
+              style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#A1A1AA', backgroundColor: showXCD ? 'rgba(226,114,91,0.1)' : 'transparent' }}
+            >
+              {showXCD ? "Show USD" : "Show EC$"}
+            </button>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-4 gap-5">
             {PRICING.map((plan, i) => (
               <motion.div
                 key={plan.name}
@@ -298,13 +297,13 @@ export function Landing({ onStart }: LandingProps) {
                 {plan.primary && (
                   <div className="mb-4">
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E2725B', border: '1px solid rgba(226,114,91,0.3)', borderRadius: '100px', padding: '3px 10px' }}>
-                      Most popular
+                      Recommended
                     </span>
                   </div>
                 )}
                 <h3 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.4rem', fontWeight: 500, color: '#FAFAFA', marginBottom: '0.5rem' }}>{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-2">
-                  <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, color: '#FAFAFA' }}>{plan.price}</span>
+                  <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '2.5rem', fontWeight: 600, color: '#FAFAFA' }}>{formatPrice(plan.price)}</span>
                   <span style={{ color: '#A1A1AA', fontSize: '0.85rem' }}>{plan.period}</span>
                 </div>
                 <p style={{ color: '#A1A1AA', fontSize: '0.85rem', marginBottom: '1.5rem' }}>{plan.desc}</p>
@@ -346,25 +345,34 @@ export function Landing({ onStart }: LandingProps) {
           <h2 style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: 'clamp(2.5rem, 7vw, 5rem)', fontWeight: 600, letterSpacing: '-0.03em', color: '#FAFAFA', marginBottom: '1.5rem', lineHeight: 1 }}>
             Ready to go live?
           </h2>
-          <p style={{ color: '#A1A1AA', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
-            Join businesses already running on BFF.
+          <p style={{ color: '#A1A1AA', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+            Join businesses across the Caribbean running on Isola.
           </p>
-          <button
-            onClick={onStart}
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
-            style={{ backgroundColor: '#E2725B', color: '#FAFAFA' }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F48B76'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E2725B'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            Get started — it's free <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={onStart}
+              className="inline-flex items-center gap-2 px-10 py-4 rounded-full text-base font-semibold transition-all cursor-pointer"
+              style={{ backgroundColor: '#E2725B', color: '#FAFAFA' }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F48B76'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#E2725B'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              Start your free trial <ArrowRight className="w-4 h-4" />
+            </button>
+            {/* Social proof */}
+            <div className="mt-8 p-6 rounded-2xl max-w-md" style={{ backgroundColor: '#111111', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <p style={{ color: '#A1A1AA', fontSize: '0.9rem', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '0.75rem' }}>
+                "EPIC Communications runs our entire helpdesk on Isola. 500+ customer conversations handled by AI every month."
+              </p>
+              <p style={{ color: '#FAFAFA', fontSize: '0.8rem', fontWeight: 500 }}>EPIC Communications, Dominica</p>
+            </div>
+          </div>
         </motion.div>
       </section>
 
       {/* ── Footer ── */}
       <footer className="relative z-10 py-10 px-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA' }}>BFF</span>
+          <span style={{ fontFamily: "'EB Garamond', Georgia, serif", fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.02em', color: '#FAFAFA' }}>Isola</span>
           <p style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>© 2026 EPIC Communications. All rights reserved.</p>
           <div className="flex gap-6 text-sm" style={{ color: '#A1A1AA' }}>
             <a href="/privacy" className="hover:text-[#FAFAFA] transition-colors">Privacy</a>

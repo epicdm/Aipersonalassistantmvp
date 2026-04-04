@@ -377,17 +377,54 @@ model Subscription {
 // the migration SQL — Prisma does not manage it natively.
 // tokenEncrypted stores the WA token as "iv:authTag:ciphertext" (base64),
 // AES-256-GCM, keyed by TENANT_MASTER_KEY env var.
-// status lifecycle: provisioning → active → inactive
+// status lifecycle: provisioning → active → inactive → token_expired → suspended
+// tokenType: 'expiring' (60-day, needs refresh) | 'permanent' (never expires)
 model TenantRegistry {
-  tenantId        String   @id @default(uuid())
-  waPhoneNumberId String   @unique
-  containerPort   Int      @unique
+  tenantId        String    @id @default(uuid())
+  waPhoneNumberId String    @unique
+  containerPort   Int       @unique
   tokenEncrypted  String
-  template        String   @default("professional")
-  status          String   @default("provisioning")
-  createdAt       DateTime @default(now())
+  tokenExpiresAt  DateTime? @map("token_expires_at")
+  tokenType       String    @default("expiring") @map("token_type")
+  template        String    @default("professional")
+  status          String    @default("provisioning")
+  businessId      String?   @map("business_id")
+  wabaId          String?   @map("waba_id")
+  displayPhone    String?   @map("display_phone")
+  businessName    String?   @map("business_name")
+  didNumber       String?   @map("did_number")
+  magnusUserId    String?   @map("magnus_user_id")
+  magnusSipId     String?   @map("magnus_sip_id")
+  magnusDidId     String?   @map("magnus_did_id")
+  createdAt       DateTime  @default(now())
 
   @@index([waPhoneNumberId])
   @@map("tenant_registry")
+}
+
+// ─── Isola SaaS Signup Registry ───────────────────────────────────────────────
+// Tracks self-signup tenants through Meta Zero Integration onboarding.
+// status: pending_otp | provisioning | active | error | suspended
+model IsolaSignup {
+  id                   String   @id @default(cuid())
+  wabaId               String   @unique
+  phoneNumberId        String?
+  containerUrl         String?
+  containerId          String?
+  businessName         String?
+  email                String?
+  planId               String   @default("community")
+  templateId           String   @default("isp")
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  didNumber            String?
+  errorMessage         String?
+  status               String   @default("provisioning")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([wabaId])
+  @@index([stripeSubscriptionId])
+  @@map("isola_signup")
 }
 }
