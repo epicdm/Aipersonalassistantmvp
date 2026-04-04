@@ -816,13 +816,15 @@ export async function POST(req: NextRequest) {
   const rawBody = Buffer.from(await req.arrayBuffer())
   const signature = req.headers.get('x-hub-signature-256') || ''
 
-  if (signature) {
-    // Only verify if signature header is present (Meta always sends it)
-    const { verifyMetaSignature } = await import('@/app/lib/meta-verify')
-    if (!verifyMetaSignature(rawBody, signature)) {
-      console.error('[WA webhook] Signature verification failed')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+  // Require signature — Meta always sends X-Hub-Signature-256
+  if (!signature) {
+    console.error('[WA webhook] Missing X-Hub-Signature-256 header')
+    return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+  }
+  const { verifyMetaSignature } = await import('@/app/lib/meta-verify')
+  if (!verifyMetaSignature(rawBody, signature)) {
+    console.error('[WA webhook] Signature verification failed')
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   let body: any

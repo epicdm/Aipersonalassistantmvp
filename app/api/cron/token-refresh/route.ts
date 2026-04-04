@@ -3,14 +3,23 @@
  * Daily cron: check expiring tokens, auto-refresh, alert on failures.
  * Triggered by external cron (e.g., crontab: curl https://bff.epic.dm/api/cron/token-refresh)
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/app/lib/prisma'
 import { checkExpiring, refreshToken, healthCheck } from '@/app/lib/token-service'
 import { alertEric } from '@/app/lib/alert'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+const CRON_SECRET = process.env.CRON_SECRET || ''
+
+export async function GET(req: NextRequest) {
+  // Require cron secret to prevent public triggering
+  if (CRON_SECRET) {
+    const auth = req.headers.get('x-cron-secret') || req.nextUrl.searchParams.get('secret') || ''
+    if (auth !== CRON_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
   const summary = { checked: 0, refreshed: 0, failed: 0, healthChecked: 0, alerts: 0 }
 
   // 1. Check expiring tokens (within 7 days)

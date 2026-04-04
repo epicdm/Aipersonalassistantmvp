@@ -84,16 +84,9 @@ export async function POST(req: NextRequest) {
         case 'phone_number_quality_update': {
           const quality = value?.current_limit
           console.log('[account-update] Quality change:', { wabaId, quality })
-          if (tenant) {
-            await prisma.agentActivity.create({
-              data: {
-                agentId: tenant.tenantId,
-                type: 'quality_change',
-                summary: `Phone quality: ${quality}`,
-                metadata: { wabaId, quality, raw: value },
-              },
-            }).catch(() => null) // AgentActivity may not have matching agentId
-          }
+          // Log quality change — use console since AgentActivity requires a valid agentId (cuid)
+        // and tenantId is a UUID. Tenant event logging will be added when tenant-to-agent mapping exists.
+        console.log('[account-update] Quality change logged:', { tenantId: tenant?.tenantId, wabaId, quality })
           break
         }
 
