@@ -21,6 +21,21 @@ export async function getProducts(agentId: string, category?: string) {
   })
 }
 
+export async function searchProducts(agentId: string, query: string, limit = 5) {
+  return prisma.product.findMany({
+    where: {
+      agentId,
+      availability: true,
+      OR: [
+        { name: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: { name: 'asc' },
+    take: limit,
+  })
+}
+
 export async function getProduct(id: string) {
   return prisma.product.findUnique({ where: { id } })
 }

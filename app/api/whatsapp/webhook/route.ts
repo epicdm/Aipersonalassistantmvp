@@ -5,6 +5,7 @@ import { buildKnowledgeContext } from '@/app/lib/knowledge'
 import { extractKnowledge, getOnboardingOpener, TEMPLATE_QUESTIONS } from '@/app/lib/onboarding'
 import { transcribeVoiceNote } from "@/app/lib/transcribe"
 import { sendWhatsAppMessage, sendTypingIndicator, sendWhatsAppVoiceNote, sendInteractiveButtons } from "@/app/lib/whatsapp"
+import { findOrCreateContact } from '@/app/lib/contacts'
 
 const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN || 'epic-wa-2026'
 const WA_TOKEN = process.env.META_WA_TOKEN || ''
@@ -207,43 +208,6 @@ async function maybeWarnUpgrade(agent: any, todayCount: number) {
   , effectivePhoneId)
 }
 
-async function findOrCreateContact(agent: any, phone: string, fallbackName?: string) {
-  let contact = await prisma.contact.findFirst({
-    where: { userId: agent.userId, phone },
-  })
-
-  if (!contact) {
-    contact = await prisma.contact.create({
-      data: {
-        userId: agent.userId,
-        primaryAgentId: agent.id,
-        name: fallbackName || phone,
-        phone,
-      },
-    })
-  }
-
-  const agentContact = await prisma.agentContact.findFirst({
-    where: { agentId: agent.id, contactId: contact.id },
-  })
-
-  if (!agentContact) {
-    await prisma.agentContact.create({
-      data: {
-        id: crypto.randomUUID(),
-        agentId: agent.id,
-        contactId: contact.id,
-      },
-    }).catch(() => null)
-  } else {
-    await prisma.agentContact.update({
-      where: { id: agentContact.id },
-      data: { lastContactAt: new Date() },
-    }).catch(() => null)
-  }
-
-  return contact
-}
 
 async function handleOnboarding(from: string, text: string, agent: any, metaMessageId?: string | null, wasVoiceNote = false, phoneId?: string) {
   const effectivePhoneId = (agent.config as any)?.phoneNumberId || phoneId
