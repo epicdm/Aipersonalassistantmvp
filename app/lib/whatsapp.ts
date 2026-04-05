@@ -300,6 +300,33 @@ export async function sendStickerMessage(
   if (!res.ok) throw new Error(`Sticker send failed: ${await res.text()}`)
 }
 
+// ─── Location Messages ───────────────────────────────────────────────────────
+
+export async function sendLocationMessage(
+  phone: string,
+  latitude: number,
+  longitude: number,
+  name: string,
+  address: string,
+  fromPhoneId?: string
+): Promise<void> {
+  const token = META_TOKEN || WHATSAPP_TOKEN
+  if (!token) throw new Error('WHATSAPP_TOKEN not configured')
+  const phoneId = fromPhoneId || DEFAULT_PHONE_ID
+
+  const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'location',
+      location: { latitude, longitude, name, address },
+    }),
+  })
+  if (!res.ok) throw new Error(`Location send failed: ${await res.text()}`)
+}
+
 // ─── Product Messages ────────────────────────────────────────────────────────
 
 export async function sendProductMessage(
