@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/whatsapp/webhook(.*)",
   "/api/whatsapp/account-update(.*)",
   "/api/whatsapp/flows(.*)",
+  "/api/internal/(.*)",
   "/api/cron/(.*)",
   "/api/voice/context(.*)",
   "/api/voice/lookup(.*)",
