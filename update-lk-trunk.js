@@ -3,7 +3,7 @@
  * update-lk-trunk.js
  * 
  * Updates LiveKit SIP trunks to ensure:
- * 1. BFF WA Inbound trunk (ST_vr8WP5pC6qLa) also allows BFF server IP 66.118.37.63
+ * 1. BFF WA Inbound trunk (ST_vr8WP5pC6qLa) also allows BFF server IP 66.118.37.12
  * 2. Dispatch rule SDR_kwnCC6cVrgsB routes to epic-voice-agent (verify)
  * 3. EPIC Shared Inbound trunk (ST_WEc3Hz4Xerb9) allows BFF server IP
  * 
@@ -16,7 +16,7 @@ const LK_URL = 'https://ai-agent-dl6ldsi8.livekit.cloud';
 const LK_API_KEY = 'APIfFhqC7dRApB2';
 const LK_API_SECRET = 'U5ln2qZ6BDX1SwYBnla31AgcyhInbSuepNDYPIfhs9V';
 
-const BFF_IP = '66.118.37.63';
+const BFF_IP = '66.118.37.12';
 
 // Trunk IDs
 const BFF_WA_TRUNK_ID = 'ST_vr8WP5pC6qLa';   // BFF WA Inbound (+17672950333)

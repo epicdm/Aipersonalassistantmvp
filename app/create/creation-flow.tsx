@@ -366,8 +366,8 @@ function StepActivate({
   const isPersonal = isPersonalTemplate(templateSlug);
   const waNumber = "17672950333";
   const waText = activationCode
-    ? `Hey! I just created my BFF agent — activate me! 🚀 ${activationCode}`
-    : "Hey! I want to set up my BFF agent";
+    ? `Hey! I just created my Isola agent — activate me! 🚀 ${activationCode}`
+    : "Hey! I want to set up my Isola agent";
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`;
 
   return (
@@ -459,7 +459,7 @@ export default function CreationFlow() {
   // Read template from sessionStorage — skip to "meet" if present
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("bff_template");
+      const saved = sessionStorage.getItem("isola_template");
       if (saved) {
         setTemplateSlug(saved);
         setAgentName(getDefaultName(saved) || "Max");
@@ -489,7 +489,7 @@ export default function CreationFlow() {
           if (existing.agent.activationCode) {
             setActivationCode(existing.agent.activationCode);
           }
-          if (typeof window !== "undefined") sessionStorage.removeItem("bff_template");
+          if (typeof window !== "undefined") sessionStorage.removeItem("isola_template");
           setStep("activate");
           setCreating(false);
           return;
@@ -535,7 +535,7 @@ export default function CreationFlow() {
 
       // Clear sessionStorage template
       if (typeof window !== "undefined") {
-        sessionStorage.removeItem("bff_template");
+        sessionStorage.removeItem("isola_template");
       }
 
       setStep("activate");
@@ -570,7 +570,7 @@ export default function CreationFlow() {
         <div className="w-8 h-8 bg-gradient-to-br from-[#00333c] to-[#004B57] rounded-xl flex items-center justify-center">
           <Bot className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-sm text-[#40484a]">BFF</span>
+        <span className="font-bold text-sm text-[#40484a]">Isola</span>
       </div>
 
       {/* Step indicator */}

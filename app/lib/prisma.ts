@@ -14,4 +14,5 @@ export const prisma =
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Always persist to globalThis — prevents new PrismaClient on every hot-reload or PM2 restart
+globalForPrisma.prisma = prisma;

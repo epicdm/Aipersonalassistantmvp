@@ -5,7 +5,7 @@ module.exports = {
     args: 'next start -p 3004',
     cwd: '/opt/bff',
     env: {
-      "DATABASE_URL": "postgresql://ocmt:ocmt_secure_2026@localhost:5432/bff",
+      "DATABASE_URL": "postgresql://ocmt:ocmt_secure_2026@localhost:5433/bff",
       "JWT_SECRET": "bff_jwt_secret_epic_2026_secure_random_string_xyz789",
       "NEXT_PUBLIC_APP_NAME": "BFF",
       "NEXT_PUBLIC_APP_URL": "https://bff.epic.dm",

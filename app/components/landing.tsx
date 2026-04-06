@@ -82,7 +82,7 @@ export function Landing({ onStart }: LandingProps) {
 
   const handleTemplateClick = (slug: string) => {
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("bff_template", slug);
+      sessionStorage.setItem("isola_template", slug);
     }
     onStart();
   };

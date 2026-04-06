@@ -24,6 +24,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/billing/webhook(.*)",
   "/api/telegram/bff-ops(.*)",
   "/api/health",
+  "/api/dashboard/(.*)",
+  "/isola(.*)",
   "/api/isola/signup",
   "/api/isola/available-numbers",
   "/api/isola/provision-number",
@@ -48,7 +50,11 @@ export default clerkMiddleware(async (auth, request) => {
           headers: { "Content-Type": "application/json" },
         });
       }
-      return redirectToSignIn({ returnBackUrl: request.url });
+      // Reconstruct public URL from forwarded headers (nginx proxies to localhost:3004)
+      const proto = request.headers.get('x-forwarded-proto') || 'https'
+      const host  = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'bff.epic.dm'
+      const publicUrl = `${proto}://${host}${request.nextUrl.pathname}${request.nextUrl.search}`
+      return redirectToSignIn({ returnBackUrl: publicUrl });
     }
   }
 });
