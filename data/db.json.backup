@@ -1,0 +1,504 @@
+{
+  "users": [
+    {
+      "id": "0f938184-d732-4047-af03-143eefcc197c",
+      "email": "eric@epic.dm",
+      "passwordHash": "$2b$10$yOWL0p.deB27NNqiWpSKBei7zg3K/gmbr6XjwTabcoEKGZI1U74Kq",
+      "createdAt": "2026-02-05T21:55:07.590Z"
+    },
+    {
+      "id": "4ea8e91d-6538-4ae9-9300-7d437a69b169",
+      "email": "test@example.com",
+      "passwordHash": "$2b$10$yJppSfaT9v2nCtRjf7aUOuXdexK0PhDNhC0IBTUb.5QN8aiT2LWp2",
+      "createdAt": "2026-02-05T21:56:57.780Z"
+    },
+    {
+      "id": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "email": "test2@example.com",
+      "passwordHash": "$2b$10$E9h5NUv72VfkTKlpZrylWOS.QoF14Jf9ZruR2W47Nm62BMOckXLMa",
+      "createdAt": "2026-02-05T21:59:34.134Z"
+    },
+    {
+      "id": "93d8c973-9654-42ba-8bc6-00a7b14fc846",
+      "email": "testuser+1909@epic.dm",
+      "passwordHash": "$2b$10$Vv6HcqyINAmxEFmyjgehyetz1iQjRhR.K/K/Xduw2103tWdrYBHjm",
+      "createdAt": "2026-02-06T00:03:49.818Z"
+    },
+    {
+      "id": "43e63a3a-56b9-4330-b3e7-260374313a4c",
+      "email": "demo@epic.dm",
+      "passwordHash": "$2b$10$tG/l/nfACq5YflxUceIt.OFiutsW3J.I.WMmd7SGzYkA0uGMHX87C",
+      "createdAt": "2026-02-06T05:18:38.712Z"
+    },
+    {
+      "id": "64a59cee-8e3a-42f7-964c-ebf79a4ce190",
+      "email": "erica@dd.dd",
+      "passwordHash": "$2b$10$K6QYRkFAHNlmLWdXZsLfbezh1Hnip7rjMU2wGkqG97yswz.vIQAdm",
+      "createdAt": "2026-02-06T05:37:35.133Z"
+    },
+    {
+      "id": "63c51917-f9d3-466d-bcb5-5aaf0e78002e",
+      "email": "newtest@example.com",
+      "passwordHash": "$2b$10$U45hxhNYfGToSg3Q7XX5r.lyhmL6mDFAaHRkW39EjuWL8h3kyT8c.",
+      "createdAt": "2026-02-06T15:42:48.277Z"
+    },
+    {
+      "id": "7ac4cfa2-ee4a-48c6-8ad1-e1396aa128d8",
+      "email": "info11@epic.dm",
+      "passwordHash": "$2b$10$CQZeYscCObX65vyxz.iA6.5WyLlC5c48Z6V1GzM.zTTWkArts1wRi",
+      "createdAt": "2026-02-06T15:43:31.817Z"
+    },
+    {
+      "id": "07ece69f-42d2-4652-b8aa-83b82c57cedb",
+      "email": "hakeem@epic.dm",
+      "passwordHash": "$2b$10$1cb8c5cOsFz7iq8wG8DypOd1unrkIX4LnqD6z3bsTrwU89lB8u2fu",
+      "createdAt": "2026-02-06T17:50:18.788Z"
+    },
+    {
+      "id": "574b32cd-ebe1-48e5-9560-cb80ff5746b7",
+      "email": "flowtest@epic.dm",
+      "passwordHash": "$2b$10$9KFZ4rqnqX/SAW4asKILU.JablYP.jsr79/g26Qk7UsqsT8bt3FMe",
+      "createdAt": "2026-02-06T18:22:09.617Z"
+    }
+  ],
+  "agents": [
+    {
+      "id": "f33d66e5-fea4-4dde-a55c-4823fc97156b",
+      "userId": "0f938184-d732-4047-af03-143eefcc197c",
+      "name": "DDD",
+      "purpose": "Be my personal assistant for daily tasks",
+      "tools": [],
+      "whatsappStatus": "pairing",
+      "phoneNumber": "17678186649",
+      "phoneStatus": "provisioned",
+      "createdAt": "2026-02-05T21:55:07.590Z",
+      "updatedAt": "2026-02-06T06:24:44.752Z",
+      "config": {
+        "name": "DDD",
+        "purpose": "Be my personal assistant for daily tasks",
+        "tone": "friendly",
+        "tools": [
+          "calendar",
+          "web",
+          "phone"
+        ],
+        "approvalMode": "confirm",
+        "role": "Personal Assistant",
+        "language": "English",
+        "whatsappPairingCode": "9924-2955",
+        "whatsappQr": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAklEQVR4AewaftIAAATfSURBVO3BQY4bSRAEwfAC//9l3znmqYBGJ0fSIszwR6qWnFQtOqladFK16KRq0UnVopOqRSdVi06qFp1ULTqpWnRSteikatFJ1aKTqkUnVYs+eQnIb1IzAXlCzQTkDTU3QG7U3AD5TWreOKladFK16KRq0SfL1GwC8oSaJ9RMQCY1N0AmNd+kZhOQTSdVi06qFp1ULfrky4A8oeYJNU8AuVHzTWomIJOaJ4A8oeabTqoWnVQtOqla9Mk/DsgTaiYgN0Bu1ExAJjUTkEnN/8lJ1aKTqkUnVYs++cepmYBMam7UPKFmAnIDZFLzf3ZSteikatFJ1aJPvkzNb1IzAZnUTEBu1ExAnlAzAZnUvKHmb3JSteikatFJ1aJPlgH5TUAmNW+omYBMaiYgk5oJyKRmAjKpuQHyNzupWnRSteikatEnL6n5mwCZ1ExAJjU3aiYgv0nNv+SkatFJ1aKTqkWfvARkUjMBuVEzAXlCzRNqJiA3am7UTEAmNROQSc0NkEnNDZBJzQTkRs0bJ1WLTqoWnVQt+uQvp+YJIJuAPKFmAvIEkBsgN2r+pJOqRSdVi06qFn3yZWomIE8AuVFzo+YJIJOaGyA3am6ATGqeADIBeULNppOqRSdVi06qFuGPvADkm9RMQCY1fxKQJ9TcALlRcwNkUvObTqoWnVQtOqla9MmXqZmATGpugDwB5A01E5AbNROQJ4BMam6ATGpugExqvumkatFJ1aKTqkWfvKTmDSA3aiYgN2omIJOaCcgTaiYgTwCZ1ExAbtTcqLkBcqPmjZOqRSdVi06qFn3yEpBJzQTkRs0EZAIyqZmA3Ki5UTMBmdRMQG7UTEBugExqJiBPAPmTTqoWnVQtOqlahD/yApAbNTdAJjU3QCY1N0AmNU8AmdRMQG7UPAFkUjMBuVHzJ51ULTqpWnRSteiTl9RMQJ5QMwHZpGYCMql5AsgbQN5QMwF5A8ik5o2TqkUnVYtOqhbhjywCcqNmE5AbNTdAJjUTkEnNBOQJNROQGzUTkEnNDZBJzTedVC06qVp0UrXok5eATGqeAPKEmknNBGQC8gSQGyA3an4TkL/JSdWik6pFJ1WLPnlJzQ2QSc0Tap5QMwHZpOab1Dyh5gbIBGRSs+mkatFJ1aKTqkWfLAMyqXlCzQTkCTWTmhsgbwC5UTMBuQHyBJAn1ExAJjVvnFQtOqladFK1CH/kHwZkUvNNQG7UPAFkUvMEkE1q3jipWnRSteikatEnLwH5TWreAHKjZgJyo+YGyBtAJjVPqJmATGo2nVQtOqladFK16JNlajYBeQLIpGZSMwGZgGxScwPkRs0Tam7UTEAmNW+cVC06qVp0UrXoky8D8oSaJ9RMQCYgk5obNU8AmdRMQCY1N0DeAHKjZlKz6aRq0UnVopOqRZ/844BMam6ATGreUHOj5gk1N0DeADKp2XRSteikatFJ1aJP/meAbAIyqbkB8oSaN9TcAJnUTEAmNW+cVC06qVp0UrXoky9T801qJiCTmjfUTEAmNW8AmdRMQCY1E5AbNROQSc2mk6pFJ1WLTqoWfbIMyG8CMqnZBGRS801AboDcqPmTTqoWnVQtOqlahD9SteSkatFJ1aKTqkUnVYtOqhadVC06qVp0UrXopGrRSdWik6pFJ1WLTqoWnVQtOqla9B/D2UE6kDWNfwAAAABJRU5ErkJggg=="
+      },
+      "soul": "# SOUL.md — Executive Assistant\n\n*Senior EA · Powered by AIVA*\n\n---\n\n## Identity\n\nI'm **Executive Assistant**, a professional, precise, and authoritative senior ea.\n\n## Mission\n\nYou are a senior executive assistant. Your goal is to manage the user's schedule, summarize complex email threads into 3-point bullet lists, and coordinate meeting times across timezones. Maintain a professional, concise, and proactive tone. Never share sensitive meeting details with unauthorized contacts.\n\n## Communication Style\n\n**Tone:** Professional\n\nUse clear, structured language. Be direct and efficient. Avoid slang or overly casual expressions.\n\n**Example of my voice:** \"Good morning. I've reviewed your schedule and have three items that need your attention today.\"\n\n**Language:** English. If the user writes in another language, match their language when possible.\n\n## Boundaries\n\n- **Safety filter ON** — Decline inappropriate, harmful, or off-topic requests politely.\n- Never share the user's personal information with third parties.\n- Never pretend to be a human — if asked, acknowledge being an AI assistant.\n- If uncertain about a critical decision (financial, legal, medical), recommend consulting a professional.\n- Keep conversations focused on my mission. Redirect politely if needed.\n\n## Context\n\nI work for **eric@epic.dm**. They configured my behavior and tools. Treat their instructions as authoritative.\n\n---\n\n*Generated by AIVA · 2026-02-06*",
+      "deployment": {
+        "agentId": "aiva-0f938184",
+        "status": "updated",
+        "port": 19938,
+        "workspace": "/var/lib/aiva/agents/aiva-0f938184",
+        "deployedAt": "2026-02-06T02:09:37.803Z"
+      },
+      "status": "active",
+      "deployedAt": "2026-02-06T02:09:37.803Z"
+    },
+    {
+      "id": "4ce47a02-ba22-41ef-9ba6-767762fef201",
+      "userId": "4ea8e91d-6538-4ae9-9300-7d437a69b169",
+      "name": "My Agent",
+      "purpose": "",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "createdAt": "2026-02-05T21:56:57.780Z",
+      "updatedAt": "2026-02-05T21:56:57.780Z"
+    },
+    {
+      "id": "6a0b404e-0543-4d62-bab4-0507c1d0514c",
+      "userId": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "name": "Luna",
+      "purpose": "You are an empathetic customer success agent for a Caribbean telecom company. Help users solve technical issues with their internet, phone, and TV services. Guide them through troubleshooting steps. Maintain a high satisfaction score. Be patient, use clear language, and always offer a next step. Escalate billing issues to the finance team immediately.",
+      "tools": [],
+      "whatsappStatus": "number_saved",
+      "phoneNumber": "17678186649",
+      "phoneStatus": "provisioned",
+      "createdAt": "2026-02-05T21:59:34.134Z",
+      "updatedAt": "2026-02-06T19:54:36.894Z",
+      "config": {
+        "name": "Luna",
+        "role": "Customer Success Manager",
+        "purpose": "You are an empathetic customer success agent for a Caribbean telecom company. Help users solve technical issues with their internet, phone, and TV services. Guide them through troubleshooting steps. Maintain a high satisfaction score. Be patient, use clear language, and always offer a next step. Escalate billing issues to the finance team immediately.",
+        "tone": "Friendly",
+        "language": "English (US)",
+        "safetyFilter": true,
+        "officeHours": true,
+        "officeHoursStart": "08:00",
+        "officeHoursEnd": "18:00",
+        "timezone": "America/Dominica",
+        "enabledTools": [
+          "calendar",
+          "email",
+          "knowledge",
+          "whatsapp"
+        ],
+        "whatsappPairingCode": "9498-0475",
+        "whatsappQr": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAklEQVR4AewaftIAAATQSURBVO3BQY4cSRIEQdNA/f/Lujz6KYBEejWbsyaCf6RqyUnVopOqRSdVi06qFp1ULTqpWnRSteikatFJ1aKTqkUnVYtOqhadVC06qVp0UrXok5eA/CQ1E5BJzRtAnlAzAZnUvAHkJ6l546Rq0UnVopOqRZ8sU7MJyBtA3lBzA+QGyI2aJ9RsArLppGrRSdWik6pFn3wZkCfUPKFmAjKpuQEyqdmk5gbIpOYJIE+o+aaTqkUnVYtOqhZ98o8D8k1AbtTcALlR819yUrXopGrRSdWiT/5xam6A3Kh5Qs0E5EbN/5OTqkUnVYtOqhZ98mVqfhKQSc0TQCY1E5A3gExq3lDzm5xULTqpWnRSteiTZUB+EpBJzQRkUjMBmdRMQCY1E5BJzQRkUjMBmdTcAPnNTqoWnVQtOqla9MlLan4zNW+omYD8JDX/kpOqRSdVi06qFn3yEpBJzQTkRs0E5Ak1E5BJzY2aCcik5kbNBGRSMwGZ1NwAmdTcAJnUTEBu1LxxUrXopGrRSdWiT36YmgnIpOYGyATkCSCTmhsgT6h5A8gNkBs1f9NJ1aKTqkUnVYs++TI1TwB5Qs0TaiYgN2pugExqJiCTmgnIpOYJIBOQJ9RsOqladFK16KRq0ScvqbkBMql5Qs0NkEnNBORGzTepuVEzAblRM6mZgExqftJJ1aKTqkUnVYvwjywCMql5AsgTaiYgk5obIJOaCciNmgnIjZoJyKTmBsikZgJyo+abTqoWnVQtOqla9MmXAblRc6PmN1EzAblRMwGZ1ExAbtTcqLkBcqPmjZOqRSdVi06qFn3yEpBvAjKpuVEzAXkCyKRmAnKj5gkgk5oJyBNA/qaTqkUnVYtOqhZ98suouQFyo2ZS8waQSc0E5AbIpOYGyKRmAnKj5m86qVp0UrXopGrRJ1+m5gbIG2pugNyoeQLIE2omIG+omYC8AWRS88ZJ1aKTqkUnVYs+eUnNDZBJzaTmJ6l5Q80E5AbIpGYC8gSQSc0NkEnNpGbTSdWik6pFJ1WLPnkJyKTmCSBvqLlRcwPkCSA3QCY13wTkNzmpWnRSteikatEnL6l5Q80bQCY1E5BJzaRmAnKj5pvUPKHmBsgEZFKz6aRq0UnVopOqRZ8sAzKpmYBMam6A3KiZgExqboC8AWRSMwF5AsgTQJ5QMwGZ1LxxUrXopGrRSdWiT5apuVHzhJobIE8AmdQ8AeQNNROQSc0TQJ4A8k0nVYtOqhadVC365CUgP0nNE0DeAHKjZgJyA+QJIJOaJ9RMQCY1m06qFp1ULTqpWvTJMjWbgPwkIG+oeQLIjZon1NyomYBMat44qVp0UrXopGrRJ18G5Ak1T6iZgNyouVHzBJBJzQRkUnMD5A0gN2omNZtOqhadVC06qVr0yT8OyKTmJ6m5UfOEmhsgbwCZ1Gw6qVp0UrXopGrRJ/8xQCY1E5BJzSYgT6h5Q80NkEnNBGRS88ZJ1aKTqkUnVYs++TI136Tmm4DcqHkDyKRmAjKpmYDcqJmATGo2nVQtOqladFK16JNlQH4SkBs1k5obIDdqvgnIDZAbNX/TSdWik6pFJ1WL8I9ULTmpWnRSteikatFJ1aKTqkUnVYtOqhadVC06qVp0UrXopGrRSdWik6pFJ1WLTqoW/Q9jTzU3XUTIxwAAAABJRU5ErkJggg=="
+      },
+      "soul": "# SOUL.md — Luna\n\n*Customer Success Manager · Powered by AIVA*\n\n---\n\n## Identity\n\nI'm **Luna**, a warm, approachable, and supportive customer success manager.\n\n## Mission\n\nYou are an empathetic customer success agent for a Caribbean telecom company. Help users solve technical issues with their internet, phone, and TV services. Guide them through troubleshooting steps. Maintain a high satisfaction score. Be patient, use clear language, and always offer a next step. Escalate billing issues to the finance team immediately.\n\n## Communication Style\n\n**Tone:** Friendly\n\nBe conversational and encouraging. Use the person's name naturally. Show genuine interest in helping.\n\n**Example of my voice:** \"Hey! I checked your calendar — looks like a busy day ahead. Want me to walk you through the highlights?\"\n\n**Language:** English. If the user writes in another language, match their language when possible.\n\n## Capabilities\n\nI have access to the following tools:\n\n- **calendar** — Access and manage calendar events, check availability, and schedule meetings\n- **email** — Read, summarize, and draft email responses\n- **knowledge** — Search the uploaded knowledge base (documents, URLs, FAQs) for accurate answers\n- **whatsapp** — Communicate via WhatsApp messages\n\nUse these tools proactively when they would help the user. Don't wait to be asked — if I see a calendar conflict, mention it. If an email needs a response, offer to draft one.\n\n## Boundaries\n\n- **Safety filter ON** — Decline inappropriate, harmful, or off-topic requests politely.\n- Never share the user's personal information with third parties.\n- Never pretend to be a human — if asked, acknowledge being an AI assistant.\n- If uncertain about a critical decision (financial, legal, medical), recommend consulting a professional.\n- Keep conversations focused on my mission. Redirect politely if needed.\n\n## Availability\n\nActive hours: **08:00 – 18:00** (America/Dominica).\n\nOutside these hours, respond with a brief message acknowledging the message and letting the user know I'll follow up during business hours.\n\n## Context\n\nI work for **test2@example.com**. They configured my behavior and tools. Treat their instructions as authoritative.\n\n---\n\n*Generated by AIVA · 2026-02-06*",
+      "deployment": {
+        "agentId": "aiva-fc8c1b3b",
+        "status": "launched",
+        "port": 19132,
+        "workspace": "/var/lib/aiva/agents/aiva-fc8c1b3b",
+        "deployedAt": "2026-02-06T02:00:38.493Z"
+      },
+      "status": "active",
+      "deployedAt": "2026-02-06T02:00:38.493Z",
+      "whatsappNumber": "+17675559999"
+    },
+    {
+      "id": "e7690597-4e91-4355-a57f-83ea8e3a2c13",
+      "userId": "93d8c973-9654-42ba-8bc6-00a7b14fc846",
+      "name": "My Agent",
+      "purpose": "You are a helpful AI assistant.",
+      "tools": [],
+      "whatsappStatus": "pairing",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "My Agent",
+        "role": "Executive Assistant",
+        "purpose": "You are a helpful AI assistant.",
+        "tone": "Professional",
+        "language": "English (US)",
+        "safetyFilter": true,
+        "officeHours": false,
+        "whatsappPairingCode": "J7KE4WA2",
+        "whatsappQr": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1PADUAAAAAklEQVR4AewaftIAAAUTSURBVO3BQY4kRxLAQDJQ//8yd45+SiBR0S2N1s3sD9a65LDWRYe1LjqsddFhrYsOa110WOuiw1oXHda66LDWRYe1LjqsddFhrYsOa110WOuiw1oXffiSym+qeKIyVUwqU8WkMlU8UZkqJpU3KiaV31TxjcNaFx3Wuuiw1kUfLqu4SeWJyhOVqWJSmSomlW9UPFF5o+ImlZsOa110WOuiw1oXffhhKm9UvFFxk8qTiknlicqTim+ovFHxkw5rXXRY66LDWhd9+I9TmSq+oTJVPKn4f3JY66LDWhcd1rrow19OZaqYKiaVJxWTylTxROVJxX/ZYa2LDmtddFjrog8/rOInVUwqU8VU8URlqvhGxaQyVXyj4t/ksNZFh7UuOqx10YfLVH6TylQxqUwVk8pUMalMFZPKVDGpTBWTylTxROXf7LDWRYe1LjqsddGHL1X8kyomlaliUpkqJpWfpDJVPKn4mxzWuuiw1kWHtS6yP/iCylQxqUwVk8pUMalMFW+oTBWTylQxqTypmFSmiicqU8UbKlPFE5Wp4qbDWhcd1rrosNZFH36ZylQxqUwVk8pUMan8kyreqJhUnlRMFZPKVPFEZar4xmGtiw5rXXRY66IPl6k8qZhUpopJ5SaVqWJSmSq+oTJVTCpTxaQyqUwVT1R+02Gtiw5rXXRY66IPl1VMKk8qnlQ8UXmj4knFE5Wp4hsVTyomlTcqJpWfdFjrosNaFx3WuujDlyqeVEwq36h4o2JSmSreqJhUnlS8ofI3O6x10WGtiw5rXfThSyo3VXyjYlKZKp6oTBWTypOKN1SmikllqnhDZaqYVG46rHXRYa2LDmtd9OFLFZPKk4o3VH5TxaTyhsqTiqniGypTxROVn3RY66LDWhcd1rrow2UVT1SmiicVT1RuUnlSMalMFU9UpopJZap4UjGpTBVTxU86rHXRYa2LDmtdZH9wkcpU8URlqphU3qh4Q2WqmFSeVLyhclPFv8lhrYsOa110WOuiD5dVTCpTxRsVk8obKr9J5UnFpDJVTCpTxRsqb1R847DWRYe1LjqsddGHL6lMFU9UpopJ5UnFE5UnFU9Upoo3Kt6oeEPljYpJ5Scd1rrosNZFh7Uusj+4SOVJxW9SmSomlaniicpUMam8UTGpTBWTylQxqUwVv+mw1kWHtS46rHXRhy+pTBWTyhOVb1S8ofKNikllqphUpopJ5YnKE5Wp4g2VqeIbh7UuOqx10WGti+wP/mIqTyomlTcqJpU3KiaVJxVvqEwVk8obFd84rHXRYa2LDmtd9OFLKr+pYqqYVCaVJxVPVN6ouEllqniiMlVMKj/psNZFh7UuOqx10YfLKm5S+UbFpPJE5UnFpDKpTBVTxaTypOKNijcqbjqsddFhrYsOa1304YepvFHxhsobFU8qJpVJZap4ojJVPFH5hspU8URlqvjGYa2LDmtddFjrog9/uYonKk8qJpWbKiaVqWJSmSomlScVTyp+0mGtiw5rXXRY66IPfzmVJxVPVJ5UvKEyVUwVk8pU8Q2VqeKJylTxjcNaFx3Wuuiw1kUffljFT6p4Q+VJxROVqWKquEnlScUbKlPFTYe1LjqsddFhrYs+XKbym1SeVDypmFSeVEwqU8UTlScqU8VPUpkqvnFY66LDWhcd1rrI/mCtSw5rXXRY66LDWhcd1rrosNZFh7UuOqx10WGtiw5rXXRY66LDWhcd1rrosNZFh7UuOqx10f8Ajo16KDgsDpcAAAAASUVORK5CYII="
+      },
+      "createdAt": "2026-02-06T00:03:49.818Z",
+      "updatedAt": "2026-02-06T00:04:22.872Z"
+    },
+    {
+      "id": "81a39866-6aac-4bb8-89c8-02345e388bbb",
+      "userId": "43e63a3a-56b9-4330-b3e7-260374313a4c",
+      "name": "My Agent",
+      "purpose": "You are a helpful AI assistant.",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "My Agent",
+        "role": "Executive Assistant",
+        "purpose": "You are a helpful AI assistant.",
+        "tone": "Professional",
+        "language": "English (US)",
+        "safetyFilter": true,
+        "officeHours": false
+      },
+      "createdAt": "2026-02-06T05:18:38.712Z",
+      "updatedAt": "2026-02-06T05:18:38.712Z"
+    },
+    {
+      "id": "d983cd33-a056-49fb-9661-d93ce8f52a42",
+      "userId": "64a59cee-8e3a-42f7-964c-ebf79a4ce190",
+      "name": "Luna",
+      "purpose": "Manage sales outreach and close deals",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "Luna",
+        "purpose": "Manage sales outreach and close deals",
+        "tone": "friendly",
+        "tools": [
+          "whatsapp",
+          "email"
+        ],
+        "approvalMode": "confirm",
+        "role": "Personal Assistant",
+        "language": "English"
+      },
+      "createdAt": "2026-02-06T05:37:35.133Z",
+      "updatedAt": "2026-02-06T05:38:07.338Z"
+    },
+    {
+      "id": "dd00a680-ea27-4a20-b580-ff827e40b7a0",
+      "userId": "63c51917-f9d3-466d-bcb5-5aaf0e78002e",
+      "name": "My Agent",
+      "purpose": "You are a helpful AI assistant.",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "My Agent",
+        "role": "Executive Assistant",
+        "purpose": "You are a helpful AI assistant.",
+        "tone": "Professional",
+        "language": "English (US)",
+        "safetyFilter": true,
+        "officeHours": false
+      },
+      "createdAt": "2026-02-06T15:42:48.277Z",
+      "updatedAt": "2026-02-06T15:42:48.277Z"
+    },
+    {
+      "id": "00b21bfc-cc95-43d4-b1f4-b49b486e0acd",
+      "userId": "7ac4cfa2-ee4a-48c6-8ad1-e1396aa128d8",
+      "name": "Max",
+      "purpose": "Collect payments and follow up on invoices",
+      "tools": [],
+      "whatsappStatus": "number_saved",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "Max",
+        "purpose": "Collect payments and follow up on invoices",
+        "tone": "professional",
+        "tools": [
+          "whatsapp",
+          "email",
+          "phone",
+          "calendar",
+          "web",
+          "knowledge"
+        ],
+        "approvalMode": "confirm",
+        "role": "Personal Assistant",
+        "language": "English"
+      },
+      "createdAt": "2026-02-06T15:43:31.817Z",
+      "updatedAt": "2026-02-06T20:00:39.283Z",
+      "whatsappNumber": "17672958382"
+    },
+    {
+      "id": "713a86b4-b4c9-4c74-b6b6-6eeec080cf81",
+      "userId": "07ece69f-42d2-4652-b8aa-83b82c57cedb",
+      "name": "Mac",
+      "purpose": "Schedule appointments and manage my calendar",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "Mac",
+        "purpose": "Schedule appointments and manage my calendar",
+        "tone": "professional",
+        "tools": [
+          "email",
+          "knowledge",
+          "calendar",
+          "phone",
+          "whatsapp",
+          "web"
+        ],
+        "approvalMode": "confirm",
+        "role": "Personal Assistant",
+        "language": "English"
+      },
+      "createdAt": "2026-02-06T17:50:18.788Z",
+      "updatedAt": "2026-02-06T17:50:41.077Z"
+    },
+    {
+      "id": "e32ca09a-b85e-4af5-94c3-576d0302be0c",
+      "userId": "574b32cd-ebe1-48e5-9560-cb80ff5746b7",
+      "name": "My Agent",
+      "purpose": "You are a helpful AI assistant.",
+      "tools": [],
+      "whatsappStatus": "not_connected",
+      "phoneNumber": null,
+      "phoneStatus": "pending",
+      "config": {
+        "name": "My Agent",
+        "role": "Executive Assistant",
+        "purpose": "You are a helpful AI assistant.",
+        "tone": "Professional",
+        "language": "English (US)",
+        "safetyFilter": true,
+        "officeHours": false
+      },
+      "createdAt": "2026-02-06T18:22:09.617Z",
+      "updatedAt": "2026-02-06T18:22:09.617Z"
+    },
+    {
+      "id": "ff464f7f-97e0-442e-8817-1635e05b0f23",
+      "userId": "+7672958382",
+      "name": "Ace",
+      "purpose": "Be my personal assistant for daily tasks",
+      "tools": [
+        "email",
+        "web",
+        "knowledge",
+        "whatsapp",
+        "phone",
+        "calendar"
+      ],
+      "channels": [
+        "whatsapp",
+        "voice",
+        "app"
+      ],
+      "config": {
+        "name": "Ace",
+        "purpose": "Be my personal assistant for daily tasks",
+        "tone": "casual",
+        "tools": [
+          "email",
+          "web",
+          "knowledge",
+          "whatsapp",
+          "phone",
+          "calendar"
+        ],
+        "channels": [
+          "whatsapp",
+          "voice",
+          "app"
+        ],
+        "approvalMode": "confirm",
+        "role": "Personal Assistant",
+        "language": "English"
+      },
+      "whatsappStatus": "not_configured",
+      "phoneStatus": "not_configured",
+      "status": "inactive",
+      "createdAt": "2026-03-07T07:35:26.348Z",
+      "updatedAt": "2026-03-07T07:35:26.348Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "9990a2ac",
+      "userId": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "name": "John Smith",
+      "phone": "+17675551234",
+      "email": "john@example.com",
+      "notes": "Client - owes invoice #1042",
+      "tags": [],
+      "createdAt": "2026-02-06T04:40:28.718Z"
+    },
+    {
+      "id": "f94fcf82",
+      "userId": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "name": "Sarah Chen",
+      "email": "sarah@burton.dm",
+      "notes": "Burton & Co - quarterly review due",
+      "tags": [],
+      "createdAt": "2026-02-06T04:43:38.199Z"
+    },
+    {
+      "id": "65ac5396",
+      "userId": "0f938184-d732-4047-af03-143eefcc197c",
+      "name": "Phillip Alleyne",
+      "phone": "+17672351274",
+      "email": "info@epic.dm",
+      "tags": [],
+      "createdAt": "2026-02-06T04:46:23.434Z"
+    },
+    {
+      "id": "764c735d",
+      "userId": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "name": "Mike Davis",
+      "phone": "+17675559876",
+      "tags": [],
+      "createdAt": "2026-02-06T06:06:15.200Z"
+    },
+    {
+      "id": "8a5d2c38",
+      "userId": "7ac4cfa2-ee4a-48c6-8ad1-e1396aa128d8",
+      "name": "Phillip Alleyne",
+      "phone": "+17672351274",
+      "tags": [],
+      "createdAt": "2026-02-06T16:08:03.540Z"
+    },
+    {
+      "id": "c03ce26f",
+      "userId": "7ac4cfa2-ee4a-48c6-8ad1-e1396aa128d8",
+      "name": "eric",
+      "phone": "17672958382",
+      "tags": [],
+      "createdAt": "2026-02-06T19:44:32.497Z"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "dd2aacdf",
+      "userId": "fc8c1b3b-b229-4a53-91af-85e2f3bfe856",
+      "contactId": "9990a2ac",
+      "channel": "whatsapp",
+      "messages": [
+        {
+          "id": "3e379151",
+          "direction": "outbound",
+          "text": "Hi John, just following up on invoice #1042. Could you let me know when we can expect payment? Thanks!",
+          "status": "sent",
+          "timestamp": "2026-02-06T04:40:33.254Z",
+          "approvedAt": "2026-02-06T04:40:37.927Z",
+          "sentAt": "2026-02-06T04:40:37.927Z"
+        }
+      ],
+      "status": "active",
+      "createdAt": "2026-02-06T04:40:33.254Z",
+      "updatedAt": "2026-02-06T04:40:37.927Z"
+    },
+    {
+      "id": "fee6cd5a",
+      "userId": "0f938184-d732-4047-af03-143eefcc197c",
+      "contactId": "65ac5396",
+      "channel": "whatsapp",
+      "messages": [
+        {
+          "id": "3265309f",
+          "direction": "outbound",
+          "text": "test",
+          "status": "sent",
+          "timestamp": "2026-02-06T04:46:32.422Z",
+          "approvedAt": "2026-02-06T04:46:36.118Z",
+          "sentAt": "2026-02-06T04:46:36.118Z"
+        },
+        {
+          "id": "c07e5573",
+          "direction": "outbound",
+          "text": "trewrw",
+          "status": "sent",
+          "timestamp": "2026-02-06T05:46:41.855Z",
+          "approvedAt": "2026-02-06T05:46:45.572Z",
+          "sentAt": "2026-02-06T05:46:45.572Z"
+        }
+      ],
+      "status": "active",
+      "createdAt": "2026-02-06T04:46:32.422Z",
+      "updatedAt": "2026-02-06T05:46:45.572Z"
+    },
+    {
+      "id": "0cdce0e0",
+      "userId": "7ac4cfa2-ee4a-48c6-8ad1-e1396aa128d8",
+      "contactId": "8a5d2c38",
+      "channel": "whatsapp",
+      "messages": [
+        {
+          "id": "40eca665",
+          "direction": "outbound",
+          "text": "test",
+          "status": "sent",
+          "timestamp": "2026-02-06T16:08:11.027Z",
+          "approvedAt": "2026-02-06T16:08:13.635Z",
+          "sentAt": "2026-02-06T16:08:13.635Z"
+        },
+        {
+          "id": "2b36b6e2",
+          "direction": "outbound",
+          "text": "yo",
+          "status": "sent",
+          "timestamp": "2026-02-06T18:20:55.509Z",
+          "approvedAt": "2026-02-06T18:20:56.875Z",
+          "sentAt": "2026-02-06T18:20:56.875Z"
+        }
+      ],
+      "status": "active",
+      "createdAt": "2026-02-06T16:08:11.027Z",
+      "updatedAt": "2026-02-06T18:20:56.875Z"
+    }
+  ]
+}

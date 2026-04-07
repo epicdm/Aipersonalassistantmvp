@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Channels</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.channel-card { margin: 0 16px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.channel-header { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+.channel-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.channel-info { flex: 1; }
+.channel-name { font-size: 14px; font-weight: 700; }
+.channel-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.channel-status-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; padding: 3px 10px; font-size: 11px; font-weight: 600; margin-top: 5px; }
+.connected { background: var(--bubble); color: var(--teal); }
+.disconnected { background: #FEE2E2; color: #991B1B; }
+.not-configured { background: var(--panel); color: var(--muted); }
+
+.channel-body { padding: 0 16px 14px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.channel-actions { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); background: var(--panel); }
+
+.webhook-box { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 11px; font-family: monospace; color: var(--muted); word-break: break-all; display: flex; align-items: center; gap: 8px; }
+.copy-btn { flex-shrink: 0; background: none; border: none; cursor: pointer; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Channels</div>
+        <div class="toolbar-sub">Connect your messaging & payments</div>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-ghost" onclick="loadChannels()">↻ Check Status</button>
+  </div>
+
+  <div class="content" id="channelList">
+    <div class="empty" style="padding-top:60px"><div class="spinner"></div></div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+let channelData = {}
+
+async function loadChannels() {
+  if (!TOKEN) return
+  try {
+    const res = await fetch(`${API}/channels?token=${TOKEN}`)
+    channelData = await res.json()
+  } catch(e) { channelData = {} }
+  renderChannels()
+}
+
+function renderChannels() {
+  const d = channelData
+  document.getElementById('channelList').innerHTML = `
+
+    <!-- WhatsApp Business API -->
+    <div class="section-label" style="margin-top:8px">Messaging</div>
+    <div class="channel-card">
+      <div class="channel-header">
+        <div class="channel-icon" style="background:#25D36620">📱</div>
+        <div class="channel-info">
+          <div class="channel-name">WhatsApp Business API</div>
+          <div class="channel-sub">Primary channel — all AI conversations flow here</div>
+          <div class="channel-status-badge ${d.whatsapp?.connected?'connected':'disconnected'}">
+            ${d.whatsapp?.connected ? '⬤ &nbsp;Connected' : '⬤ &nbsp;Disconnected'}
+          </div>
+        </div>
+      </div>
+      <div class="channel-body">
+        <div class="field-row">
+          <div class="input-group"><label class="input-label">Phone Number ID</label><input class="input" id="wa_phone_id" value="${d.whatsapp?.phoneNumberId||''}" placeholder="From Meta Business Manager" /></div>
+          <div class="input-group"><label class="input-label">WABA ID</label><input class="input" id="wa_waba_id" value="${d.whatsapp?.wabaId||''}" placeholder="WhatsApp Business Account ID" /></div>
+        </div>
+        <div class="input-group" style="margin-bottom:10px">
+          <label class="input-label">Access Token</label>
+          <input class="input" id="wa_token" type="password" value="${d.whatsapp?.token||''}" placeholder="EAAxxxxxxxxxxxxxxxx" />
+        </div>
+        <div class="input-group" style="margin-bottom:10px">
+          <label class="input-label">Webhook URL (paste in Meta)</label>
+          <div class="webhook-box">
+            <span id="waWebhook">${window.location.origin}/webhook/whatsapp</span>
+            <button class="copy-btn" onclick="copy('waWebhook')" title="Copy">📋</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Verify Token</label>
+          <div class="webhook-box">
+            <span id="waVerify">${d.whatsapp?.verifyToken||'isola_verify_' + Math.random().toString(36).slice(2,8)}</span>
+            <button class="copy-btn" onclick="copy('waVerify')" title="Copy">📋</button>
+          </div>
+        </div>
+      </div>
+      <div class="channel-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveChannel('whatsapp')">💾 Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="testChannel('whatsapp')">🔍 Test Connection</button>
+      </div>
+    </div>
+
+    <!-- Voice / SIP -->
+    <div class="channel-card">
+      <div class="channel-header">
+        <div class="channel-icon" style="background:#5B8DEF20">🎙</div>
+        <div class="channel-info">
+          <div class="channel-name">Voice Line (SIP / LiveKit)</div>
+          <div class="channel-sub">AI voice calls via your DID</div>
+          <div class="channel-status-badge ${d.voice?.connected?'connected':'not-configured'}">
+            ${d.voice?.connected ? '⬤ &nbsp;Active' : '○ &nbsp;Not configured'}
+          </div>
+        </div>
+      </div>
+      <div class="channel-body">
+        <div class="field-row">
+          <div class="input-group"><label class="input-label">DID Number</label><input class="input" id="voice_did" value="${d.voice?.did||''}" placeholder="+1 767 818 0000" /></div>
+          <div class="input-group"><label class="input-label">LiveKit Room</label><input class="input" id="voice_room" value="${d.voice?.room||''}" placeholder="isola-voice" /></div>
+        </div>
+      </div>
+      <div class="channel-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveChannel('voice')">💾 Save</button>
+      </div>
+    </div>
+
+    <!-- Payments -->
+    <div class="section-label">Payments</div>
+    <div class="channel-card">
+      <div class="channel-header">
+        <div class="channel-icon" style="background:#635BFF20">💳</div>
+        <div class="channel-info">
+          <div class="channel-name">Stripe</div>
+          <div class="channel-sub">Accept card payments via WhatsApp Pay links</div>
+          <div class="channel-status-badge ${d.stripe?.connected?'connected':'not-configured'}">
+            ${d.stripe?.connected ? '⬤ &nbsp;Live' : '○ &nbsp;Not configured'}
+          </div>
+        </div>
+      </div>
+      <div class="channel-body">
+        <div class="field-row">
+          <div class="input-group"><label class="input-label">Publishable Key</label><input class="input" id="stripe_pk" value="${d.stripe?.pk||''}" placeholder="pk_live_…" /></div>
+          <div class="input-group"><label class="input-label">Secret Key</label><input class="input" id="stripe_sk" type="password" value="${d.stripe?.sk||''}" placeholder="sk_live_…" /></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Webhook Secret</label>
+          <input class="input" id="stripe_whsec" type="password" value="${d.stripe?.webhookSecret||''}" placeholder="whsec_…" />
+        </div>
+      </div>
+      <div class="channel-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveChannel('stripe')">💾 Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="testChannel('stripe')">🔍 Test</button>
+      </div>
+    </div>
+
+    <!-- Magnus (Telecom) -->
+    <div class="channel-card">
+      <div class="channel-header">
+        <div class="channel-icon" style="background:#FFA72220">📡</div>
+        <div class="channel-info">
+          <div class="channel-name">Magnus Billing</div>
+          <div class="channel-sub">DID provisioning, call billing, top-up</div>
+          <div class="channel-status-badge ${d.magnus?.connected?'connected':'not-configured'}">
+            ${d.magnus?.connected ? '⬤ &nbsp;Connected' : '○ &nbsp;Not configured'}
+          </div>
+        </div>
+      </div>
+      <div class="channel-body">
+        <div class="field-row">
+          <div class="input-group"><label class="input-label">API Key</label><input class="input" id="magnus_key" value="${d.magnus?.apiKey||''}" placeholder="Magnus API key" /></div>
+          <div class="input-group"><label class="input-label">API Secret</label><input class="input" id="magnus_secret" type="password" value="${d.magnus?.apiSecret||''}" placeholder="Magnus API secret" /></div>
+        </div>
+      </div>
+      <div class="channel-actions">
+        <button class="btn btn-primary btn-sm" onclick="saveChannel('magnus')">💾 Save</button>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+  `
+}
+
+const CHANNEL_FIELDS = {
+  whatsapp: { phoneNumberId:'wa_phone_id', wabaId:'wa_waba_id', token:'wa_token' },
+  voice:    { did:'voice_did', room:'voice_room' },
+  stripe:   { pk:'stripe_pk', sk:'stripe_sk', webhookSecret:'stripe_whsec' },
+  magnus:   { apiKey:'magnus_key', apiSecret:'magnus_secret' },
+}
+
+async function saveChannel(ch) {
+  const fields = CHANNEL_FIELDS[ch]
+  const body = {}
+  Object.entries(fields).forEach(([k,id]) => { body[k] = document.getElementById(id)?.value||'' })
+  try {
+    await fetch(`${API}/channels/${ch}?token=${TOKEN}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    showToast(`${ch} saved ✓`)
+    loadChannels()
+  } catch(e) { showToast('Save failed') }
+}
+
+async function testChannel(ch) {
+  try {
+    const res = await fetch(`${API}/channels/${ch}/test?token=${TOKEN}`, { method:'POST' })
+    const d = await res.json()
+    showToast(d.ok ? `${ch}: Connected ✓` : `${ch}: ${d.error||'Failed'}`)
+  } catch(e) { showToast('Test failed') }
+}
+
+function copy(id) {
+  const text = document.getElementById(id)?.textContent
+  if (text) navigator.clipboard.writeText(text).then(() => showToast('Copied ✓'))
+}
+
+function showToast(msg) { const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000); }
+
+loadChannels()
+</script>
+</body>
+</html>

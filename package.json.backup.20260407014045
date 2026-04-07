@@ -4,10 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "build:dev": "prisma generate && prisma db push && next build",
-    "migrate:deploy": "prisma migrate deploy",
-    "migrate:dev": "prisma migrate dev",
+    "build": "prisma generate && (prisma db push --accept-data-loss || true) && next build",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
@@ -15,7 +12,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.82.0",
     "@base-ui/react": "^1.2.0",
     "@clerk/nextjs": "^6",
     "@fontsource/eb-garamond": "^5.2.7",

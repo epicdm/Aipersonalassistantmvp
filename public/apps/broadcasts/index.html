@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Broadcasts</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.split { display: flex; height: calc(100vh - 52px); }
+.left-pane { width: 300px; min-width: 300px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.right-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.pane-header { padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.broadcast-row { display: flex; flex-direction: column; gap: 3px; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+.broadcast-row:hover { background: var(--panel); }
+.broadcast-row.active { background: #e7f7ee; border-left: 3px solid var(--teal); }
+.br-name { font-size: 13px; font-weight: 600; }
+.br-sub { font-size: 11px; color: var(--muted); }
+.br-stats { display: flex; gap: 10px; margin-top: 4px; }
+.br-stat { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
+.compose-area { padding: 16px; }
+.preview-phone {
+  width: 260px; margin: 16px auto; background: #E5DDD5; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.preview-top { background: var(--teal); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.preview-name { font-size: 13px; font-weight: 600; color: #fff; }
+.preview-sub { font-size: 10px; color: rgba(255,255,255,0.7); }
+.preview-body { padding: 10px 8px; min-height: 120px; }
+.preview-bubble { background: #fff; border-radius: 8px 8px 8px 0; padding: 8px 10px; font-size: 12px; line-height: 1.5; max-width: 220px; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.preview-time { font-size: 10px; color: var(--muted); text-align: right; margin-top: 4px; }
+.audience-chip {
+  display: inline-flex; align-items: center; gap: 5px; background: var(--panel);
+  border-radius: 14px; padding: 4px 10px; font-size: 11px; font-weight: 500; cursor: pointer; margin: 3px;
+  border: 2px solid transparent; transition: all 0.1s;
+}
+.audience-chip.selected { background: var(--bubble); border-color: var(--teal); color: var(--teal); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Broadcasts</div>
+        <div class="toolbar-sub">Send to all or targeted groups</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="showCompose()">+ New Broadcast</button>
+  </div>
+
+  <div class="split">
+    <!-- History -->
+    <div class="left-pane">
+      <div class="pane-header">
+        Recent
+        <span id="totalCount" style="color:var(--text)">—</span>
+      </div>
+      <div style="flex:1;overflow-y:auto" id="broadcastList">
+        <div class="empty"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Compose / Detail -->
+    <div class="right-pane" id="rightPane">
+      <div class="compose-area" id="composeView">
+        <div style="margin-bottom:16px">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">New Broadcast</div>
+          <div style="font-size:12px;color:var(--muted)">Compose a WhatsApp message to send to selected contacts.</div>
+        </div>
+
+        <div class="input-group" style="margin-bottom:12px">
+          <label class="input-label">Audience</label>
+          <div id="audienceChips" style="display:flex;flex-wrap:wrap;margin-top:4px"></div>
+        </div>
+
+        <div class="input-group" style="margin-bottom:12px">
+          <label class="input-label">Message</label>
+          <textarea class="input" id="broadcastMsg" rows="5" placeholder="Hi {{name}}, this is EPIC Communications…" oninput="updatePreview()"></textarea>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Use {{name}} to personalize. Plain text, no HTML.</div>
+        </div>
+
+        <div class="input-group" style="margin-bottom:12px">
+          <label class="input-label">Schedule</label>
+          <select class="input" id="scheduleSelect">
+            <option value="now">Send Now</option>
+            <option value="later">Schedule for Later</option>
+          </select>
+        </div>
+        <div id="schedulePicker" style="display:none;margin-bottom:12px">
+          <input class="input" type="datetime-local" id="scheduleTime" />
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-phone">
+          <div class="preview-top">
+            <div style="width:32px;height:32px;border-radius:50%;background:#128C7E;display:flex;align-items:center;justify-content:center;font-size:14px">🤖</div>
+            <div><div class="preview-name">Your Business</div><div class="preview-sub">WhatsApp Business</div></div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-bubble" id="previewBubble">Your message will appear here…</div>
+            <div class="preview-time">now ✓✓</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn btn-primary btn-lg" style="flex:1" id="sendBtn" onclick="sendBroadcast()">📣 Send Broadcast</button>
+        </div>
+        <div id="sendResult" style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+let selectedAudience = new Set(['all'])
+
+const AUDIENCES = [
+  { id:'all', label:'All Contacts', icon:'👥' },
+  { id:'active', label:'Active', icon:'✅' },
+  { id:'inactive', label:'Inactive 7d', icon:'😴' },
+  { id:'paying', label:'Customers', icon:'💳' },
+  { id:'leads', label:'Leads', icon:'🎯' },
+]
+
+function renderAudience() {
+  document.getElementById('audienceChips').innerHTML = AUDIENCES.map(a => `
+    <div class="audience-chip ${selectedAudience.has(a.id)?'selected':''}" onclick="toggleAudience('${a.id}')">
+      ${a.icon} ${a.label}
+    </div>`).join('')
+}
+
+function toggleAudience(id) {
+  if (id === 'all') { selectedAudience = new Set(['all']) }
+  else {
+    selectedAudience.delete('all')
+    if (selectedAudience.has(id)) selectedAudience.delete(id)
+    else selectedAudience.add(id)
+    if (!selectedAudience.size) selectedAudience.add('all')
+  }
+  renderAudience()
+}
+
+function updatePreview() {
+  const msg = document.getElementById('broadcastMsg').value || 'Your message will appear here…'
+  document.getElementById('previewBubble').textContent = msg.replace('{{name}}', 'Maria')
+}
+
+document.getElementById('scheduleSelect').addEventListener('change', function() {
+  document.getElementById('schedulePicker').style.display = this.value === 'later' ? '' : 'none'
+})
+
+async function sendBroadcast() {
+  if (!TOKEN) { showToast('Missing auth token'); return }
+  const msg = document.getElementById('broadcastMsg').value.trim()
+  if (!msg) { showToast('Please write a message first'); return }
+  const btn = document.getElementById('sendBtn')
+  btn.disabled = true; btn.textContent = 'Sending…'
+  try {
+    const res = await fetch(`${API}/broadcasts?token=${TOKEN}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, audience: [...selectedAudience], schedule: document.getElementById('scheduleSelect').value === 'later' ? document.getElementById('scheduleTime').value : null })
+    })
+    const d = await res.json()
+    document.getElementById('sendResult').textContent = `✅ Sent to ${d.count || 0} contacts`
+    document.getElementById('broadcastMsg').value = ''
+    updatePreview()
+    loadHistory()
+  } catch(e) {
+    document.getElementById('sendResult').textContent = '❌ Send failed — try again'
+  }
+  btn.disabled = false; btn.textContent = '📣 Send Broadcast'
+}
+
+async function loadHistory() {
+  if (!TOKEN) return
+  const el = document.getElementById('broadcastList')
+  try {
+    const res = await fetch(`${API}/broadcasts?token=${TOKEN}`)
+    const d = await res.json()
+    const items = d.broadcasts || []
+    document.getElementById('totalCount').textContent = items.length
+    if (!items.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📣</div><h3>No broadcasts yet</h3><p>Send your first broadcast above.</p></div>'; return }
+    el.innerHTML = items.map(b => `
+      <div class="broadcast-row">
+        <div class="br-name">${b.label || 'Broadcast'}</div>
+        <div class="br-sub">${b.audience} · ${b.date}</div>
+        <div class="br-stats">
+          <div class="br-stat" style="background:var(--bubble);color:var(--teal)">✓ ${b.delivered||0}</div>
+          <div class="br-stat" style="background:var(--panel);color:var(--muted)">↩ ${b.replied||0}</div>
+        </div>
+      </div>`).join('')
+  } catch(e) { el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div><h3>Offline</h3></div>' }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div'); t.className='toast'; t.textContent=msg
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 3000)
+}
+
+renderAudience()
+loadHistory()
+</script>
+</body>
+</html>

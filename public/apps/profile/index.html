@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Business Profile</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.profile-hero {
+  margin: 14px 16px; padding: 20px; background: var(--teal);
+  border-radius: 14px; display: flex; align-items: center; gap: 16px;
+}
+.profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%; background: #128C7E;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile-avatar-edit { position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; font-size: 18px; border-radius: 50%; }
+.profile-avatar:hover .profile-avatar-edit { display: flex; }
+.profile-info { flex: 1; }
+.profile-name { font-size: 18px; font-weight: 700; color: #fff; }
+.profile-phone { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 3px; }
+.profile-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 3px 10px; font-size: 11px; color: #fff; margin-top: 6px; }
+
+.form-section { margin: 0 16px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.form-section-header { padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+.form-section-body { padding: 14px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hours-grid { display: flex; flex-direction: column; gap: 6px; }
+.day-row { display: flex; align-items: center; gap: 10px; }
+.day-label { width: 72px; font-size: 12px; font-weight: 500; }
+.save-bar { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; background: var(--bg); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Business Profile</div>
+        <div class="toolbar-sub">How Aria represents your business</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Hero -->
+    <div class="profile-hero">
+      <div class="profile-avatar" onclick="document.getElementById('logoFile').click()">
+        <div id="logoEmoji">🏢</div>
+        <div class="profile-avatar-edit">📷</div>
+      </div>
+      <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+      <div class="profile-info">
+        <div class="profile-name" id="heroName">Your Business</div>
+        <div class="profile-phone" id="heroPhone">+1 767 000 0000</div>
+        <div class="profile-badge">✅ &nbsp;WhatsApp Business verified</div>
+      </div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="form-section">
+      <div class="form-section-header">🏢 Basic Information</div>
+      <div class="form-section-body">
+        <div class="form-grid" style="margin-bottom:10px">
+          <div class="input-group"><label class="input-label">Business Name</label><input class="input" id="bizName" oninput="updateHero()" /></div>
+          <div class="input-group"><label class="input-label">Display Phone</label><input class="input" id="bizPhone" oninput="updateHero()" /></div>
+        </div>
+        <div class="input-group" style="margin-bottom:10px">
+          <label class="input-label">Description</label>
+          <textarea class="input" id="bizDesc" rows="3" placeholder="Brief description of your business…"></textarea>
+        </div>
+        <div class="form-grid" style="margin-bottom:10px">
+          <div class="input-group"><label class="input-label">Website</label><input class="input" id="bizWeb" placeholder="https://epic.dm" /></div>
+          <div class="input-group"><label class="input-label">Email</label><input class="input" id="bizEmail" placeholder="hello@epic.dm" /></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Address</label>
+          <input class="input" id="bizAddr" placeholder="Roseau, Dominica" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Category -->
+    <div class="form-section">
+      <div class="form-section-header">📂 Business Category</div>
+      <div class="form-section-body">
+        <select class="input" id="bizCategory">
+          <option>Internet Service Provider</option>
+          <option>IT / Computer Repair</option>
+          <option>Telecommunications</option>
+          <option>Retail</option>
+          <option>Professional Services</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Hours -->
+    <div class="form-section">
+      <div class="form-section-header">🕐 Business Hours</div>
+      <div class="form-section-body">
+        <div class="hours-grid" id="hoursGrid"></div>
+      </div>
+    </div>
+
+    <!-- Social -->
+    <div class="form-section">
+      <div class="form-section-header">🌐 Social Links</div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="input-group"><label class="input-label">Facebook</label><input class="input" id="socialFb" placeholder="facebook.com/…" /></div>
+          <div class="input-group"><label class="input-label">Instagram</label><input class="input" id="socialIg" placeholder="@yourhandle" /></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn btn-primary btn-lg" style="flex:1" onclick="saveProfile()">💾 Save Profile</button>
+      <div id="saveMsg" style="font-size:12px;color:var(--muted)"></div>
+    </div>
+
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+
+function buildHoursGrid(hours) {
+  const el = document.getElementById('hoursGrid')
+  el.innerHTML = DAYS.map(day => {
+    const val = hours?.[day] || 'closed'
+    const closed = val === 'closed'
+    const [fr, to] = closed ? ['08:00','17:00'] : val.split('-')
+    return `
+      <div class="day-row">
+        <div class="day-label">${day.slice(0,3)}</div>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+          <input type="checkbox" ${!closed?'checked':''} id="day_${day}" onchange="toggleDay('${day}',this)"> Open
+        </label>
+        <div id="dtime_${day}" style="${closed?'opacity:0.3;pointer-events:none':''}; display:flex;align-items:center;gap:6px">
+          <input class="input" style="width:80px;height:26px;padding:3px 7px;font-size:11px" type="time" value="${fr}" id="from_${day}">
+          <span style="font-size:10px;color:var(--muted)">–</span>
+          <input class="input" style="width:80px;height:26px;padding:3px 7px;font-size:11px" type="time" value="${to}" id="to_${day}">
+        </div>
+      </div>`
+  }).join('')
+}
+
+function toggleDay(day, cb) {
+  const row = document.getElementById('dtime_'+day)
+  row.style.opacity = cb.checked?'1':'0.3'
+  row.style.pointerEvents = cb.checked?'':'none'
+}
+
+function updateHero() {
+  const n = document.getElementById('bizName').value
+  const p = document.getElementById('bizPhone').value
+  if (n) document.getElementById('heroName').textContent = n
+  if (p) document.getElementById('heroPhone').textContent = p
+}
+
+async function loadProfile() {
+  if (!TOKEN) return
+  try {
+    const res = await fetch(`${API}/profile?token=${TOKEN}`)
+    const d = await res.json()
+    const p = d.profile || {}
+    document.getElementById('bizName').value = p.name||''
+    document.getElementById('bizPhone').value = p.phone||''
+    document.getElementById('bizDesc').value = p.description||''
+    document.getElementById('bizWeb').value = p.website||''
+    document.getElementById('bizEmail').value = p.email||''
+    document.getElementById('bizAddr').value = p.address||''
+    document.getElementById('socialFb').value = p.facebook||''
+    document.getElementById('socialIg').value = p.instagram||''
+    if (p.category) document.getElementById('bizCategory').value = p.category
+    if (p.name) { document.getElementById('heroName').textContent = p.name }
+    if (p.phone) { document.getElementById('heroPhone').textContent = p.phone }
+    if (p.logo) { const img = document.createElement('img'); img.src = p.logo; document.getElementById('logoEmoji').replaceWith(img) }
+    buildHoursGrid(p.hours)
+  } catch(e) { buildHoursGrid(null) }
+}
+
+async function saveProfile() {
+  const hours = {}
+  DAYS.forEach(day => {
+    const open = document.getElementById('day_'+day)?.checked
+    hours[day] = open ? `${document.getElementById('from_'+day).value}-${document.getElementById('to_'+day).value}` : 'closed'
+  })
+  const body = {
+    name: v('bizName'), phone: v('bizPhone'), description: v('bizDesc'),
+    website: v('bizWeb'), email: v('bizEmail'), address: v('bizAddr'),
+    category: v('bizCategory'), facebook: v('socialFb'), instagram: v('socialIg'),
+    hours
+  }
+  try {
+    await fetch(`${API}/profile?token=${TOKEN}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    document.getElementById('saveMsg').textContent = '✅ Saved'
+    setTimeout(()=>{ document.getElementById('saveMsg').textContent='' }, 2000)
+  } catch(e) { document.getElementById('saveMsg').textContent = '❌ Error saving' }
+}
+
+async function uploadLogo(input) {
+  if (!input.files[0]) return
+  const fd = new FormData(); fd.append('file', input.files[0])
+  try {
+    const res = await fetch(`${API}/upload?token=${TOKEN}`, { method:'POST', body: fd })
+    const d = await res.json()
+    const img = document.createElement('img'); img.src = d.url
+    const em = document.getElementById('logoEmoji')
+    if (em) em.replaceWith(img)
+    else document.querySelector('.profile-avatar').prepend(img)
+  } catch(e) {}
+}
+
+function v(id) { const el=document.getElementById(id); return el?el.value:'' }
+
+loadProfile()
+</script>
+</body>
+</html>

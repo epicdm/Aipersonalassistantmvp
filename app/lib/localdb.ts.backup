@@ -1,0 +1,95 @@
+import { Low } from "lowdb";
+import { JSONFile } from "lowdb/node";
+import path from "path";
+import fs from "fs";
+
+export type User = {
+  id: string;
+  email: string;
+  name?: string;
+  passwordHash: string;
+  createdAt: string;
+};
+
+export type Contact = {
+  id: string;
+  userId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  tags?: string[];
+  createdAt: string;
+};
+
+export type Conversation = {
+  id: string;
+  userId: string;
+  contactId: string;
+  channel: "whatsapp" | "email" | "sms";
+  messages: ConversationMessage[];
+  status: "active" | "paused" | "closed";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ConversationMessage = {
+  id: string;
+  direction: "outbound" | "inbound";
+  text: string;
+  status: "draft" | "pending_approval" | "sent" | "delivered" | "failed";
+  approvedAt?: string;
+  sentAt?: string;
+  timestamp: string;
+};
+
+export type Agent = {
+  id: string;
+  userId: string;
+  name: string;
+  purpose?: string | null;
+  tools: string[];
+  whatsappStatus: string;
+  phoneNumber?: string | null;
+  phoneStatus: string;
+  channels?: string[] | string;
+  containerID?: string;
+  gatewayToken?: string;
+  gatewayPort?: number;
+  config?: any;
+  soul?: string;
+  deployment?: any;
+  status?: string;
+  deployedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  [key: string]: any;
+};
+
+export type DBData = {
+  users: User[];
+  agents: Agent[];
+  contacts: Contact[];
+  conversations: Conversation[];
+};
+
+const dataDir = path.join(process.cwd(), "data");
+const dbFile = path.join(dataDir, "db.json");
+
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify({ users: [], agents: [], contacts: [], conversations: [] }, null, 2));
+
+const adapter = new JSONFile<DBData>(dbFile);
+export const db = new Low<DBData>(adapter, { users: [], agents: [], contacts: [], conversations: [] });
+
+export async function loadDb() {
+  await db.read();
+  db.data ||= { users: [], agents: [], contacts: [], conversations: [] };
+  // Migrate: add contacts/conversations arrays if missing
+  if (!db.data.contacts) db.data.contacts = [];
+  if (!db.data.conversations) db.data.conversations = [];
+}
+
+export async function saveDb() {
+  await db.write();
+}

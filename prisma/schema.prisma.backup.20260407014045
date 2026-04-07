@@ -78,11 +78,6 @@ model Agent {
   isActive                Boolean           @default(true)
   inboundRouting          String            @default("whatsapp")
   whatsappPhone           String?
-  // Phase 3: multi-number support + Chatwoot sync
-  tenantId                String?   // FK to TenantRegistry.tenantId (nullable, set at signup)
-  waPhoneNumberId         String?   // Meta phone_number_id (canonical, replaces whatsappNumber/etc)
-  waDisplayNumber         String?   // E.164 display number e.g. +17678180001
-  chatwootInboxId         String?   // Chatwoot inbox ID for this agent's number
   user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities              AgentActivity[]
   agentContacts           AgentContact[]
@@ -91,8 +86,6 @@ model Agent {
   conversations           Conversation[]
   knowledgeSources        KnowledgeSource[]
   messageDrafts           MessageDraft[]
-  watchSessions         WatchSession[]
-  whispers              WhisperMessage[]
   MessageQueue            MessageQueue[]
   PendingReply            PendingReply[]
   SentSummary             SentSummary[]
@@ -101,8 +94,6 @@ model Agent {
   @@index([shareCode])
   @@index([ownerPhone])
   @@index([userId])
-  @@index([waPhoneNumberId])
-  @@index([tenantId])
 }
 
 model Reminder {
@@ -166,7 +157,6 @@ model Contact {
   doNotContactAt DateTime?
   ownerNotes     String?
   primaryAgentId String?
-  chatwootContactId  String?   // Phase 3: Chatwoot contact ID for operator console sync
   stage          String?
   tags           String[]       @default([])
   agentContacts  AgentContact[]
@@ -184,18 +174,15 @@ model Conversation {
   channel            String         @default("whatsapp")
   status             String         @default("active")
   createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
   escalationFlag     String?
   lastMessageAt      DateTime       @default(now())
   lastMessagePreview String?
   phone              String?
   sessionType        String         @default("customer")
-  chatwootConversationId String?        // Phase 3: Chatwoot conversation ID for sync
   agent              Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
   contact            Contact?       @relation(fields: [contactId], references: [id])
   user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   messageDrafts      MessageDraft[]
-  whisperMessages     WhisperMessage[]
 
   @@index([agentId, phone])
   @@index([agentId, sessionType])
@@ -401,79 +388,7 @@ model TenantRegistry {
   template        String   @default("professional")
   status          String   @default("provisioning")
   createdAt       DateTime @default(now())
-  // Sprint 0: per-tenant envelope encryption
-  tenantDek       String?  // AES-256-GCM encrypted DEK (encrypted under TENANT_MASTER_KEY)
-  // Phase 1: Chatwoot provisioning
-  chatwootAccountId    String?
-  chatwootStatus       String?  // pending | provisioned | failed
-  chatwootProvisionedAt DateTime?
-  // Fields present in signup route (were missing from schema — fixed Phase 1)
-  businessName         String?
-  businessId           String?
-  wabaId               String?
-  displayPhone         String?
-  tokenExpiresAt       DateTime?
-  tokenType            String?  @default("expiring")
-  ownerPhone           String?  // for welcome message; populated from displayPhone at signup
-  // Phase 1: routing remediation prep (06-phase0-routing-remediation.md)
-  // When populated, overrides port-based container URL in webhook routing.
-  containerUrl         String?
-  didNumber            String?
 
   @@index([waPhoneNumberId])
   @@map("tenant_registry")
 }
-
-// Dead-letter queue for failed webhook deliveries to tenant containers.
-// Populated when a container is unreachable or returns an error.
-// Retry worker polls this table and re-delivers on container recovery.
-model DeadLetter {
-  id            String   @id @default(cuid())
-  tenantId      String?
-  waPhoneNumberId String?
-  payload       Json
-  attempts      Int      @default(1)
-  createdAt     DateTime @default(now())
-  lastAttemptAt DateTime @default(now())
-  failureReason String
-  resolved      Boolean  @default(false)
-  resolvedAt    DateTime?
-
-  @@index([tenantId, resolved, createdAt])
-  @@index([resolved, lastAttemptAt])
-  @@map("dead_letter")
-}
-
-
-model WatchSession {
-  id          String    @id @default(cuid())
-  agentId     String
-  ownerPhone  String
-  mode        String    @default("watch") // watch | takeover
-  startedAt   DateTime  @default(now())
-  endedAt     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
-  @@index([agentId, ownerPhone])
-  @@index([mode])
-}
-
-
-
-model WhisperMessage {
-  id              String   @id @default(cuid())
-  conversationId  String
-  agentId         String
-  content         String
-  createdAt       DateTime @default(now())
-  
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  agent           Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
-  @@index([conversationId])
-  @@index([agentId])
-}
-

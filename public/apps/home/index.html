@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Home</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+.agent-card {
+  margin: 0 16px 12px; padding: 16px 18px; background: #054640;
+  border-radius: 12px; display: flex; align-items: center; gap: 14px;
+}
+.agent-avatar {
+  width: 44px; height: 44px; border-radius: 50%; background: #075E54;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  flex-shrink: 0; position: relative;
+}
+.agent-online {
+  position: absolute; bottom: 0; right: 0; width: 12px; height: 12px;
+  border-radius: 50%; background: #25D366; border: 2px solid #054640;
+}
+.agent-body { flex: 1; }
+.agent-name { font-size: 14px; font-weight: 600; color: #E9EDEF; }
+.agent-sub { font-size: 11px; color: #aebac1; margin-top: 2px; }
+.agent-tick { font-size: 11px; color: #00A884; margin-top: 4px; }
+.pause-btn {
+  padding: 6px 12px; background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+  font-size: 11px; color: #E9EDEF; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.pause-btn:hover { background: rgba(255,255,255,0.18); }
+.tip-bar {
+  margin: 0 16px 16px; padding: 10px 14px; background: var(--bubble);
+  border-radius: 8px; font-size: 11px; color: #054640; line-height: 1.6;
+}
+.feed-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.feed-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--panel); border-radius: 10px; cursor: pointer;
+  transition: background 0.1s;
+}
+.feed-row:hover { background: var(--border); }
+.feed-icon {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.feed-body { flex: 1; }
+.feed-name { font-size: 13px; font-weight: 600; }
+.feed-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.feed-time { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.feed-badge { width: 20px; height: 20px; border-radius: 50%; background: var(--green); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.live-badge {
+  display: flex; align-items: center; gap: 5px; background: var(--bubble);
+  border-radius: 12px; padding: 3px 10px; font-size: 11px; font-weight: 500; color: var(--teal);
+}
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div class="toolbar h1" style="margin:0;font-size:14px">Home</div>
+        <div class="toolbar-sub" id="greetLine">Good morning, EPIC 👋</div>
+      </div>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div> Live</div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-label">Convos Handled</div><div class="stat-value" id="statConvos">—</div><div class="stat-delta" style="color:var(--teal)" id="statConvosDelta"></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--epic-green)"></div><div class="stat-label">AI Revenue</div><div class="stat-value" id="statRevenue">—</div><div class="stat-delta" style="color:var(--epic-green)" id="statRevenueDelta"></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal-active)"></div><div class="stat-label">AI Handled</div><div class="stat-value" id="statHandled">—</div><div class="stat-delta" style="color:var(--teal-active)" id="statHandledDelta"></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--warn)"></div><div class="stat-label">Need Attention</div><div class="stat-value" id="statAttention">—</div><div class="stat-delta" style="color:var(--warn)" id="statAttentionDelta"></div></div>
+    </div>
+
+    <!-- Agent status -->
+    <div class="agent-card" id="agentCard">
+      <div class="agent-avatar">🤖<div class="agent-online"></div></div>
+      <div class="agent-body">
+        <div class="agent-name" id="agentName">Aria is active</div>
+        <div class="agent-sub">Handling all WhatsApp messages &amp; calls</div>
+        <div class="agent-tick" id="agentTick">✓✓ Checking…</div>
+      </div>
+      <button class="pause-btn" id="pauseBtn" onclick="toggleAgent()">⏸ Pause</button>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="section-label">Recent Activity</div>
+    <div class="feed-list" id="feedList">
+      <div class="empty"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Tip -->
+    <div class="tip-bar" id="tipBar" style="display:none"></div>
+  </div>
+
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+const COLORS = ['#5B8DEF','#E67E22','#075E54','#8E44AD','#F15C6D','#128C7E','#3A9B1E']
+function colorFor(str) { let h=0; for(let c of str) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; }
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function greet() {
+  const h = new Date().getHours()
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+}
+document.getElementById('greetLine').textContent = greet() + ', EPIC 👋'
+
+async function load() {
+  if (!TOKEN) { showAuthError(); return; }
+  try {
+    const res = await fetch(`${API}/home?token=${TOKEN}`)
+    if (res.status === 401) { showAuthError(); return; }
+    const d = await res.json()
+
+    // Stats
+    document.getElementById('statConvos').textContent = d.stats?.convos ?? '—'
+    document.getElementById('statConvosDelta').textContent = d.stats?.convosDelta ?? ''
+    document.getElementById('statRevenue').textContent = d.stats?.revenue ?? '—'
+    document.getElementById('statRevenueDelta').textContent = d.stats?.revenueDelta ?? ''
+    document.getElementById('statHandled').textContent = d.stats?.handled ?? '—'
+    document.getElementById('statHandledDelta').textContent = d.stats?.handledDelta ?? ''
+    document.getElementById('statAttention').textContent = d.stats?.attention ?? '—'
+    document.getElementById('statAttentionDelta').textContent = d.stats?.attentionDelta ?? ''
+
+    // Agent
+    const agent = d.agent || {}
+    document.getElementById('agentName').textContent = (agent.name || 'Aria') + (agent.active ? ' is active' : ' is paused')
+    document.getElementById('agentTick').textContent = agent.lastMessage ? `✓✓ Last message: ${agent.lastMessage}` : ''
+    document.getElementById('pauseBtn').textContent = agent.active ? '⏸ Pause' : '▶ Resume'
+    document.getElementById('agentCard').style.background = agent.active ? '#054640' : '#2a2a2a'
+
+    // Feed
+    renderFeed(d.activity || [])
+
+    // Tip
+    if (d.tip) {
+      const t = document.getElementById('tipBar')
+      t.innerHTML = '💡 <strong>Tip:</strong> ' + d.tip
+      t.style.display = 'block'
+    }
+  } catch(e) {
+    renderFeed([])
+  }
+}
+
+function renderFeed(items) {
+  const el = document.getElementById('feedList')
+  if (!items.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✨</div><h3>All caught up</h3><p>No recent activity to show.</p></div>'
+    return
+  }
+  el.innerHTML = items.map(item => `
+    <div class="feed-row">
+      <div class="feed-icon" style="background:${colorFor(item.label||'')}">${item.icon || initials(item.label||'?')}</div>
+      <div class="feed-body">
+        <div class="feed-name">${item.label}</div>
+        <div class="feed-sub">${item.detail || ''}</div>
+      </div>
+      <div class="feed-time">${item.time || ''}</div>
+      ${item.unread ? `<div class="feed-badge">${item.unread}</div>` : ''}
+    </div>`).join('')
+}
+
+async function toggleAgent() {
+  if (!TOKEN) return
+  const btn = document.getElementById('pauseBtn')
+  const paused = btn.textContent.includes('Pause')
+  btn.disabled = true
+  try {
+    await fetch(`${API}/agent/toggle?token=${TOKEN}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: !paused }) })
+    load()
+  } finally { btn.disabled = false }
+}
+
+function showAuthError() {
+  document.getElementById('feedList').innerHTML = '<div class="empty"><div class="empty-icon">🔐</div><h3>Not authorized</h3><p>Missing authentication token.</p></div>'
+}
+
+load()
+setInterval(load, 30000)
+</script>
+</body>
+</html>

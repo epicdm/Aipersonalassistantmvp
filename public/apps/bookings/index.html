@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Bookings</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.split { display: flex; height: calc(100vh - 52px); }
+.left-pane { width: 280px; min-width: 280px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.right-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--panel); }
+.pane-header { padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); }
+.booking-row {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s;
+}
+.booking-row:hover { background: #f5f5f5; }
+.booking-row.active { background: #e7f7ee; border-left: 3px solid var(--teal); }
+.booking-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.booking-body { flex: 1; }
+.booking-name { font-size: 13px; font-weight: 600; }
+.booking-service { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.booking-time { font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+.detail-card { margin: 14px; background: var(--bg); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; }
+.detail-header { padding: 14px 16px; background: var(--teal); }
+.detail-name { font-size: 16px; font-weight: 700; color: #fff; }
+.detail-when { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+.detail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.detail-row { display: flex; align-items: center; gap: 10px; }
+.detail-icon { font-size: 18px; width: 28px; text-align: center; }
+.detail-text { flex: 1; }
+.detail-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.detail-value { font-size: 13px; font-weight: 500; margin-top: 1px; }
+.action-row-btns { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+
+.status-chip { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.status-confirmed { background: var(--bubble); color: var(--teal); }
+.status-pending { background: #FFF3CD; color: #856404; }
+.status-cancelled { background: #FEE2E2; color: #991B1B; }
+.status-completed { background: var(--panel); color: var(--muted); }
+
+.empty-detail { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 40px; text-align: center; gap: 10px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Bookings</div>
+        <div class="toolbar-sub" id="bookingCount">Loading…</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <select class="input" style="height:30px;width:120px;padding:4px 8px;font-size:12px" id="statusFilter" onchange="loadBookings()">
+        <option value="">All</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="pending">Pending</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="showNewBooking()">+ Add</button>
+    </div>
+  </div>
+
+  <div class="split">
+    <!-- List -->
+    <div class="left-pane">
+      <div class="pane-header">Upcoming</div>
+      <div style="flex:1;overflow-y:auto" id="bookingList">
+        <div class="empty"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div class="right-pane" id="detailPane">
+      <div class="empty-detail">
+        <div style="font-size:40px">📅</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">Select a booking</div>
+        <div style="font-size:12px">Click any booking to see details and take action.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+let bookings = []
+let selected = null
+
+const STATUS_COLOR = { confirmed:'var(--green)', pending:'var(--warn)', cancelled:'var(--error)', completed:'var(--border)' }
+const STATUS_CLASS = { confirmed:'status-confirmed', pending:'status-pending', cancelled:'status-cancelled', completed:'status-completed' }
+
+async function loadBookings() {
+  if (!TOKEN) return
+  const status = document.getElementById('statusFilter').value
+  try {
+    const res = await fetch(`${API}/bookings?token=${TOKEN}${status?'&status='+status:''}`)
+    const d = await res.json()
+    bookings = d.bookings || []
+    document.getElementById('bookingCount').textContent = `${bookings.length} booking${bookings.length!==1?'s':''}`
+    renderList()
+  } catch(e) {}
+}
+
+function renderList() {
+  const el = document.getElementById('bookingList')
+  if (!bookings.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><h3>No bookings</h3><p>Aria will add them here automatically.</p></div>'
+    return
+  }
+  el.innerHTML = bookings.map((b,i) => `
+    <div class="booking-row ${selected===i?'active':''}" onclick="selectBooking(${i})">
+      <div class="booking-dot" style="background:${STATUS_COLOR[b.status]||'var(--border)'}"></div>
+      <div class="booking-body">
+        <div class="booking-name">${b.contactName || 'Unknown'}</div>
+        <div class="booking-service">${b.service || 'Appointment'}</div>
+        <div style="margin-top:4px"><span class="status-chip ${STATUS_CLASS[b.status]||''}">${b.status||'pending'}</span></div>
+      </div>
+      <div class="booking-time">${b.dateShort || b.date || ''}</div>
+    </div>`).join('')
+}
+
+function selectBooking(i) {
+  selected = i
+  renderList()
+  const b = bookings[i]
+  document.getElementById('detailPane').innerHTML = `
+    <div class="detail-card">
+      <div class="detail-header">
+        <div class="detail-name">${b.contactName || 'Unknown'}</div>
+        <div class="detail-when">${b.date || ''} ${b.time ? '· ' + b.time : ''}</div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-row"><div class="detail-icon">🔧</div><div class="detail-text"><div class="detail-label">Service</div><div class="detail-value">${b.service||'Appointment'}</div></div></div>
+        <div class="detail-row"><div class="detail-icon">📱</div><div class="detail-text"><div class="detail-label">Contact</div><div class="detail-value">${b.phone||'—'}</div></div></div>
+        <div class="detail-row"><div class="detail-icon">📍</div><div class="detail-text"><div class="detail-label">Location</div><div class="detail-value">${b.location||'TBD'}</div></div></div>
+        <div class="detail-row"><div class="detail-icon">💬</div><div class="detail-text"><div class="detail-label">Notes</div><div class="detail-value">${b.notes||'None'}</div></div></div>
+        <div class="detail-row"><div class="detail-icon">💰</div><div class="detail-text"><div class="detail-label">Amount</div><div class="detail-value">${b.amount||'—'}</div></div></div>
+        <div class="detail-row"><div class="detail-icon">🤖</div><div class="detail-text"><div class="detail-label">Booked via</div><div class="detail-value">${b.source||'WhatsApp AI'}</div></div></div>
+      </div>
+      <div class="action-row-btns">
+        ${b.status!=='confirmed'?`<button class="btn btn-success btn-sm" onclick="updateStatus(${i},'confirmed')">✅ Confirm</button>`:''}
+        ${b.status!=='cancelled'?`<button class="btn btn-danger btn-sm" onclick="updateStatus(${i},'cancelled')">✗ Cancel</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="sendReminder(${i})">📤 Send Reminder</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="deleteBooking(${i})">🗑</button>
+      </div>
+    </div>`
+}
+
+async function updateStatus(i, status) {
+  const b = bookings[i]
+  try {
+    await fetch(`${API}/bookings/${b.id}?token=${TOKEN}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status}) })
+    bookings[i].status = status
+    renderList(); selectBooking(i)
+  } catch(e) {}
+}
+
+async function sendReminder(i) {
+  const b = bookings[i]
+  try {
+    await fetch(`${API}/bookings/${b.id}/remind?token=${TOKEN}`, { method:'POST' })
+    showToast('Reminder sent via WhatsApp ✓')
+  } catch(e) {}
+}
+
+async function deleteBooking(i) {
+  if (!confirm('Delete this booking?')) return
+  const b = bookings[i]
+  try {
+    await fetch(`${API}/bookings/${b.id}?token=${TOKEN}`, { method:'DELETE' })
+    bookings.splice(i,1); selected=null
+    document.getElementById('detailPane').innerHTML = '<div class="empty-detail"><div style="font-size:40px">📅</div><div>Select a booking</div></div>'
+    renderList()
+  } catch(e) {}
+}
+
+function showNewBooking() {
+  document.getElementById('detailPane').innerHTML = `
+    <div class="detail-card">
+      <div class="detail-header"><div class="detail-name">New Booking</div></div>
+      <div class="detail-body">
+        <div class="input-group"><label class="input-label">Contact Name</label><input class="input" id="nb_name" placeholder="John Smith" /></div>
+        <div class="input-group"><label class="input-label">Phone</label><input class="input" id="nb_phone" placeholder="+1 767 555 0000" /></div>
+        <div class="input-group"><label class="input-label">Service</label><input class="input" id="nb_service" placeholder="PC Repair / Internet Setup…" /></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="input-group"><label class="input-label">Date</label><input class="input" id="nb_date" type="date" /></div>
+          <div class="input-group"><label class="input-label">Time</label><input class="input" id="nb_time" type="time" /></div>
+        </div>
+        <div class="input-group"><label class="input-label">Notes</label><textarea class="input" id="nb_notes" rows="2"></textarea></div>
+      </div>
+      <div class="action-row-btns">
+        <button class="btn btn-primary" onclick="createBooking()">📅 Create Booking</button>
+        <button class="btn btn-ghost" onclick="cancelNew()">Cancel</button>
+      </div>
+    </div>`
+}
+
+async function createBooking() {
+  const body = { contactName:v('nb_name'), phone:v('nb_phone'), service:v('nb_service'), date:v('nb_date'), time:v('nb_time'), notes:v('nb_notes'), status:'confirmed' }
+  try {
+    await fetch(`${API}/bookings?token=${TOKEN}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    loadBookings()
+  } catch(e) {}
+}
+
+function cancelNew() {
+  selected = null
+  document.getElementById('detailPane').innerHTML = '<div class="empty-detail"><div style="font-size:40px">📅</div><div style="font-size:14px;font-weight:600;color:var(--text)">Select a booking</div></div>'
+}
+
+function v(id) { const el=document.getElementById(id); return el?el.value:'' }
+function showToast(msg) { const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000); }
+
+loadBookings()
+</script>
+</body>
+</html>

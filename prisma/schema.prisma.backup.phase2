@@ -78,11 +78,6 @@ model Agent {
   isActive                Boolean           @default(true)
   inboundRouting          String            @default("whatsapp")
   whatsappPhone           String?
-  // Phase 3: multi-number support + Chatwoot sync
-  tenantId                String?   // FK to TenantRegistry.tenantId (nullable, set at signup)
-  waPhoneNumberId         String?   // Meta phone_number_id (canonical, replaces whatsappNumber/etc)
-  waDisplayNumber         String?   // E.164 display number e.g. +17678180001
-  chatwootInboxId         String?   // Chatwoot inbox ID for this agent's number
   user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities              AgentActivity[]
   agentContacts           AgentContact[]
@@ -91,8 +86,6 @@ model Agent {
   conversations           Conversation[]
   knowledgeSources        KnowledgeSource[]
   messageDrafts           MessageDraft[]
-  watchSessions         WatchSession[]
-  whispers              WhisperMessage[]
   MessageQueue            MessageQueue[]
   PendingReply            PendingReply[]
   SentSummary             SentSummary[]
@@ -101,8 +94,6 @@ model Agent {
   @@index([shareCode])
   @@index([ownerPhone])
   @@index([userId])
-  @@index([waPhoneNumberId])
-  @@index([tenantId])
 }
 
 model Reminder {
@@ -166,7 +157,6 @@ model Contact {
   doNotContactAt DateTime?
   ownerNotes     String?
   primaryAgentId String?
-  chatwootContactId  String?   // Phase 3: Chatwoot contact ID for operator console sync
   stage          String?
   tags           String[]       @default([])
   agentContacts  AgentContact[]
@@ -184,18 +174,15 @@ model Conversation {
   channel            String         @default("whatsapp")
   status             String         @default("active")
   createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
   escalationFlag     String?
   lastMessageAt      DateTime       @default(now())
   lastMessagePreview String?
   phone              String?
   sessionType        String         @default("customer")
-  chatwootConversationId String?        // Phase 3: Chatwoot conversation ID for sync
   agent              Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
   contact            Contact?       @relation(fields: [contactId], references: [id])
   user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   messageDrafts      MessageDraft[]
-  whisperMessages     WhisperMessage[]
 
   @@index([agentId, phone])
   @@index([agentId, sessionType])
@@ -418,7 +405,6 @@ model TenantRegistry {
   // Phase 1: routing remediation prep (06-phase0-routing-remediation.md)
   // When populated, overrides port-based container URL in webhook routing.
   containerUrl         String?
-  didNumber            String?
 
   @@index([waPhoneNumberId])
   @@map("tenant_registry")
@@ -443,37 +429,3 @@ model DeadLetter {
   @@index([resolved, lastAttemptAt])
   @@map("dead_letter")
 }
-
-
-model WatchSession {
-  id          String    @id @default(cuid())
-  agentId     String
-  ownerPhone  String
-  mode        String    @default("watch") // watch | takeover
-  startedAt   DateTime  @default(now())
-  endedAt     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
-  @@index([agentId, ownerPhone])
-  @@index([mode])
-}
-
-
-
-model WhisperMessage {
-  id              String   @id @default(cuid())
-  conversationId  String
-  agentId         String
-  content         String
-  createdAt       DateTime @default(now())
-  
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  agent           Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
-  @@index([conversationId])
-  @@index([agentId])
-}
-

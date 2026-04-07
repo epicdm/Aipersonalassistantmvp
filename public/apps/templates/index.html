@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Templates</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.split { display: flex; height: calc(100vh - 52px); }
+.left-pane { width: 280px; min-width: 280px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.right-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.pane-header { padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.tmpl-row { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+.tmpl-row:hover { background: var(--panel); }
+.tmpl-row.active { background: #e7f7ee; border-left: 3px solid var(--teal); }
+.tmpl-name { font-size: 13px; font-weight: 600; }
+.tmpl-preview { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.tmpl-meta { display: flex; gap: 6px; margin-top: 5px; }
+
+.editor-area { padding: 16px; flex: 1; }
+.phone-preview {
+  width: 240px; background: #E5DDD5; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1); margin: 16px auto 0;
+}
+.phone-top { background: var(--teal); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+.phone-name { font-size: 12px; font-weight: 600; color: #fff; }
+.phone-body { padding: 10px 8px; min-height: 100px; }
+.phone-bubble { background: #fff; border-radius: 8px 8px 8px 0; padding: 8px 10px; font-size: 11px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.phone-time { font-size: 9px; color: var(--muted); text-align: right; margin-top: 3px; }
+.category-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--panel); border-radius: 10px; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 2px solid transparent; cursor: pointer; margin: 2px; }
+.category-chip.sel { background: var(--bubble); border-color: var(--teal); color: var(--teal); }
+.var-hint { font-size: 10px; background: var(--panel); border-radius: 4px; padding: 2px 6px; cursor: pointer; display: inline-block; margin: 2px; font-family: monospace; }
+.var-hint:hover { background: var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Templates</div>
+        <div class="toolbar-sub">Message templates for Aria</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="newTemplate()">+ New</button>
+  </div>
+
+  <div class="split">
+    <div class="left-pane">
+      <div class="pane-header">Templates <span id="tmplCount" style="color:var(--text)">—</span></div>
+      <div style="padding:8px 12px">
+        <input class="input" style="height:28px;font-size:12px" placeholder="🔍 Search…" id="searchInput" oninput="filterTemplates()" />
+      </div>
+      <div style="flex:1;overflow-y:auto" id="tmplList">
+        <div class="empty"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <div class="right-pane">
+      <div id="editorPane" style="padding:16px">
+        <div class="empty"><div class="empty-icon">📝</div><h3>Select a template</h3><p>Choose a template to edit or create a new one.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+let templates = []
+let filtered = []
+let selected = null
+
+const CATS = ['greeting','hours','payment','booking','catalog','support','followup','custom']
+const CAT_ICON = { greeting:'👋', hours:'🕐', payment:'💳', booking:'📅', catalog:'📦', support:'🛠', followup:'🔔', custom:'✏️' }
+
+async function loadTemplates() {
+  if (!TOKEN) return
+  try {
+    const res = await fetch(`${API}/templates?token=${TOKEN}`)
+    const d = await res.json()
+    templates = d.templates || []
+    document.getElementById('tmplCount').textContent = templates.length
+    filtered = [...templates]
+    renderList()
+  } catch(e) {}
+}
+
+function filterTemplates() {
+  const q = document.getElementById('searchInput').value.toLowerCase()
+  filtered = templates.filter(t => t.name.toLowerCase().includes(q) || (t.body||'').toLowerCase().includes(q))
+  renderList()
+}
+
+function renderList() {
+  const el = document.getElementById('tmplList')
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><h3>No templates</h3></div>'
+    return
+  }
+  el.innerHTML = filtered.map((t,i) => `
+    <div class="tmpl-row ${selected===t.id?'active':''}" onclick="selectTemplate('${t.id}')">
+      <div class="tmpl-name">${CAT_ICON[t.category]||'📝'} ${t.name}</div>
+      <div class="tmpl-preview">${t.body||''}</div>
+      <div class="tmpl-meta">
+        <span class="badge badge-gray">${t.category||'custom'}</span>
+        ${t.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Draft</span>'}
+      </div>
+    </div>`).join('')
+}
+
+function selectTemplate(id) {
+  selected = id
+  renderList()
+  const t = templates.find(x => x.id === id)
+  if (!t) return
+  showEditor(t)
+}
+
+function showEditor(t) {
+  const el = document.getElementById('editorPane')
+  el.innerHTML = `
+    <div style="font-size:15px;font-weight:700;margin-bottom:14px">${t ? t.name : 'New Template'}</div>
+    <div class="input-group" style="margin-bottom:10px">
+      <label class="input-label">Template Name</label>
+      <input class="input" id="tName" value="${t?.name||''}" placeholder="e.g. Welcome Message" />
+    </div>
+    <div class="input-group" style="margin-bottom:10px">
+      <label class="input-label">Category</label>
+      <div style="display:flex;flex-wrap:wrap;margin-top:4px" id="catChips">
+        ${CATS.map(c => `<div class="category-chip ${t?.category===c?'sel':''}" onclick="selCat('${c}',this)">${CAT_ICON[c]} ${c}</div>`).join('')}
+      </div>
+      <input type="hidden" id="tCat" value="${t?.category||'custom'}" />
+    </div>
+    <div class="input-group" style="margin-bottom:6px">
+      <label class="input-label">Message Body</label>
+      <textarea class="input" id="tBody" rows="6" oninput="updatePhonePreview()" placeholder="Hi {{name}}, thanks for reaching out to EPIC…">${t?.body||''}</textarea>
+    </div>
+    <div style="margin-bottom:12px;font-size:11px;color:var(--muted)">
+      Insert variable:
+      <span class="var-hint" onclick="insertVar('{{name}}')">{{name}}</span>
+      <span class="var-hint" onclick="insertVar('{{phone}}')">{{phone}}</span>
+      <span class="var-hint" onclick="insertVar('{{business}}')">{{business}}</span>
+      <span class="var-hint" onclick="insertVar('{{date}}')">{{date}}</span>
+      <span class="var-hint" onclick="insertVar('{{amount}}')">{{amount}}</span>
+    </div>
+    <div class="phone-preview">
+      <div class="phone-top">
+        <div style="width:28px;height:28px;border-radius:50%;background:#128C7E;display:flex;align-items:center;justify-content:center;font-size:12px">🤖</div>
+        <div class="phone-name">Aria</div>
+      </div>
+      <div class="phone-body">
+        <div class="phone-bubble" id="phoneBubble">${(t?.body||'Your message here…').replace('{{name}}','Maria')}</div>
+        <div class="phone-time">now ✓✓</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary" onclick="saveTemplate('${t?.id||''}')">💾 Save</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-left:4px">
+        <input type="checkbox" id="tActive" ${t?.active?'checked':''}>
+        Active
+      </label>
+      ${t?.id ? `<button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="deleteTemplate('${t.id}')">🗑 Delete</button>` : ''}
+    </div>
+    <div id="saveMsg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>`
+}
+
+function selCat(c, el) {
+  document.querySelectorAll('.category-chip').forEach(x => x.classList.remove('sel'))
+  el.classList.add('sel')
+  document.getElementById('tCat').value = c
+}
+
+function insertVar(v) {
+  const ta = document.getElementById('tBody')
+  const pos = ta.selectionStart
+  ta.value = ta.value.slice(0,pos) + v + ta.value.slice(ta.selectionEnd)
+  ta.setSelectionRange(pos+v.length, pos+v.length)
+  updatePhonePreview()
+}
+
+function updatePhonePreview() {
+  const b = document.getElementById('phoneBubble')
+  const ta = document.getElementById('tBody')
+  if (b && ta) b.textContent = (ta.value||'Your message here…').replace(/\{\{name\}\}/g,'Maria').replace(/\{\{business\}\}/g,'EPIC').replace(/\{\{date\}\}/g,'Apr 5').replace(/\{\{amount\}\}/g,'$49')
+}
+
+async function saveTemplate(id) {
+  const body = { name: v('tName'), category: v('tCat'), body: v('tBody'), active: document.getElementById('tActive')?.checked }
+  try {
+    const method = id ? 'PATCH' : 'POST'
+    const url = id ? `${API}/templates/${id}?token=${TOKEN}` : `${API}/templates?token=${TOKEN}`
+    await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    document.getElementById('saveMsg').textContent = '✅ Saved'
+    setTimeout(() => { document.getElementById('saveMsg').textContent = '' }, 2000)
+    loadTemplates()
+  } catch(e) { document.getElementById('saveMsg').textContent = '❌ Error saving' }
+}
+
+async function deleteTemplate(id) {
+  if (!confirm('Delete this template?')) return
+  await fetch(`${API}/templates/${id}?token=${TOKEN}`, { method:'DELETE' })
+  selected = null
+  document.getElementById('editorPane').innerHTML = '<div class="empty"><div class="empty-icon">📝</div><h3>Select a template</h3></div>'
+  loadTemplates()
+}
+
+function newTemplate() {
+  selected = null
+  renderList()
+  showEditor(null)
+}
+
+function v(id) { const el=document.getElementById(id); return el?el.value:'' }
+
+loadTemplates()
+</script>
+</body>
+</html>

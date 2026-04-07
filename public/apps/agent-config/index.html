@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Config</title>
+  <style>
+    /* ── Chatwoot design tokens ─────────────────────────────────────── */
+    :root {
+      --slate-1:  #fcfcfd; --slate-2:  #f9f9fb; --slate-3:  #f0f0f3;
+      --slate-4:  #e8e8ec; --slate-5:  #e0e1e6; --slate-6:  #d9d9e0;
+      --slate-7:  #cdced6; --slate-8:  #b9bbc6; --slate-9:  #8b8d98;
+      --slate-10: #80828d; --slate-11: #62636c; --slate-12: #1c1d23;
+      --accent:   #1f73b7;
+      --accent-h: #1a5e96;
+      --accent-bg: #e8f4fd;
+      --danger:   #e35b66;
+      --danger-bg:#fdf0f0;
+      --success:  #3ea48c;
+      --success-bg:#edf7f4;
+      --radius:   4px;
+      --font:     'Inter', system-ui, -apple-system, sans-serif;
+      --bg:       var(--slate-1);
+      --surface:  var(--slate-2);
+      --border:   var(--slate-5);
+      --text:     var(--slate-12);
+      --muted:    var(--slate-11);
+      --subtle:   var(--slate-9);
+    }
+    [data-theme="dark"] {
+      --slate-1:  #151618; --slate-2:  #1a1b1e; --slate-3:  #222327;
+      --slate-4:  #292a2e; --slate-5:  #303136; --slate-6:  #393a40;
+      --slate-7:  #46474f; --slate-8:  #5f6068; --slate-9:  #6c6e79;
+      --slate-10: #797b86; --slate-11: #b2b3bd; --slate-12: #eeeef0;
+      --accent:   #4ba3e3;
+      --accent-h: #5cb3f0;
+      --accent-bg: #1a2d3d;
+      --danger-bg: #2d1a1b;
+      --success-bg:#1a2d28;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 80px; /* room for sticky footer */
+    }
+
+    /* ── Loading / error states ──────────────────────────────────────── */
+    #loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px 24px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error-screen {
+      display: none;
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--danger);
+    }
+    #error-screen p { margin-bottom: 12px; font-size: 13px; }
+    #error-screen button {
+      padding: 6px 16px;
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    /* ── Main form ───────────────────────────────────────────────────── */
+    #main-form { display: none; }
+
+    .form-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 520;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-bottom: 12px;
+    }
+
+    /* ── Agent name input ────────────────────────────────────────────── */
+    .field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 440;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .text-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 420;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .text-input:focus { border-color: var(--accent); }
+    .text-input::placeholder { color: var(--subtle); }
+    .agent-name-input { font-size: 14px; font-weight: 460; }
+
+    /* ── Personality radios ──────────────────────────────────────────── */
+    .radio-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      min-height: 44px;
+    }
+    .radio-option:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .radio-option input[type="radio"] { display: none; }
+    .radio-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+    .radio-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      transition: border-color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .radio-option.selected .radio-dot { border-color: var(--accent); }
+    .radio-dot::after {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: none;
+    }
+    .radio-option.selected .radio-dot::after { display: block; }
+    .radio-label {
+      font-size: 12px;
+      font-weight: 440;
+      color: var(--text);
+    }
+
+    .custom-tone-wrapper {
+      margin-top: 8px;
+      display: none;
+    }
+    .custom-tone-wrapper.visible { display: block; }
+    .custom-textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      resize: vertical;
+      min-height: 72px;
+      outline: none;
+    }
+    .custom-textarea:focus { border-color: var(--accent); }
+    .char-hint {
+      font-size: 11px;
+      color: var(--subtle);
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    /* ── Tool toggles ────────────────────────────────────────────────── */
+    .tool-list { display: flex; flex-direction: column; gap: 2px; }
+
+    .tool-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius);
+      min-height: 48px;
+      transition: background 0.1s;
+    }
+    .tool-row:hover { background: var(--slate-3); }
+
+    .tool-info { flex: 1; min-width: 0; }
+    .tool-name {
+      font-size: 12px;
+      font-weight: 460;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tool-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .opt-in-badge {
+      font-size: 9px;
+      font-weight: 520;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: var(--slate-4);
+      color: var(--subtle);
+      flex-shrink: 0;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--slate-6);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-track { background: var(--accent); }
+    .toggle input:checked + .toggle-track::after { transform: translateX(16px); }
+    .toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Sticky save footer ──────────────────────────────────────────── */
+    .sticky-footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      transform: translateY(100%);
+      transition: transform 0.2s ease;
+      z-index: 100;
+    }
+    .sticky-footer.visible { transform: translateY(0); }
+
+    .btn {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: var(--radius);
+      border: none;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 520;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      min-height: 36px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-h); }
+    .btn-ghost {
+      background: var(--slate-3);
+      color: var(--text);
+      flex: 0 0 auto;
+      padding: 9px 16px;
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--slate-4); }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--slate-12);
+      color: var(--slate-1);
+      font-size: 12px;
+      font-weight: 440;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 200;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.success { background: var(--success); }
+    #toast.error   { background: var(--danger);  }
+  </style>
+</head>
+<body>
+
+  <!-- Loading -->
+  <div id="loading-screen">
+    <div class="spinner" role="status" aria-label="Loading"></div>
+    <span>Loading agent config...</span>
+  </div>
+
+  <!-- Error -->
+  <div id="error-screen" role="alert">
+    <p id="error-msg">Failed to load agent config.</p>
+    <button onclick="loadConfig()">Retry</button>
+  </div>
+
+  <!-- Main form -->
+  <div id="main-form" aria-label="Agent configuration">
+
+    <!-- Agent name -->
+    <div class="form-section">
+      <div class="section-label">Identity</div>
+      <label class="field-label" for="agent-name">Display name</label>
+      <input
+        id="agent-name"
+        class="text-input agent-name-input"
+        type="text"
+        placeholder="e.g. EPIC Assistant"
+        maxlength="60"
+        autocomplete="off"
+      />
+    </div>
+
+    <!-- Personality -->
+    <div class="form-section">
+      <div class="section-label">Personality</div>
+      <div class="radio-group" role="radiogroup" aria-label="Personality">
+        <label class="radio-option" data-tone="professional">
+          <input type="radio" name="tone" value="professional" />
+          <span class="radio-dot"></span>
+          <span class="radio-label">Professional</span>
+        </label>
+        <label class="radio-option" data-tone="casual">
+          <input type="radio" name="tone" value="casual" />
+          <span class="radio-dot"></span>
+          <span class="radio-label">Casual</span>
+        </label>
+        <label class="radio-option" data-tone="formal">
+          <input type="radio" name="tone" value="formal" />
+          <span class="radio-dot"></span>
+          <span class="radio-label">Formal</span>
+        </label>
+        <label class="radio-option" data-tone="custom">
+          <input type="radio" name="tone" value="custom" />
+          <span class="radio-dot"></span>
+          <span class="radio-label">Custom</span>
+        </label>
+      </div>
+      <div class="custom-tone-wrapper" id="custom-tone-wrapper">
+        <textarea
+          id="custom-tone-text"
+          class="custom-textarea"
+          placeholder="Describe the personality in your own words..."
+          maxlength="200"
+        ></textarea>
+        <div class="char-hint"><span id="char-count">0</span>/200</div>
+      </div>
+    </div>
+
+    <!-- Tools -->
+    <div class="form-section">
+      <div class="section-label">Capabilities</div>
+      <div class="tool-list" id="tool-list" role="list"></div>
+    </div>
+
+  </div>
+
+  <!-- Sticky save footer -->
+  <div class="sticky-footer" id="save-footer" role="group" aria-label="Save changes">
+    <button class="btn btn-ghost" id="discard-btn" onclick="discardChanges()">Discard</button>
+    <button class="btn btn-primary" id="save-btn" onclick="saveConfig()">Save changes</button>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="alert" aria-live="assertive"></div>
+
+  <script>
+    // ── Tool definitions (mirrors TOOL_LABELS in agent-config route) ──────────
+    const TOOLS = [
+      { key: 'catalog_browse',        label: 'Browse Products',    description: 'Show product catalog to customers' },
+      { key: 'catalog_search',        label: 'Search Products',    description: 'Find specific products by name' },
+      { key: 'create_payment_link',   label: 'Accept Payments',    description: 'Send Stripe checkout links' },
+      { key: 'get_booking_slots',     label: 'Show Availability',  description: 'Display appointment time slots' },
+      { key: 'create_booking',        label: 'Book Appointments',  description: 'Confirm bookings for customers' },
+      { key: 'get_business_hours',    label: 'Show Hours',         description: "Answer 'when are you open?' questions" },
+      { key: 'send_product_card',     label: 'Product Cards',      description: 'Send rich product cards with buy button' },
+      { key: 'send_media',            label: 'Send Files',         description: 'Share images, documents, videos' },
+      { key: 'send_location',         label: 'Share Location',     description: 'Send business location on a map' },
+      { key: 'send_template',         label: 'Send Templates',     description: 'Send approved WhatsApp message templates' },
+      { key: 'lookup_contact',        label: 'Customer History',   description: 'Look up returning customer profiles' },
+      { key: 'get_order_status',      label: 'Order Status',       description: 'Show recent orders and bookings' },
+      { key: 'send_feedback_request', label: 'Ask for Reviews',    description: 'Request ratings after service', optIn: true },
+      { key: 'qualify_lead',          label: 'Tag Leads',          description: 'Update customer pipeline stage', optIn: true },
+    ]
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    const token = new URLSearchParams(location.search).get('token')
+    let original = {}   // data as loaded from API
+    let current  = {}   // current form state
+    let saving   = false
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      buildToolList()
+      bindFormEvents()
+      loadConfig()
+    })
+
+    // Listen for dark/light mode from Chatwoot postMessage
+    window.addEventListener('message', e => {
+      if (e.data && e.data.type === 'set-color-scheme') {
+        document.documentElement.setAttribute('data-theme', e.data.scheme === 'dark' ? 'dark' : '')
+      }
+    })
+
+    // ── Build tool rows ───────────────────────────────────────────────────────
+    function buildToolList() {
+      const list = document.getElementById('tool-list')
+      TOOLS.forEach(tool => {
+        const row = document.createElement('div')
+        row.className = 'tool-row'
+        row.setAttribute('role', 'listitem')
+        row.innerHTML = `
+          <div class="tool-info">
+            <div class="tool-name">${tool.label}</div>
+            <div class="tool-desc">${tool.description}</div>
+          </div>
+          ${tool.optIn ? '<span class="opt-in-badge">Opt-in</span>' : ''}
+          <label class="toggle" aria-label="${tool.label}">
+            <input type="checkbox" id="tool-${tool.key}" data-key="${tool.key}" />
+            <span class="toggle-track"></span>
+          </label>
+        `
+        list.appendChild(row)
+        document.getElementById(`tool-${tool.key}`).addEventListener('change', onFormChange)
+      })
+    }
+
+    // ── Load config from API ──────────────────────────────────────────────────
+    async function loadConfig() {
+      show('loading')
+      try {
+        const res = await fetch(`/api/dashboard/agent-config?token=${token}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        populateForm(data)
+        show('form')
+      } catch (err) {
+        console.error('[agent-config] load error:', err)
+        document.getElementById('error-msg').textContent = 'Could not load agent config. Please try again.'
+        show('error')
+      }
+    }
+
+    // ── Populate form from API response ──────────────────────────────────────
+    function populateForm(data) {
+      const nameInput  = document.getElementById('agent-name')
+      const tonePreset = ['professional', 'casual', 'formal'].includes(data.tone) ? data.tone : 'custom'
+      const customText = tonePreset === 'custom' ? (data.tone || '') : ''
+
+      nameInput.value = data.name || ''
+      selectTone(tonePreset)
+      if (tonePreset === 'custom') {
+        const ta = document.getElementById('custom-tone-text')
+        ta.value = customText
+        updateCharCount()
+      }
+
+      // Set tool toggles
+      const toolMap = {}
+      if (data.tools) {
+        data.tools.forEach(t => { toolMap[t.key] = t.enabled })
+      }
+      TOOLS.forEach(tool => {
+        const cb = document.getElementById(`tool-${tool.key}`)
+        if (cb) cb.checked = toolMap[tool.key] ?? !tool.optIn
+      })
+
+      // Snapshot original state
+      original = captureState()
+      current  = captureState()
+      updateFooter()
+    }
+
+    // ── Form events ───────────────────────────────────────────────────────────
+    function bindFormEvents() {
+      document.getElementById('agent-name').addEventListener('input', onFormChange)
+      document.getElementById('custom-tone-text').addEventListener('input', () => {
+        updateCharCount()
+        onFormChange()
+      })
+      document.querySelectorAll('.radio-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          selectTone(opt.dataset.tone)
+          onFormChange()
+        })
+        opt.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            selectTone(opt.dataset.tone)
+            onFormChange()
+          }
+        })
+        opt.setAttribute('tabindex', '0')
+        opt.setAttribute('role', 'radio')
+      })
+    }
+
+    function selectTone(tone) {
+      document.querySelectorAll('.radio-option').forEach(opt => {
+        const isSelected = opt.dataset.tone === tone
+        opt.classList.toggle('selected', isSelected)
+        opt.querySelector('input').checked = isSelected
+        opt.setAttribute('aria-checked', isSelected)
+      })
+      document.getElementById('custom-tone-wrapper').classList.toggle('visible', tone === 'custom')
+      current.tone = tone
+    }
+
+    function updateCharCount() {
+      const ta = document.getElementById('custom-tone-text')
+      document.getElementById('char-count').textContent = ta.value.length
+    }
+
+    function onFormChange() {
+      current = captureState()
+      updateFooter()
+    }
+
+    // ── Capture current form state ────────────────────────────────────────────
+    function captureState() {
+      const toneSelected = document.querySelector('.radio-option.selected')?.dataset.tone || 'professional'
+      const toneValue = toneSelected === 'custom'
+        ? document.getElementById('custom-tone-text').value.trim()
+        : toneSelected
+
+      const tools = {}
+      TOOLS.forEach(tool => {
+        const cb = document.getElementById(`tool-${tool.key}`)
+        if (cb) tools[tool.key] = cb.checked
+      })
+
+      return {
+        name:  document.getElementById('agent-name').value.trim(),
+        tone:  toneValue,
+        tools,
+      }
+    }
+
+    // ── Dirty check ───────────────────────────────────────────────────────────
+    function isDirty() {
+      if (current.name !== original.name) return true
+      if (current.tone !== original.tone) return true
+      for (const key of Object.keys(current.tools)) {
+        if (current.tools[key] !== original.tools[key]) return true
+      }
+      return false
+    }
+
+    function updateFooter() {
+      document.getElementById('save-footer').classList.toggle('visible', isDirty())
+    }
+
+    // ── Discard ───────────────────────────────────────────────────────────────
+    function discardChanges() {
+      const tonePreset = ['professional', 'casual', 'formal'].includes(original.tone)
+        ? original.tone : 'custom'
+
+      document.getElementById('agent-name').value = original.name
+      selectTone(tonePreset)
+      if (tonePreset === 'custom') {
+        document.getElementById('custom-tone-text').value = original.tone
+        updateCharCount()
+      }
+      TOOLS.forEach(tool => {
+        const cb = document.getElementById(`tool-${tool.key}`)
+        if (cb) cb.checked = original.tools[tool.key] ?? !tool.optIn
+      })
+      current = captureState()
+      updateFooter()
+    }
+
+    // ── Save ──────────────────────────────────────────────────────────────────
+    async function saveConfig() {
+      if (saving) return
+      if (!current.name) {
+        showToast('Agent name is required', 'error')
+        document.getElementById('agent-name').focus()
+        return
+      }
+
+      saving = true
+      const saveBtn = document.getElementById('save-btn')
+      const discardBtn = document.getElementById('discard-btn')
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Saving...'
+      discardBtn.disabled = true
+
+      try {
+        const body = {}
+        if (current.name !== original.name)  body.name  = current.name
+        if (current.tone !== original.tone)  body.tone  = current.tone
+
+        // Only send changed tools
+        const changedTools = {}
+        let anyToolChanged = false
+        TOOLS.forEach(tool => {
+          if (current.tools[tool.key] !== original.tools[tool.key]) {
+            changedTools[tool.key] = current.tools[tool.key]
+            anyToolChanged = true
+          }
+        })
+        if (anyToolChanged) body.tools = changedTools
+
+        const res = await fetch(`/api/dashboard/agent-config?token=${token}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.error || `HTTP ${res.status}`)
+        }
+
+        // Update snapshot so footer hides
+        original = captureState()
+        updateFooter()
+        showToast('Changes saved', 'success')
+      } catch (err) {
+        console.error('[agent-config] save error:', err)
+        showToast(err.message || 'Save failed, please try again', 'error')
+      } finally {
+        saving = false
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Save changes'
+        discardBtn.disabled = false
+      }
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────────────────
+    let toastTimer = null
+    function showToast(msg, type = '') {
+      const el = document.getElementById('toast')
+      el.textContent = msg
+      el.className = type ? `show ${type}` : 'show'
+      clearTimeout(toastTimer)
+      toastTimer = setTimeout(() => { el.className = '' }, 2800)
+    }
+
+    // ── Screen switching ──────────────────────────────────────────────────────
+    function show(screen) {
+      document.getElementById('loading-screen').style.display = screen === 'loading' ? 'flex'  : 'none'
+      document.getElementById('error-screen').style.display   = screen === 'error'   ? 'block' : 'none'
+      document.getElementById('main-form').style.display      = screen === 'form'    ? 'block' : 'none'
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isola — Setup</title>
+<link rel="stylesheet" href="../shared.css">
+<style>
+.wizard { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
+.step-intro { text-align: center; margin-bottom: 28px; }
+.step-intro h2 { font-size: 20px; font-weight: 700; color: var(--teal); }
+.step-intro p { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+.form-section { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.form-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.form-row.two { grid-template-columns: 1fr 1fr; }
+.logo-upload {
+  width: 80px; height: 80px; border-radius: 50%; border: 2px dashed var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 30px;
+  cursor: pointer; transition: border-color 0.15s; margin: 0 auto 16px;
+}
+.logo-upload:hover { border-color: var(--teal); }
+.hours-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.hours-label { width: 80px; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+.hours-closed { font-size: 12px; color: var(--muted); }
+.hours-time { display: flex; align-items: center; gap: 6px; flex: 1; }
+.nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+.progress-label { font-size: 11px; color: var(--muted); }
+.step-complete {
+  text-align: center; padding: 40px 24px;
+}
+.step-complete .check { font-size: 56px; margin-bottom: 16px; }
+.step-complete h2 { font-size: 20px; font-weight: 700; color: var(--teal); }
+.step-complete p { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div style="font-size:13px;font-weight:700;color:var(--teal)">Isola</div>
+      <div>
+        <div style="font-size:14px;font-weight:600">Setup Wizard</div>
+        <div class="toolbar-sub" id="stepSubtitle">Step 1 of 4 — Business Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div style="padding:0 16px 0">
+    <div class="progress-track" style="margin:8px 0 0">
+      <div class="progress-fill" id="progressFill" style="width:25%"></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="wizard">
+
+      <!-- STEP 1: Business Profile -->
+      <div id="step1">
+        <div class="step-intro">
+          <h2>👋 Welcome to Isola</h2>
+          <p>Let's set up your business in 4 quick steps so Aria, your AI agent, can start handling customers right away.</p>
+        </div>
+        <div class="form-section">
+          <h3>🏢 Your Business</h3>
+          <div class="logo-upload" id="logoUpload" onclick="document.getElementById('logoFile').click()">🏢</div>
+          <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="previewLogo(this)">
+          <div class="form-row two">
+            <div class="input-group"><label class="input-label">Business Name</label><input class="input" id="bizName" placeholder="EPIC Communications" /></div>
+            <div class="input-group"><label class="input-label">Phone Number</label><input class="input" id="bizPhone" placeholder="+1 767 818 0000" /></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Business Description</label><textarea class="input" id="bizDesc" rows="3" placeholder="We provide internet, PC repair, and networking services in Dominica."></textarea></div>
+          </div>
+          <div class="form-row two">
+            <div class="input-group"><label class="input-label">Website</label><input class="input" id="bizWeb" placeholder="https://epic.dm" /></div>
+            <div class="input-group"><label class="input-label">Email</label><input class="input" id="bizEmail" placeholder="hello@epic.dm" /></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Address</label><input class="input" id="bizAddr" placeholder="Roseau, Dominica" /></div>
+          </div>
+        </div>
+        <div class="nav-row">
+          <span class="progress-label">Step 1 of 4</span>
+          <button class="btn btn-primary" onclick="goStep(2)">Next: Business Hours →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Hours -->
+      <div id="step2" style="display:none">
+        <div class="step-intro">
+          <h2>🕐 Business Hours</h2>
+          <p>Aria will automatically tell customers when you're open or closed, and offer to take a message after hours.</p>
+        </div>
+        <div class="form-section">
+          <h3>📅 Weekly Schedule</h3>
+          <div id="hoursRows"></div>
+        </div>
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Next: AI Agent →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: AI Agent -->
+      <div id="step3" style="display:none">
+        <div class="step-intro">
+          <h2>🤖 Meet Aria</h2>
+          <p>Aria is your AI agent. Give her a name and personality — she'll handle WhatsApp messages and calls in your voice.</p>
+        </div>
+        <div class="form-section">
+          <h3>🎭 Personality</h3>
+          <div class="form-row two">
+            <div class="input-group"><label class="input-label">Agent Name</label><input class="input" id="agentName" placeholder="Aria" /></div>
+            <div class="input-group"><label class="input-label">Language</label>
+              <select class="input" id="agentLang"><option>English</option><option>Spanish</option><option>French Creole</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Greeting Message</label><textarea class="input" id="agentGreeting" rows="3" placeholder="Hi! I'm Aria, your EPIC Communications assistant. How can I help you today?"></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Tone</label>
+              <select class="input" id="agentTone">
+                <option>Friendly &amp; Professional</option>
+                <option>Casual &amp; Warm</option>
+                <option>Formal &amp; Corporate</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>⚡ Capabilities</h3>
+          <div style="display:flex;flex-direction:column;gap:8px" id="capList">
+            <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer"><input type="checkbox" checked id="cap_catalog"> Show product catalog &amp; pricing</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer"><input type="checkbox" checked id="cap_payment"> Accept payments via WhatsApp</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer"><input type="checkbox" checked id="cap_booking"> Book appointments</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer"><input type="checkbox" checked id="cap_hours"> Share business hours</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="cap_voice"> Handle voice calls with AI</label>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(4)">Next: Connect WhatsApp →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Connect -->
+      <div id="step4" style="display:none">
+        <div class="step-intro">
+          <h2>📱 Connect WhatsApp</h2>
+          <p>Your WhatsApp Business number is the gateway. Aria handles everything through it.</p>
+        </div>
+        <div class="form-section">
+          <h3>📲 WhatsApp Business API</h3>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Phone Number ID</label><input class="input" id="waPhoneId" placeholder="From Meta Business Manager" /></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Access Token</label><input class="input" id="waToken" type="password" placeholder="EAAxxxxxxxx…" /></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label class="input-label">Webhook Verify Token</label><input class="input" id="waVerify" placeholder="auto-generated" readonly /></div>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <button class="btn btn-success" id="finishBtn" onclick="finish()">🚀 Launch Isola</button>
+        </div>
+      </div>
+
+      <!-- DONE -->
+      <div id="stepDone" style="display:none">
+        <div class="step-complete">
+          <div class="check">✅</div>
+          <h2>Isola is live!</h2>
+          <p>Aria is now active on your WhatsApp number.<br>She'll handle messages, payments, bookings and calls automatically.</p>
+          <button class="btn btn-primary btn-lg" style="margin-top:24px" onclick="openHome()">Go to Dashboard →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const params = new URLSearchParams(location.search)
+const TOKEN  = params.get('token') || ''
+const API    = '/api/dashboard'
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+const DEFAULT_HOURS = { Monday:'08:00-17:00', Tuesday:'08:00-17:00', Wednesday:'08:00-17:00', Thursday:'08:00-17:00', Friday:'08:00-17:00', Saturday:'closed', Sunday:'closed' }
+
+let hours = { ...DEFAULT_HOURS }
+
+// Build hours UI
+;(function() {
+  const el = document.getElementById('hoursRows')
+  DAYS.forEach(day => {
+    const closed = hours[day] === 'closed'
+    const [from, to] = closed ? ['08:00','17:00'] : hours[day].split('-')
+    el.innerHTML += `
+      <div class="hours-row">
+        <div class="hours-label">${day.slice(0,3)}</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+          <input type="checkbox" ${!closed?'checked':''} onchange="toggleDay('${day}',this)" id="day_${day}">
+          Open
+        </label>
+        <div class="hours-time" id="time_${day}" style="${closed?'opacity:0.3;pointer-events:none':''}">
+          <input class="input" style="width:90px;height:28px;padding:4px 8px;font-size:12px" type="time" value="${from}" id="from_${day}">
+          <span style="color:var(--muted);font-size:11px">to</span>
+          <input class="input" style="width:90px;height:28px;padding:4px 8px;font-size:12px" type="time" value="${to}" id="to_${day}">
+        </div>
+      </div>`
+  })
+})()
+
+function toggleDay(day, cb) {
+  const row = document.getElementById('time_'+day)
+  row.style.opacity = cb.checked ? '1' : '0.3'
+  row.style.pointerEvents = cb.checked ? '' : 'none'
+  hours[day] = cb.checked ? `${document.getElementById('from_'+day).value}-${document.getElementById('to_'+day).value}` : 'closed'
+}
+
+// Random verify token
+document.getElementById('waVerify').value = 'isola_' + Math.random().toString(36).slice(2,10)
+
+function goStep(n) {
+  [1,2,3,4].forEach(i => document.getElementById('step'+i).style.display = i===n?'':'none')
+  document.getElementById('stepDone').style.display = 'none'
+  const labels = ['Business Profile','Business Hours','AI Agent','Connect WhatsApp']
+  document.getElementById('stepSubtitle').textContent = `Step ${n} of 4 — ${labels[n-1]}`
+  document.getElementById('progressFill').style.width = (n*25)+'%'
+}
+
+async function finish() {
+  const btn = document.getElementById('finishBtn')
+  btn.disabled = true; btn.textContent = 'Launching…'
+  const payload = {
+    biz: { name: v('bizName'), phone: v('bizPhone'), description: v('bizDesc'), website: v('bizWeb'), email: v('bizEmail'), address: v('bizAddr') },
+    hours,
+    agent: { name: v('agentName')||'Aria', language: v('agentLang'), greeting: v('agentGreeting'), tone: v('agentTone'),
+      capabilities: { catalog: g('cap_catalog'), payment: g('cap_payment'), booking: g('cap_booking'), hours: g('cap_hours'), voice: g('cap_voice') } },
+    wa: { phoneId: v('waPhoneId'), token: v('waToken'), verifyToken: v('waVerify') }
+  }
+  try {
+    await fetch(`${API}/onboarding?token=${TOKEN}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+  } catch(e) {}
+  document.getElementById('step4').style.display = 'none'
+  document.getElementById('stepDone').style.display = ''
+  document.getElementById('stepSubtitle').textContent = 'Complete!'
+  document.getElementById('progressFill').style.width = '100%'
+}
+
+function v(id) { const el=document.getElementById(id); return el ? el.value : '' }
+function g(id) { const el=document.getElementById(id); return el ? el.checked : false }
+
+function previewLogo(input) {
+  if (!input.files[0]) return
+  const r = new FileReader()
+  r.onload = e => { const el=document.getElementById('logoUpload'); el.style.backgroundImage=`url(${e.target.result})`; el.style.backgroundSize='cover'; el.textContent=''; }
+  r.readAsDataURL(input.files[0])
+}
+
+function openHome() { window.location.href = '../home/?token='+TOKEN }
+
+// Load saved progress
+async function loadProgress() {
+  if (!TOKEN) return
+  try {
+    const res = await fetch(`${API}/onboarding?token=${TOKEN}`)
+    if (!res.ok) return
+    const d = await res.json()
+    if (d.completed) { goStep(4); return; }
+    if (d.biz?.name) document.getElementById('bizName').value = d.biz.name
+  } catch(e) {}
+}
+loadProgress()
+</script>
+</body>
+</html>
